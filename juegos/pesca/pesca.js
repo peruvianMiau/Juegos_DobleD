@@ -13,6 +13,71 @@ let tiempoRestante = 60;
 let juegoTerminado = false;
 let temporizadorID;
 
+// Sistema de Audio (Web Audio API)
+let audioCtx;
+function iniciarAudio() {
+    if (!audioCtx) {
+        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        reproducirMusicaFondo();
+    }
+}
+
+// Reproductor de música 8-bit en bucle
+function reproducirMusicaFondo() {
+    if (juegoTerminado || !audioCtx) return;
+
+    const notas = [261.63, 293.66, 329.63, 349.23, 392.00, 440.00, 493.88, 523.25]; // Escala C mayor
+    let paso = 0;
+
+    setInterval(() => {
+        if (juegoTerminado || !audioCtx) return;
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(notas[paso % notas.length], audioCtx.currentTime);
+
+        gain.gain.setValueAtTime(0.03, audioCtx.currentTime); // Volumen suave
+        gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.25);
+
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+
+        osc.start();
+        osc.stop(audioCtx.currentTime + 0.25);
+
+        paso++;
+    }, 300);
+}
+
+// Efectos de Sonido
+function sonarCaptura(puntos) {
+    if (!audioCtx) return;
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    osc.connect(gain);
+    gain.connect(audioCtx.destination);
+
+    if (puntos > 0) {
+        // Sonido de victoria/puntos
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(440, audioCtx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(880, audioCtx.currentTime + 0.2);
+        gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.2);
+    } else {
+        // Sonido de Pez Globo (pérdida de puntos)
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(200, audioCtx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(80, audioCtx.currentTime + 0.3);
+        gain.gain.setValueAtTime(0.15, audioCtx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.3);
+    }
+
+    osc.start();
+    osc.stop(audioCtx.currentTime + 0.3);
+}
+
 // Estado del barco y anzuelo
 const bote = { x: 350, y: 60, ancho: 100, alto: 30, velocidad: 5 };
 const anzuelo = {
@@ -23,21 +88,29 @@ const anzuelo = {
     pezEnganchado: null
 };
 
-// Control de teclas presionadas
-const teclas = {
-    Izquierda: false,
-    Derecha: false,
-    Arriba: false,
-    Abajo: false
-};
+// Control de teclado
+const teclas = { Izquierda: false, Derecha: false, Arriba: false, Abajo: false };
 
-// Lista de peces en movimiento
+// Peces, Burbujas y Partículas
 let peces = [];
+let burbujas = [];
+let particulas = [];
+
 const TIPOS_PECES = [
     { nombre: 'Normal', color: '#ff7b00', puntos: 10, velocidad: 2, tamaño: 16 },
     { nombre: 'Dorado', color: '#ffd700', puntos: 30, velocidad: 3.5, tamaño: 12 },
     { nombre: 'PezGlobo', color: '#e63946', puntos: -15, velocidad: 1.5, tamaño: 20 }
 ];
+
+// Generar burbujas de fondo
+for (let i = 0; i < 20; i++) {
+    burbujas.push({
+        x: Math.random() * 800,
+        y: Math.random() * 500,
+        radio: Math.random() * 3 + 1,
+        velY: Math.random() * 1 + 0.5
+    });
+}
 
 function crearPez() {
     const tipo = TIPOS_PECES[Math.floor(Math.random() * (Math.random() > 0.8 ? 3 : 2))];
@@ -50,8 +123,21 @@ function crearPez() {
     });
 }
 
-// Escuchadores de eventos para el teclado
+function crearParticulas(x, y, color) {
+    for (let i = 0; i < 10; i++) {
+        particulas.push({
+            x, y,
+            vx: (Math.random() - 0.5) * 4,
+            vy: (Math.random() - 0.5) * 4,
+            vida: 1,
+            color
+        });
+    }
+}
+
+// Escuchadores de eventos
 window.addEventListener('keydown', (e) => {
+    iniciarAudio(); // Inicia el audio con la primera tecla presionada
     if (juegoTerminado) return;
     if (['ArrowLeft', 'a', 'A'].includes(e.key)) teclas.Izquierda = true;
     if (['ArrowRight', 'd', 'D'].includes(e.key)) teclas.Derecha = true;
@@ -91,6 +177,7 @@ function reiniciarJuego() {
     tiempoRestante = 60;
     juegoTerminado = false;
     peces = [];
+    particulas = [];
     bote.x = 350;
     anzuelo.x = bote.x + bote.ancho / 2;
     anzuelo.y = 100;
@@ -101,11 +188,11 @@ function reiniciarJuego() {
     timerEl.innerText = '60';
     overlayEl.style.display = 'none';
 
+    iniciarAudio();
     iniciarTemporizador();
 }
 
 function actualizarMovimiento() {
-    // Movimiento Horizontal (Bote + Anzuelo)
     if (teclas.Izquierda && bote.x > 0) {
         bote.x -= bote.velocidad;
         anzuelo.x -= bote.velocidad;
@@ -114,8 +201,6 @@ function actualizarMovimiento() {
         bote.x += bote.velocidad;
         anzuelo.x += bote.velocidad;
     }
-
-    // Movimiento Vertical (Anzuelo)
     if (teclas.Abajo && anzuelo.y < canvas.height - 20) {
         anzuelo.y += anzuelo.velocidadVertical;
     }
@@ -123,28 +208,46 @@ function actualizarMovimiento() {
         anzuelo.y -= anzuelo.velocidadVertical;
     }
 
-    // Procesar captura cuando el anzuelo sube a la superficie
     if (anzuelo.y <= 100) {
         anzuelo.y = 100;
         if (anzuelo.pezEnganchado) {
+            sonarCaptura(anzuelo.pezEnganchado.puntos);
+            crearParticulas(anzuelo.x, anzuelo.y, anzuelo.pezEnganchado.color);
+
             puntuacion = Math.max(0, puntuacion + anzuelo.pezEnganchado.puntos);
             if (anzuelo.pezEnganchado.puntos > 0) capturas++;
             scoreEl.innerText = puntuacion;
             fishCountEl.innerText = capturas;
 
-            // Eliminar el pez capturado del array
             const idx = peces.indexOf(anzuelo.pezEnganchado);
             if (idx !== -1) peces.splice(idx, 1);
-
             anzuelo.pezEnganchado = null;
         }
     }
 
-    // Acompañar posición del pez enganchado
     if (anzuelo.pezEnganchado) {
         anzuelo.pezEnganchado.x = anzuelo.x;
         anzuelo.pezEnganchado.y = anzuelo.y + 10;
     }
+}
+
+function actualizarEfectos() {
+    // Actualizar burbujas
+    burbujas.forEach((b) => {
+        b.y -= b.velY;
+        if (b.y < 90) {
+            b.y = canvas.height;
+            b.x = Math.random() * canvas.width;
+        }
+    });
+
+    // Actualizar partículas
+    particulas.forEach((p, i) => {
+        p.x += p.vx;
+        p.y += p.vy;
+        p.vida -= 0.03;
+        if (p.vida <= 0) particulas.splice(i, 1);
+    });
 }
 
 function actualizarPeces() {
@@ -157,7 +260,6 @@ function actualizarPeces() {
             pez.x += pez.velocidad * pez.dir;
         }
 
-        // Detectar colisión con el anzuelo
         if (!anzuelo.pezEnganchado && anzuelo.y > 110) {
             const dist = Math.hypot(anzuelo.x - pez.x, anzuelo.y - pez.y);
             if (dist < pez.tamaño + anzuelo.radio) {
@@ -165,7 +267,6 @@ function actualizarPeces() {
             }
         }
 
-        // Eliminar peces fuera de pantalla
         if ((pez.dir === 1 && pez.x > canvas.width + 40) || (pez.dir === -1 && pez.x < -40)) {
             if (pez !== anzuelo.pezEnganchado) {
                 peces.splice(index, 1);
@@ -177,11 +278,26 @@ function actualizarPeces() {
 function dibujar() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-    // Agua Superficie
-    ctx.fillStyle = '#87ceeb';
+    // Fondo Marino (Degradado)
+    const fondoGrad = ctx.createLinearGradient(0, 90, 0, canvas.height);
+    fondoGrad.addColorStop(0, '#1e90ff');
+    fondoGrad.addColorStop(1, '#000033');
+    ctx.fillStyle = fondoGrad;
+    ctx.fillRect(0, 90, canvas.width, canvas.height - 90);
+
+    // Cielo/Superficie
+    ctx.fillStyle = '#0d1b2a';
     ctx.fillRect(0, 0, canvas.width, 90);
 
-    // Bote
+    // Dibujar Burbujas
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.3)';
+    burbujas.forEach((b) => {
+        ctx.beginPath();
+        ctx.arc(b.x, b.y, b.radio, 0, Math.PI * 2);
+        ctx.fill();
+    });
+
+    // Bote detallado
     ctx.fillStyle = '#8d5b4c';
     ctx.beginPath();
     ctx.moveTo(bote.x, bote.y);
@@ -191,22 +307,36 @@ function dibujar() {
     ctx.closePath();
     ctx.fill();
 
-    // Línea de pesca
-    ctx.strokeStyle = '#ffffff';
-    ctx.lineWidth = 1.5;
+    // Pescador
+    ctx.fillStyle = '#ffd1dc';
     ctx.beginPath();
-    ctx.moveTo(anzuelo.x, bote.y + bote.alto / 2);
+    ctx.arc(bote.x + 30, bote.y - 10, 8, 0, Math.PI * 2); // Cabeza
+    ctx.fill();
+
+    // Caña de pesca
+    ctx.strokeStyle = '#d4a373';
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.moveTo(bote.x + 30, bote.y - 5);
+    ctx.lineTo(anzuelo.x, bote.y - 15);
+    ctx.stroke();
+
+    // Hilo de Pescar
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.7)';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(anzuelo.x, bote.y - 15);
     ctx.lineTo(anzuelo.x, anzuelo.y);
     ctx.stroke();
 
-    // Anzuelo
-    ctx.strokeStyle = '#d0d0d0';
+    // Anzuelo brillante
+    ctx.strokeStyle = '#e0e0e0';
     ctx.lineWidth = 3;
     ctx.beginPath();
     ctx.arc(anzuelo.x, anzuelo.y, anzuelo.radio, 0, Math.PI);
     ctx.stroke();
 
-    // Dibujar Peces
+    // Peces con detalles
     peces.forEach((pez) => {
         ctx.fillStyle = pez.color;
         ctx.beginPath();
@@ -221,12 +351,33 @@ function dibujar() {
         ctx.lineTo(colaX, pez.y + 8);
         ctx.closePath();
         ctx.fill();
+
+        // Ojo del pez
+        ctx.fillStyle = '#ffffff';
+        ctx.beginPath();
+        ctx.arc(pez.x + (pez.tamaño / 2 * pez.dir), pez.y - 2, 3, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = '#000000';
+        ctx.beginPath();
+        ctx.arc(pez.x + (pez.tamaño / 2 * pez.dir), pez.y - 2, 1.5, 0, Math.PI * 2);
+        ctx.fill();
+    });
+
+    // Dibujar Partículas de captura
+    particulas.forEach((p) => {
+        ctx.fillStyle = p.color;
+        ctx.globalAlpha = p.vida;
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, 3, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.globalAlpha = 1.0;
     });
 }
 
 function bucleJuego() {
     if (!juegoTerminado) {
         actualizarMovimiento();
+        actualizarEfectos();
         actualizarPeces();
         dibujar();
     }
@@ -235,4 +386,3 @@ function bucleJuego() {
 
 iniciarTemporizador();
 bucleJuego();
-
