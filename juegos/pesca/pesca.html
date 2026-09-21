@@ -4,47 +4,44 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Pesca Nocturna - Arcade</title>
+    <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="pesca.css">
     <script src="pesca.js" defer></script>
 </head>
-<body>
-<div class="top-bar">
-    <a href="../../index.html" class="btn-back">⬅️ Volver al Menú</a>
-    <h1>Aventura de Pesca 🎣</h1>
-</div>
+<body class="min-h-screen bg-slate-950 text-slate-100 font-sans flex flex-col items-center justify-start gap-6 p-3 sm:p-6 select-none">
 
-<div class="main-layout">
-    <div class="game-container">
-        <!-- HUD Informativo -->
-        <div class="hud">
-            <div class="hud-item">Puntos: <span id="score">0</span></div>
-            <div class="hud-item">Tiempo: <span id="timer">60</span>s</div>
-            <div class="hud-item">Capturas: <span id="fish-count">0</span></div>
-        </div>
+<header class="w-full max-w-5xl flex items-center justify-between bg-slate-900/80 backdrop-blur border border-slate-800 rounded-2xl px-5 py-3 shadow-lg">
+    <a href="../../index.html" class="inline-flex items-center gap-2 text-emerald-400 hover:text-emerald-300 font-semibold text-sm sm:text-base transition-colors">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
+        </svg>
+        Volver al Menú
+    </a>
+    <h1 class="text-xl sm:text-2xl font-black bg-gradient-to-r from-emerald-400 to-amber-300 bg-clip-text text-transparent">
+        PESCA ARCADE
+    </h1>
+    <div class="w-[120px]"></div>
+</header>
 
-        <!-- Canvas del Juego -->
-        <canvas id="fishingCanvas" width="800" height="500"></canvas>
-
-        <!-- Overlay de Game Over -->
-        <div id="game-over-overlay" class="overlay">
-            <h2>¡Tiempo Agotado! 🐟</h2>
-            <p>Puntuación Final: <span id="final-score">0</span></p>
-            <button onclick="reiniciarJuego()" class="btn-restart">Pescar de Nuevo</button>
-        </div>
-
-        <div class="controls-info">
-            <strong>Controles:</strong> Haz <strong>Clic Izquierdo</strong> en el agua para lanzar el anzuelo. Mantén presionado <strong>Clic</strong> para recoger la línea.
-        </div>
+<div class="game-container">
+    <div class="hud">
+        <div class="hud-item">Puntos: <span id="score">0</span></div>
+        <div class="hud-item">Tiempo: <span id="timer">60</span>s</div>
+        <div class="hud-item">Capturas: <span id="fish-count">0</span></div>
     </div>
 
-    <!-- Panel de Reglas a la Derecha -->
-    <div class="rules-sidebar">
-        <h3>📜 Reglas del Juego</h3>
-        <p>• <strong>Objetivo:</strong> Atrapa el mayor número posible de peces antes de que se agoten los 60 segundos.</p>
-        <p>• <strong>Lanzamiento:</strong> Haz clic izquierdo en cualquier punto del agua para arrojar el anzuelo.</p>
-        <p>• <strong>Recoger Línea:</strong> Mantén presionado el clic izquierdo para izar el sedal cuando un pez toque el anzuelo.</p>
-        <p>• <strong>Peces Dorados / Rápidos:</strong> Conceden mayor puntuación que los peces lentos superficiales.</p>
+    <canvas id="fishingCanvas" width="800" height="500"></canvas>
+
+    <div id="game-over-overlay" class="overlay">
+        <h2>¡Tiempo Agotado! 🐟</h2>
+        <p>Puntuación Final: <span id="final-score">0</span></p>
+        <button onclick="reiniciarJuego()" class="btn-restart">Pescar de Nuevo</button>
+    </div>
+
+    <div class="controls-info">
+        <strong>Controles:</strong> Usa <strong>⬅️ ➡️ (o A/D)</strong> para mover el barco. Usa <strong>⬇️ (o S)</strong> para bajar el anzuelo y <strong>⬆️ (o W)</strong> para recoger la línea.
     </div>
 </div>
+
 </body>
 </html>

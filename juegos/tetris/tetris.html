@@ -3,30 +3,51 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Tetris - Mi Plataforma</title>
+    <title>Tetris Arcade - Casino Arcade</title>
+    <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="tetris.css">
-    <!-- Se agrega defer para asegurar que el canvas se cargue antes de ejecutar el JS -->
     <script src="tetris.js" defer></script>
 </head>
-<body>
-<div class="top-bar">
-    <a href="../../index.html" class="btn-back">⬅️ Volver al Menú</a>
-    <h1>Tetris Arcade</h1>
-</div>
+<body class="min-h-screen bg-slate-950 text-slate-100 font-sans flex flex-col items-center justify-start gap-6 p-3 sm:p-6 select-none">
 
-<div class="game-container">
-    <canvas id="tetris" width="240" height="400"></canvas>
+<header class="w-full max-w-5xl flex items-center justify-between bg-slate-900/80 backdrop-blur border border-slate-800 rounded-2xl px-5 py-3 shadow-lg">
+    <a href="../../index.html" class="inline-flex items-center gap-2 text-emerald-400 hover:text-emerald-300 font-semibold text-sm sm:text-base transition-colors">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
+        </svg>
+        Volver al Menú
+    </a>
+    <h1 class="text-xl sm:text-2xl font-black bg-gradient-to-r from-emerald-400 to-amber-300 bg-clip-text text-transparent">
+        TETRIS ARCADE
+    </h1>
+    <div class="w-[120px]"></div>
+</header>
+
+<main class="game-container">
+    <canvas id="tetris" width="360" height="600"></canvas>
 
     <div class="info-panel">
         <div class="score-board">
-            Puntos: <span id="score">0</span>
+            <h3>PUNTOS</h3>
+            <span id="score">0</span>
         </div>
-        <div id="game-over">GAME OVER</div>
+
+        <div class="next-piece-box">
+            <h3>SIGUIENTE</h3>
+            <canvas id="next" width="120" height="120"></canvas>
+        </div>
+
+        <div id="game-over">
+            <h2>GAME OVER</h2>
+            <button onclick="reiniciarJuego()" class="btn-restart">Jugar de Nuevo</button>
+        </div>
+
         <div class="controls">
             <strong>Controles:</strong><br>
-            ⬅️ / ➡️ : Mover<br>
-            ⬇️ : Caída rápida<br>
-            ⬆️ / Z : Rotar
+            ⬅️ ➡️ / <strong>A - D</strong> : Mover<br>
+            ⬇️ / <strong>S</strong> : Caída rápida<br>
+            ⬆️ / <strong>W</strong> : Rotar<br>
+            <strong>ESPACIO</strong> : Caída instantánea
         </div>
         <div class="rules-box">
             <strong>📜 Reglas del Juego:</strong><br>
@@ -35,6 +56,7 @@
             • Evita que la pila de piezas llegue a la parte superior de la pantalla.
         </div>
     </div>
-</div>
+</main>
+
 </body>
 </html>
