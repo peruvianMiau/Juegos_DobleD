@@ -297,16 +297,38 @@ function getTiempoMs() {
     return (audioCtx.currentTime - tiempoInicioAudio) * 1000 + DESFASE_MS;
 }
 
+let chispasRitmo = [];
+
+function crearChispas(x, y, color) {
+    for (let i = 0; i < 14; i++) {
+        const angulo = Math.random() * Math.PI * 2;
+        const vel = 2 + Math.random() * 3.5;
+        chispasRitmo.push({
+            x: x,
+            y: y,
+            vx: Math.cos(angulo) * vel,
+            vy: Math.sin(angulo) * vel - 1.5,
+            vida: 1.0,
+            color: color,
+            radio: 2 + Math.random() * 2.5
+        });
+    }
+}
+
 function procesarPresion(carrilIdx) {
     const t = getTiempoMs();
     const nota = notasGeneradas.find(n => n.carril === carrilIdx && !n.golpeada && !n.fallada && Math.abs(n.tiempoMs - t) < 140);
 
     impactosTotales++;
+    const carril = CARRILES[carrilIdx];
 
     if (nota) {
         const diff = Math.abs(nota.tiempoMs - t);
         nota.golpeada = true;
         aciertosTotales++;
+
+        const impactX = carrilIdx * ANCHO_CARRIL + ANCHO_CARRIL / 2;
+        crearChispas(impactX, ALTURA_LINEA, carril.color);
 
         if (nota.duracionMs > 0) {
             nota.manteniendo = true;
@@ -319,7 +341,7 @@ function procesarPresion(carrilIdx) {
         }
         combo++;
     } else {
-        mostrarFeedback('MISS', '#888');
+        mostrarFeedback('MISS', '#ef4444');
         combo = 0;
     }
     comboMax = Math.max(comboMax, combo);
@@ -332,9 +354,13 @@ function procesarLiberacion(carrilIdx) {
 
     if (notaHold) {
         const finEsperado = notaHold.tiempoMs + notaHold.duracionMs;
+        const carril = CARRILES[carrilIdx];
+        const impactX = carrilIdx * ANCHO_CARRIL + ANCHO_CARRIL / 2;
+
         if (Math.abs(t - finEsperado) < 170) {
             notaHold.finalizada = true;
             mostrarFeedback('HOLD COMPLETE!', '#00f0ff');
+            crearChispas(impactX, ALTURA_LINEA, '#00f0ff');
             puntuacion += 400;
         } else {
             notaHold.fallada = true;
@@ -349,8 +375,13 @@ function procesarLiberacion(carrilIdx) {
 function mostrarFeedback(txt, col) {
     hitFeedback.innerText = txt;
     hitFeedback.style.color = col;
+    hitFeedback.style.textShadow = `0 0 25px ${col}`;
+    hitFeedback.style.transform = 'scale(1.2)';
     hitFeedback.style.opacity = '1';
-    setTimeout(() => hitFeedback.style.opacity = '0', 250);
+    setTimeout(() => {
+        hitFeedback.style.transform = 'scale(1)';
+        hitFeedback.style.opacity = '0';
+    }, 220);
 }
 
 function actualizarHUD() {
@@ -359,36 +390,102 @@ function actualizarHUD() {
     accuracyEl.innerText = impactosTotales === 0 ? 100 : Math.round((aciertosTotales / impactosTotales) * 100);
 }
 
+function dibujarCapsulaNota(c, x, y, w, h, color) {
+    c.save();
+    c.shadowBlur = 16;
+    c.shadowColor = color;
+
+    // Fondo degradado
+    const grad = c.createLinearGradient(x, y, x, y + h);
+    grad.addColorStop(0, '#ffffff');
+    grad.addColorStop(0.35, color);
+    grad.addColorStop(1, '#0a0a0a');
+    c.fillStyle = grad;
+
+    c.beginPath();
+    const r = Math.min(8, h / 2);
+    c.moveTo(x + r, y);
+    c.lineTo(x + w - r, y);
+    c.quadraticCurveTo(x + w, y, x + w, y + r);
+    c.lineTo(x + w, y + h - r);
+    c.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+    c.lineTo(x + r, y + h);
+    c.quadraticCurveTo(x, y + h, x, y + h - r);
+    c.lineTo(x, y + r);
+    c.quadraticCurveTo(x, y, x + r, y);
+    c.closePath();
+    c.fill();
+
+    // Borde brillante
+    c.strokeStyle = '#ffffff';
+    c.lineWidth = 1.5;
+    c.stroke();
+    c.restore();
+}
+
 function bucleJuego() {
     if (!juegoIniciado || juegoPausado) return;
 
     const t = getTiempoMs();
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
+    // Fondo oscuro con degradado
+    const bgGrad = ctx.createLinearGradient(0, 0, 0, canvas.height);
+    bgGrad.addColorStop(0, '#090b14');
+    bgGrad.addColorStop(1, '#03050a');
+    ctx.fillStyle = bgGrad;
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
     // Dibujar Carriles y Teclas
     CARRILES.forEach((c, idx) => {
         const x = idx * ANCHO_CARRIL;
-        ctx.strokeStyle = '#1f2338';
+        
+        // Línea divisoria de carril
+        ctx.strokeStyle = 'rgba(255, 255, 255, 0.08)';
+        ctx.lineWidth = 1;
         ctx.strokeRect(x, 0, ANCHO_CARRIL, canvas.height);
 
+        // Iluminación al presionar tecla
         if (teclasPresionadas[c.tecla]) {
-            ctx.fillStyle = 'rgba(0, 240, 255, 0.2)';
+            const laneGrad = ctx.createLinearGradient(x, ALTURA_LINEA, x, 0);
+            laneGrad.addColorStop(0, c.color + '55');
+            laneGrad.addColorStop(1, 'rgba(0,0,0,0)');
+            ctx.fillStyle = laneGrad;
             ctx.fillRect(x, 0, ANCHO_CARRIL, canvas.height);
         }
 
-        ctx.fillStyle = '#ffffff';
-        ctx.font = 'bold 18px Arial';
+        // Receptor en la parte inferior
+        ctx.save();
+        ctx.fillStyle = teclasPresionadas[c.tecla] ? c.color : '#1e293b';
+        ctx.strokeStyle = c.color;
+        ctx.lineWidth = 2;
+        if (teclasPresionadas[c.tecla]) {
+            ctx.shadowBlur = 15;
+            ctx.shadowColor = c.color;
+        }
+        ctx.fillRect(x + 6, ALTURA_LINEA - 4, ANCHO_CARRIL - 12, 38);
+        ctx.strokeRect(x + 6, ALTURA_LINEA - 4, ANCHO_CARRIL - 12, 38);
+
+        // Tecla
+        ctx.fillStyle = teclasPresionadas[c.tecla] ? '#ffffff' : c.color;
+        ctx.font = 'bold 16px sans-serif';
         ctx.textAlign = 'center';
-        ctx.fillText(c.tecla.toUpperCase(), x + ANCHO_CARRIL / 2, ALTURA_LINEA + 35);
+        ctx.shadowBlur = 0;
+        ctx.fillText(c.tecla.toUpperCase(), x + ANCHO_CARRIL / 2, ALTURA_LINEA + 22);
+        ctx.restore();
     });
 
-    // Línea de Recepción
-    ctx.strokeStyle = '#00f0ff';
-    ctx.lineWidth = 4;
+    // Línea de Recepción (Láser Neón)
+    ctx.save();
+    ctx.shadowBlur = 15;
+    ctx.shadowColor = '#00f0ff';
+    ctx.strokeStyle = '#38bdf8';
+    ctx.lineWidth = 3;
     ctx.beginPath();
     ctx.moveTo(0, ALTURA_LINEA);
     ctx.lineTo(canvas.width, ALTURA_LINEA);
     ctx.stroke();
+    ctx.restore();
 
     // Renderizar Notas
     notasGeneradas.forEach(nota => {
@@ -402,35 +499,65 @@ function bucleJuego() {
             nota.fallada = true;
             combo = 0;
             impactosTotales++;
-            mostrarFeedback('MISS', '#888');
+            mostrarFeedback('MISS', '#ef4444');
             actualizarHUD();
         }
 
         const carril = CARRILES[nota.carril];
         const x = nota.carril * ANCHO_CARRIL;
 
-        // Renderizado de Hold Note
+        // Renderizado de Hold Note (Cinta luminosa)
         if (nota.duracionMs > 0) {
             const distFin = (nota.tiempoMs + nota.duracionMs) - t;
             const yFin = ALTURA_LINEA - (distFin * VELOCIDAD_CAIDA);
 
             if (yInicio > -50 && yFin < canvas.height + 50) {
-                ctx.fillStyle = 'rgba(255, 215, 0, 0.4)';
-                ctx.fillRect(x + 20, yFin, ANCHO_CARRIL - 40, yInicio - yFin);
+                // Haz de luz de la nota hold
+                const holdGrad = ctx.createLinearGradient(x, 0, x + ANCHO_CARRIL, 0);
+                holdGrad.addColorStop(0, 'rgba(255, 215, 0, 0.1)');
+                holdGrad.addColorStop(0.5, 'rgba(255, 215, 0, 0.45)');
+                holdGrad.addColorStop(1, 'rgba(255, 215, 0, 0.1)');
+                ctx.fillStyle = holdGrad;
+                ctx.fillRect(x + 12, yFin, ANCHO_CARRIL - 24, yInicio - yFin);
+
+                // Bordes luminosos del haz
+                ctx.strokeStyle = '#ffd700';
+                ctx.lineWidth = 1.5;
+                ctx.strokeRect(x + 12, yFin, ANCHO_CARRIL - 24, yInicio - yFin);
 
                 if (!nota.golpeada) {
-                    ctx.fillStyle = carril.color;
-                    ctx.fillRect(x + 8, yInicio - 8, ANCHO_CARRIL - 16, 16);
+                    dibujarCapsulaNota(ctx, x + 6, yInicio - 10, ANCHO_CARRIL - 12, 20, carril.color);
                 }
             }
         } else if (!nota.golpeada && yInicio > -30 && yInicio < canvas.height + 30) {
-            ctx.fillStyle = carril.color;
-            ctx.shadowColor = carril.color;
-            ctx.shadowBlur = 10;
-            ctx.fillRect(x + 8, yInicio - 8, ANCHO_CARRIL - 16, 16);
-            ctx.shadowBlur = 0;
+            dibujarCapsulaNota(ctx, x + 6, yInicio - 10, ANCHO_CARRIL - 12, 20, carril.color);
         }
     });
+
+    // Renderizar Chispas de Impacto
+    for (let i = chispasRitmo.length - 1; i >= 0; i--) {
+        const p = chispasRitmo[i];
+        p.x += p.vx;
+        p.y += p.vy;
+        p.vx *= 0.93;
+        p.vy *= 0.93;
+        p.vida -= 0.045;
+
+        if (p.vida <= 0) {
+            chispasRitmo.splice(i, 1);
+            continue;
+        }
+
+        ctx.save();
+        ctx.globalAlpha = p.vida;
+        ctx.fillStyle = p.color;
+        ctx.shadowBlur = 10;
+        ctx.shadowColor = p.color;
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.radio, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+    }
 
     requestAnimationFrame(bucleJuego);
 }

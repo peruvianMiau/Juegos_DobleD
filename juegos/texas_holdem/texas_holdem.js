@@ -93,8 +93,9 @@ function renderizarCarta(carta, oculta = false) {
 // Iniciar Nueva Mano
 function iniciarNuevaMano() {
     if (fichasJugador < 20) {
-        actualizarMensaje("¡No tienes suficientes fichas para la ciega ($20)!", "text-rose-400");
-        return;
+        fichasJugador = 500;
+        guardarSaldo(fichasJugador);
+        actualizarMensaje("¡Te quedaste sin fichas! Te regalamos $500 para continuar jugando.", "text-purple-400 font-bold");
     }
 
     baraja = crearBaraja();
@@ -243,7 +244,7 @@ function turnoBot(botNombre, cartasBot, fichasBot, apuestaBot) {
     const diff = apuestaActualRonda - apuestaBot;
     const sieteCartas = [...cartasBot, ...cartasComunitarias];
     const evaluacion = cartasComunitarias.length >= 3 
-        ? evaluarMejorManoDe7(sieteCartas) 
+        ? evaluarMejorMano(sieteCartas) 
         : null;
 
     // Fuerza preflop simple basada en parejas o cartas altas
@@ -375,7 +376,7 @@ function avanzarFase() {
 
 function evaluarManoJugadorActual() {
     if (cartasComunitarias.length >= 3) {
-        const mejor = evaluarMejorManoDe7([...cartasJugador, ...cartasComunitarias]);
+        const mejor = evaluarMejorMano([...cartasJugador, ...cartasComunitarias]);
         document.getElementById('player-hand-desc').innerText = mejor.tierName;
     } else {
         document.getElementById('player-hand-desc').innerText = `En mano: ${cartasJugador[0].nombre}${cartasJugador[0].palo} ${cartasJugador[1].nombre}${cartasJugador[1].palo}`;
@@ -390,15 +391,15 @@ function ejecutarShowdown() {
     let participantes = [];
 
     if (jugadorActivo) {
-        const evJugador = evaluarMejorManoDe7([...cartasJugador, ...cartasComunitarias]);
+        const evJugador = evaluarMejorMano([...cartasJugador, ...cartasComunitarias]);
         participantes.push({ nombre: 'Tú', evaluacion: evJugador, esJugador: true });
     }
     if (bot1Activo) {
-        const evBot1 = evaluarMejorManoDe7([...cartasBot1, ...cartasComunitarias]);
+        const evBot1 = evaluarMejorMano([...cartasBot1, ...cartasComunitarias]);
         participantes.push({ nombre: 'Carlos (IA)', evaluacion: evBot1, botId: 'bot1' });
     }
     if (bot2Activo) {
-        const evBot2 = evaluarMejorManoDe7([...cartasBot2, ...cartasComunitarias]);
+        const evBot2 = evaluarMejorMano([...cartasBot2, ...cartasComunitarias]);
         participantes.push({ nombre: 'Elena (IA)', evaluacion: evBot2, botId: 'bot2' });
     }
 
@@ -439,21 +440,24 @@ function finalizarPorRetirada() {
     habilitarControlesJugador(false);
 }
 
-// Evaluador Matemático de 7 Cartas -> Mejor combinación de 5 cartas
-function obtenerCombinaciones5de7(siete) {
+// Evaluador Matemático de Cartas (5 a 7 cartas) -> Extrae la mejor combinación de 5 cartas
+function obtenerCombinacionesDe5(cartas) {
+    if (!cartas || cartas.length < 5) return [];
+    if (cartas.length === 5) return [cartas];
+    let n = cartas.length;
     let combis = [];
-    for (let a = 0; a < 7; a++) {
-        for (let b = a + 1; b < 7; b++) {
-            for (let c = b + 1; c < 7; c++) {
-                for (let d = c + 1; d < 7; d++) {
-                    for (let e = d + 1; e < 7; e++) {
-                        combis.push([siete[a], siete[b], siete[c], siete[d], siete[e]]);
+    for (let a = 0; a < n; a++) {
+        for (let b = a + 1; b < n; b++) {
+            for (let c = b + 1; c < n; c++) {
+                for (let d = c + 1; d < n; d++) {
+                    for (let e = d + 1; e < n; e++) {
+                        combis.push([cartas[a], cartas[b], cartas[c], cartas[d], cartas[e]]);
                     }
                 }
             }
         }
     }
-    return combis; // 21 combinaciones posibles
+    return combis;
 }
 
 function evaluar5Cartas(cinco) {
@@ -529,8 +533,11 @@ function compararManos(scoreA, scoreB) {
     return 0;
 }
 
-function evaluarMejorManoDe7(sieteCartas) {
-    const combinaciones = obtenerCombinaciones5de7(sieteCartas);
+function evaluarMejorMano(cartas) {
+    if (!cartas || cartas.length < 5) {
+        return { score: [0, 0], tierName: "Incompleta", cartas: cartas || [] };
+    }
+    const combinaciones = obtenerCombinacionesDe5(cartas);
     let mejor = null;
 
     for (let combi of combinaciones) {

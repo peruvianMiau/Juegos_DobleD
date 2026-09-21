@@ -27,48 +27,91 @@
     </div>
 </header>
 
-<!-- Contenedor Principal: Mesa de Video Poker + Reglas a la Derecha -->
+<!-- Contenedor Principal: Muestras Visuales (Izq) + Mesa (Centro) + Reglas (Der) -->
 <div class="w-full max-w-7xl flex flex-col lg:flex-row gap-6 my-4 flex-1 items-start justify-center">
 
+    <!-- Panel de Muestras Visuales en el Lado Izquierdo -->
+    <aside class="w-full lg:w-80 order-2 lg:order-1 bg-slate-900/80 backdrop-blur border border-slate-800 rounded-3xl p-5 shadow-xl flex flex-col gap-4 text-slate-300 text-sm">
+        <div class="flex items-center justify-between pb-3 border-b border-slate-800">
+            <div class="flex items-center gap-2 text-amber-400 font-bold text-base">
+                <span class="text-xl">🃏</span>
+                <h2>Muestras Visuales</h2>
+            </div>
+            <span class="text-[10px] text-amber-300 font-bold bg-amber-950/80 border border-amber-500/40 px-2 py-0.5 rounded-full">Guía de Manos</span>
+        </div>
+
+        <!-- Visor Destacado de Mano Seleccionada -->
+        <div id="preview-showcase" class="bg-slate-950 border-2 border-amber-400/80 rounded-2xl p-3.5 shadow-xl flex flex-col gap-2.5 transition-all duration-200">
+            <div class="flex items-center justify-between border-b border-slate-800 pb-2">
+                <h4 id="preview-title" class="font-black text-amber-300 text-sm">👑 Escalera Real</h4>
+                <span id="preview-payout" class="font-black text-emerald-400 text-xs px-2.5 py-0.5 rounded-full bg-emerald-950/90 border border-emerald-500/50">250x</span>
+            </div>
+
+            <!-- 5 Mini Cartas Visuales de Ejemplo -->
+            <div id="preview-cards" class="flex items-center justify-center gap-1.5 py-1">
+                <!-- Generadas dinámicamente con las 5 mini cartas -->
+            </div>
+
+            <!-- Explicación de la Mano -->
+            <p id="preview-desc" class="text-xs text-slate-300 leading-relaxed min-h-[44px]">
+                Las 5 cartas consecutivas más altas (10, J, Q, K, As) del mismo palo. La mano máxima imbatible.
+            </p>
+        </div>
+
+        <div class="flex items-center justify-between text-[11px] text-slate-400 font-bold uppercase tracking-wider px-1">
+            <span>Combinación</span>
+            <span>Premio</span>
+        </div>
+
+        <!-- Lista de Selección de Manos para Explorar -->
+        <div class="space-y-1.5 overflow-y-auto max-h-[360px] pr-1" id="hands-selector-list">
+            <!-- Botones interactivos generados por JS -->
+        </div>
+    </aside>
+
     <!-- Gabinete / Mesa de Video Poker -->
-    <main class="flex-1 w-full bg-slate-900/60 border border-slate-800 rounded-3xl p-4 sm:p-6 shadow-2xl flex flex-col items-center gap-6">
+    <main class="flex-1 w-full order-1 lg:order-2 bg-slate-900/60 border border-slate-800 rounded-3xl p-4 sm:p-6 shadow-2xl flex flex-col items-center gap-6">
 
         <!-- Tabla Luminosa de Pagos (Paytable) -->
-        <div class="w-full bg-slate-950/90 border border-slate-800 rounded-2xl p-3 shadow-xl overflow-x-auto">
+        <div class="w-full bg-slate-950/90 border border-slate-800 rounded-2xl p-3 shadow-xl overflow-x-auto relative">
+            <div class="flex items-center justify-between mb-1 px-1">
+                <span class="text-[11px] uppercase tracking-wider text-slate-400 font-bold">Tabla de Pagos</span>
+                <span class="text-[10px] text-amber-400/80 font-medium italic">Pasa el ratón o pulsa para ver la muestra a la izquierda 👈</span>
+            </div>
             <div class="grid grid-cols-3 sm:grid-cols-5 md:grid-cols-9 gap-1 text-center text-xs" id="paytable-grid">
-                <div class="paytable-item p-1.5 rounded-lg border border-slate-800/80" id="pay-royal">
+                <div class="paytable-item p-1.5 rounded-lg border border-slate-800/80 cursor-pointer" id="pay-royal">
                     <span class="block text-slate-400 text-[10px] uppercase font-bold">Esc. Real</span>
                     <strong class="text-amber-400 font-black">250x</strong>
                 </div>
-                <div class="paytable-item p-1.5 rounded-lg border border-slate-800/80" id="pay-straight-flush">
+                <div class="paytable-item p-1.5 rounded-lg border border-slate-800/80 cursor-pointer" id="pay-straight-flush">
                     <span class="block text-slate-400 text-[10px] uppercase font-bold">Esc. Color</span>
                     <strong class="text-amber-400 font-black">50x</strong>
                 </div>
-                <div class="paytable-item p-1.5 rounded-lg border border-slate-800/80" id="pay-quads">
+                <div class="paytable-item p-1.5 rounded-lg border border-slate-800/80 cursor-pointer" id="pay-quads">
                     <span class="block text-slate-400 text-[10px] uppercase font-bold">Póker</span>
                     <strong class="text-amber-400 font-black">25x</strong>
                 </div>
-                <div class="paytable-item p-1.5 rounded-lg border border-slate-800/80" id="pay-full">
+                <div class="paytable-item p-1.5 rounded-lg border border-slate-800/80 cursor-pointer" id="pay-full">
                     <span class="block text-slate-400 text-[10px] uppercase font-bold">Full House</span>
                     <strong class="text-amber-400 font-black">9x</strong>
                 </div>
-                <div class="paytable-item p-1.5 rounded-lg border border-slate-800/80" id="pay-flush">
+                <div class="paytable-item p-1.5 rounded-lg border border-slate-800/80 cursor-pointer" id="pay-flush">
                     <span class="block text-slate-400 text-[10px] uppercase font-bold">Color</span>
                     <strong class="text-amber-400 font-black">6x</strong>
                 </div>
-                <div class="paytable-item p-1.5 rounded-lg border border-slate-800/80" id="pay-straight">
+                <div class="paytable-item p-1.5 rounded-lg border border-slate-800/80 cursor-pointer" id="pay-straight">
                     <span class="block text-slate-400 text-[10px] uppercase font-bold">Escalera</span>
                     <strong class="text-amber-400 font-black">4x</strong>
                 </div>
-                <div class="paytable-item p-1.5 rounded-lg border border-slate-800/80" id="pay-trips">
+                <div class="paytable-item p-1.5 rounded-lg border border-slate-800/80 cursor-pointer" id="pay-trips">
                     <span class="block text-slate-400 text-[10px] uppercase font-bold">Trío</span>
                     <strong class="text-amber-400 font-black">3x</strong>
                 </div>
-                <div class="paytable-item p-1.5 rounded-lg border border-slate-800/80" id="pay-twopair">
+                <div class="paytable-item p-1.5 rounded-lg border border-slate-800/80 cursor-pointer" id="pay-twopair">
                     <span class="block text-slate-400 text-[10px] uppercase font-bold">Doble Par</span>
                     <strong class="text-amber-400 font-black">2x</strong>
                 </div>
-                <div class="paytable-item p-1.5 rounded-lg border border-slate-800/80" id="pay-jacks">
+                <div class="paytable-item p-1.5 rounded-lg border border-slate-800/80 cursor-pointer" id="pay-jacks">
                     <span class="block text-slate-400 text-[10px] uppercase font-bold">Jacks+</span>
                     <strong class="text-amber-400 font-black">1x</strong>
                 </div>
@@ -77,7 +120,7 @@
 
         <!-- Mesa de Fieltro Casino con las 5 Cartas -->
         <div class="casino-table w-full rounded-2xl p-6 sm:p-8 flex flex-col items-center justify-center gap-6 min-h-[320px] relative">
-            
+
             <!-- Banner de Instrucción / Resultado -->
             <div id="status-banner" class="text-center py-2 px-6 rounded-xl font-bold text-base sm:text-lg transition-all duration-300">
                 Selecciona tu apuesta y presiona REPARTIR
@@ -120,7 +163,7 @@
     </main>
 
     <!-- Panel de Reglas en el Lado Derecho -->
-    <aside class="w-full lg:w-80 bg-slate-900/80 backdrop-blur border border-slate-800 rounded-3xl p-5 shadow-xl flex flex-col gap-4 text-slate-300 text-sm">
+    <aside class="w-full lg:w-80 order-3 lg:order-3 bg-slate-900/80 backdrop-blur border border-slate-800 rounded-3xl p-5 shadow-xl flex flex-col gap-4 text-slate-300 text-sm">
         <div class="flex items-center gap-2 pb-3 border-b border-slate-800 text-emerald-400 font-bold text-base">
             <span class="text-xl">📜</span>
             <h2>Reglas de Video Poker</h2>

@@ -12,11 +12,78 @@
     transition: all 0.2s ease;
 }
 
+.paytable-item:hover {
+    background: #1e293b;
+    border-color: #38bdf8;
+    transform: translateY(-2px);
+}
+
 .paytable-item.active-win {
     background: #78350f;
     border-color: #f59e0b;
     box-shadow: 0 0 15px #f59e0b;
     transform: scale(1.05);
+}
+
+/* Panel de Muestras Visuales en el Lado Izquierdo */
+.hand-nav-btn {
+    background: #090d16;
+    border: 1px solid rgba(51, 65, 85, 0.6);
+    border-radius: 10px;
+    padding: 7px 10px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    width: 100%;
+    text-align: left;
+}
+
+.hand-nav-btn:hover {
+    background: #1e293b;
+    border-color: #38bdf8;
+    transform: translateX(3px);
+}
+
+.hand-nav-btn.active {
+    background: #1e293b;
+    border-color: #f59e0b;
+    box-shadow: 0 0 12px rgba(245, 158, 11, 0.35);
+    outline: 1px solid #f59e0b;
+}
+
+.mini-card {
+    width: 44px;
+    height: 64px;
+    background-color: #ffffff;
+    border-radius: 6px;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.5), inset 0 0 0 1px rgba(0, 0, 0, 0.1);
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    padding: 3px 4px;
+    font-weight: 900;
+    line-height: 1;
+    position: relative;
+    user-select: none;
+}
+
+.mini-card.red { color: #dc2626; }
+.mini-card.black { color: #1e293b; }
+
+.mini-card-corner {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    line-height: 0.9;
+}
+
+.mini-card-val { font-size: 0.75rem; }
+.mini-card-suit { font-size: 0.65rem; }
+.mini-card-center {
+    font-size: 1.15rem;
+    align-self: center;
 }
 
 /* Contenedor de Carta Individual */

@@ -108,6 +108,8 @@ function actualizarTextoBoton() {
     }
 }
 
+let procesando = false;
+
 function renderizarCartas() {
     const container = document.getElementById('cards-container');
     container.innerHTML = '';
@@ -143,10 +145,14 @@ function renderizarCartas() {
             `;
         }
 
-        // Botón inferior
+        // Botón inferior con stopPropagation para evitar doble activación
         const btnToggle = document.createElement('button');
         btnToggle.className = 'btn-hold-toggle';
         btnToggle.innerText = cartasRetenidas[i] ? 'RETENIDO' : 'HOLD';
+        btnToggle.onclick = (e) => {
+            e.stopPropagation();
+            alternarRetencion(i);
+        };
 
         wrapper.appendChild(badge);
         wrapper.appendChild(cardDiv);
@@ -156,13 +162,14 @@ function renderizarCartas() {
 }
 
 function alternarRetencion(index) {
-    if (estadoJuego !== 'DRAW') return;
+    if (estadoJuego !== 'DRAW' || procesando) return;
     cartasRetenidas[index] = !cartasRetenidas[index];
     reproducirClick();
     renderizarCartas();
 }
 
 function manejarBotonAccion() {
+    if (procesando) return;
     if (estadoJuego === 'DEAL') {
         iniciarReparto();
     } else if (estadoJuego === 'DRAW') {
@@ -171,6 +178,12 @@ function manejarBotonAccion() {
 }
 
 function iniciarReparto() {
+    if (fichas < 10) {
+        fichas = 500;
+        guardarSaldo(fichas);
+        mostrarMensaje("¡Te quedaste sin fichas! Te regalamos $500 para jugar.", "text-purple-400 font-bold");
+    }
+
     const betInput = document.getElementById('bet-input');
     const monto = parseInt(betInput.value) || 50;
 
@@ -178,6 +191,8 @@ function iniciarReparto() {
         mostrarMensaje("¡Monto de apuesta inválido o saldo insuficiente!", "text-rose-400");
         return;
     }
+
+    procesando = true;
 
     // Descontar apuesta
     fichas -= monto;
@@ -199,9 +214,15 @@ function iniciarReparto() {
     estadoJuego = 'DRAW';
     actualizarTextoBoton();
     mostrarMensaje("Haz clic en las cartas que deseas CONSERVAR (HOLD) y pulsa CAMBIAR.", "text-cyan-300");
+
+    setTimeout(() => {
+        procesando = false;
+    }, 250);
 }
 
 function ejecutarCambio() {
+    procesando = true;
+
     // Reemplazar cartas no retenidas
     for (let i = 0; i < 5; i++) {
         if (!cartasRetenidas[i]) {
@@ -218,6 +239,10 @@ function ejecutarCambio() {
     estadoJuego = 'DEAL';
     actualizarTextoBoton();
     document.getElementById('bet-input').disabled = false;
+
+    setTimeout(() => {
+        procesando = false;
+    }, 250);
 }
 
 function evaluarManoFinal() {
@@ -289,6 +314,8 @@ function evaluarManoFinal() {
         const el = document.getElementById(resultado.id);
         if (el) el.classList.add('active-win');
 
+        mostrarMuestraVisual(resultado.id);
+
         mostrarMensaje(`🎉 ${resultado.nombre} Ganaste $${premio} (${resultado.mult}x)`, "text-amber-300 font-black");
     } else {
         mostrarMensaje("Mano no premiada. ¡Prueba otra mano!", "text-slate-400 font-semibold");
@@ -308,13 +335,204 @@ document.addEventListener('keydown', (e) => {
         alternarRetencion(idx);
     } else if (e.code === 'Space' && document.activeElement.tagName !== 'INPUT') {
         e.preventDefault();
-        manejarBotonAccion();
+        if (!procesando) manejarBotonAccion();
     }
 });
+
+// Guía ilustrada de combinaciones para la tabla de pagos
+const INFO_MANOS = {
+    'pay-royal': {
+        titulo: '👑 Escalera Real (Royal Flush)',
+        pago: '250x',
+        desc: 'Las 5 cartas consecutivas más altas (10, J, Q, K, As) del mismo palo. La mano máxima imbatible.',
+        cartas: [
+            { v: '10', s: '♠', c: 'black' },
+            { v: 'J', s: '♠', c: 'black' },
+            { v: 'Q', s: '♠', c: 'black' },
+            { v: 'K', s: '♠', c: 'black' },
+            { v: 'A', s: '♠', c: 'black' }
+        ]
+    },
+    'pay-straight-flush': {
+        titulo: '🔥 Escalera de Color (Straight Flush)',
+        pago: '50x',
+        desc: 'Cinco cartas en orden numérico correlativo y pertenecientes al mismísimo palo.',
+        cartas: [
+            { v: '5', s: '♥', c: 'red' },
+            { v: '6', s: '♥', c: 'red' },
+            { v: '7', s: '♥', c: 'red' },
+            { v: '8', s: '♥', c: 'red' },
+            { v: '9', s: '♥', c: 'red' }
+        ]
+    },
+    'pay-quads': {
+        titulo: '⚡ Póker (Four of a Kind)',
+        pago: '25x',
+        desc: 'Cuatro cartas idénticas en valor numérico con una carta cualquiera de acompañamiento.',
+        cartas: [
+            { v: 'K', s: '♠', c: 'black' },
+            { v: 'K', s: '♥', c: 'red' },
+            { v: 'K', s: '♦', c: 'red' },
+            { v: 'K', s: '♣', c: 'black' },
+            { v: '4', s: '♦', c: 'red' }
+        ]
+    },
+    'pay-full': {
+        titulo: '🏰 Full House',
+        pago: '9x',
+        desc: 'Un trío (3 cartas del mismo valor) combinado con una pareja (2 cartas de otro valor distinto).',
+        cartas: [
+            { v: 'Q', s: '♠', c: 'black' },
+            { v: 'Q', s: '♥', c: 'red' },
+            { v: 'Q', s: '♦', c: 'red' },
+            { v: '8', s: '♣', c: 'black' },
+            { v: '8', s: '♦', c: 'red' }
+        ]
+    },
+    'pay-flush': {
+        titulo: '💎 Color (Flush)',
+        pago: '6x',
+        desc: 'Cinco cartas cualesquiera del mismo palo, sin importar si son correlativas.',
+        cartas: [
+            { v: '2', s: '♦', c: 'red' },
+            { v: '5', s: '♦', c: 'red' },
+            { v: '9', s: '♦', c: 'red' },
+            { v: 'J', s: '♦', c: 'red' },
+            { v: 'A', s: '♦', c: 'red' }
+        ]
+    },
+    'pay-straight': {
+        titulo: '📈 Escalera (Straight)',
+        pago: '4x',
+        desc: 'Cinco cartas en orden consecutivo en valor numérico, de palos variados o mezclados.',
+        cartas: [
+            { v: '6', s: '♣', c: 'black' },
+            { v: '7', s: '♦', c: 'red' },
+            { v: '8', s: '♠', c: 'black' },
+            { v: '9', s: '♥', c: 'red' },
+            { v: '10', s: '♠', c: 'black' }
+        ]
+    },
+    'pay-trips': {
+        titulo: '🎯 Trío (Three of a Kind)',
+        pago: '3x',
+        desc: 'Tres cartas del mismo valor numérico y dos cartas sueltas diferentes.',
+        cartas: [
+            { v: '7', s: '♠', c: 'black' },
+            { v: '7', s: '♥', c: 'red' },
+            { v: '7', s: '♦', c: 'red' },
+            { v: '3', s: '♣', c: 'black' },
+            { v: '9', s: '♦', c: 'red' }
+        ]
+    },
+    'pay-twopair': {
+        titulo: '✌️ Doble Pareja (Two Pair)',
+        pago: '2x',
+        desc: 'Dos parejas de diferente valor en una misma mano más una quinta carta cualquiera.',
+        cartas: [
+            { v: 'J', s: '♥', c: 'red' },
+            { v: 'J', s: '♣', c: 'black' },
+            { v: '5', s: '♦', c: 'red' },
+            { v: '5', s: '♠', c: 'black' },
+            { v: '9', s: '♣', c: 'black' }
+        ]
+    },
+    'pay-jacks': {
+        titulo: '🃏 Jacks or Better (Pareja Alta)',
+        pago: '1x',
+        desc: 'Una pareja formada únicamente por figuras altas: Jotas (J), Reinas (Q), Reyes (K) o Ases (A). Parejas inferiores (ej. 10s) no cobran.',
+        cartas: [
+            { v: 'J', s: '♠', c: 'black' },
+            { v: 'J', s: '♦', c: 'red' },
+            { v: '4', s: '♣', c: 'black' },
+            { v: '8', s: '♥', c: 'red' },
+            { v: '2', s: '♠', c: 'black' }
+        ]
+    }
+};
+
+function mostrarMuestraVisual(id) {
+    const info = INFO_MANOS[id];
+    if (!info) return;
+
+    const titleEl = document.getElementById('preview-title');
+    const payoutEl = document.getElementById('preview-payout');
+    const cardsEl = document.getElementById('preview-cards');
+    const descEl = document.getElementById('preview-desc');
+
+    if (titleEl) titleEl.innerText = info.titulo;
+    if (payoutEl) payoutEl.innerText = info.pago;
+    if (descEl) descEl.innerText = info.desc;
+
+    if (cardsEl) {
+        cardsEl.innerHTML = '';
+        info.cartas.forEach(c => {
+            const mini = document.createElement('div');
+            mini.className = `mini-card ${c.c}`;
+            mini.innerHTML = `
+                <div class="mini-card-corner">
+                    <span class="mini-card-val">${c.v}</span>
+                    <span class="mini-card-suit">${c.s}</span>
+                </div>
+                <div class="mini-card-center">${c.s}</div>
+                <div class="mini-card-corner" style="transform: rotate(180deg);">
+                    <span class="mini-card-val">${c.v}</span>
+                    <span class="mini-card-suit">${c.s}</span>
+                </div>
+            `;
+            cardsEl.appendChild(mini);
+        });
+    }
+
+    // Resaltar botón en la lista lateral
+    document.querySelectorAll('.hand-nav-btn').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.handId === id);
+    });
+}
+
+function inicializarMuestrasVisuales() {
+    const listEl = document.getElementById('hands-selector-list');
+    if (!listEl) return;
+
+    listEl.innerHTML = '';
+
+    const HAND_ORDER = [
+        'pay-royal', 'pay-straight-flush', 'pay-quads', 'pay-full',
+        'pay-flush', 'pay-straight', 'pay-trips', 'pay-twopair', 'pay-jacks'
+    ];
+
+    HAND_ORDER.forEach(id => {
+        const info = INFO_MANOS[id];
+        if (!info) return;
+
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'hand-nav-btn';
+        btn.dataset.handId = id;
+        btn.innerHTML = `
+            <span class="text-xs font-semibold text-slate-200">${info.titulo}</span>
+            <span class="text-xs font-black text-amber-400 ml-2">${info.pago}</span>
+        `;
+
+        btn.addEventListener('mouseenter', () => mostrarMuestraVisual(id));
+        btn.addEventListener('click', () => mostrarMuestraVisual(id));
+        listEl.appendChild(btn);
+    });
+
+    // Conectar eventos también a los ítems de la tabla de pagos superior
+    document.querySelectorAll('.paytable-item').forEach(item => {
+        item.addEventListener('mouseenter', () => mostrarMuestraVisual(item.id));
+        item.addEventListener('click', () => mostrarMuestraVisual(item.id));
+    });
+
+    // Mostrar Escalera Real por defecto al cargar
+    mostrarMuestraVisual('pay-royal');
+}
 
 // Inicialización
 document.addEventListener('DOMContentLoaded', () => {
     guardarSaldo(fichas);
     actualizarTextoBoton();
     renderizarCartas();
+    inicializarMuestrasVisuales();
 });
