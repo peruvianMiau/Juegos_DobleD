@@ -37,7 +37,7 @@ function reproducirMusicaFondo() {
         osc.type = 'triangle';
         osc.frequency.setValueAtTime(notas[paso % notas.length], audioCtx.currentTime);
 
-        gain.gain.setValueAtTime(0.03, audioCtx.currentTime); // Volumen suave
+        gain.gain.setValueAtTime(0.1, audioCtx.currentTime); // Volumen suave
         gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.25);
 
         osc.connect(gain);
@@ -63,14 +63,14 @@ function sonarCaptura(puntos) {
         osc.type = 'sine';
         osc.frequency.setValueAtTime(440, audioCtx.currentTime);
         osc.frequency.exponentialRampToValueAtTime(880, audioCtx.currentTime + 0.2);
-        gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
+        gain.gain.setValueAtTime(0.25, audioCtx.currentTime);
         gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.2);
     } else {
         // Sonido de Pez Globo (pérdida de puntos)
         osc.type = 'sawtooth';
         osc.frequency.setValueAtTime(200, audioCtx.currentTime);
         osc.frequency.exponentialRampToValueAtTime(80, audioCtx.currentTime + 0.3);
-        gain.gain.setValueAtTime(0.15, audioCtx.currentTime);
+        gain.gain.setValueAtTime(0.3, audioCtx.currentTime);
         gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.3);
     }
 
