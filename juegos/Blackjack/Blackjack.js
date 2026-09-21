@@ -7,7 +7,7 @@ document.addEventListener('DOMContentLoaded', () => {
     let baraja = [];
     let manoJugador = [];
     let manoDealer = [];
-    let fichas = 1000;
+    let fichas = parseInt(localStorage.getItem('casino_balance')) || 1000;
     let apuestaActual = 50;
     let juegoEnProgreso = false;
 
@@ -290,6 +290,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function actualizarFichasUI() {
         fichasCountEl.innerText = fichas;
+        localStorage.setItem('casino_balance', fichas);
     }
 
     function actualizarBotonesUI() {
@@ -359,5 +360,6 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     // Inicializar interfaz vacía
+    actualizarFichasUI();
     actualizarBotonesUI();
 });

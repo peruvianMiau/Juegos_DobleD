@@ -47,3 +47,18 @@ canvas {
     font-weight: bold;
     display: none;
 }
+
+.rules-box {
+    background: #121212;
+    padding: 12px;
+    border-radius: 8px;
+    border: 1px solid #333;
+    font-size: 0.85rem;
+    line-height: 1.4;
+    max-width: 200px;
+    color: #cbd5e1;
+}
+
+.rules-box strong {
+    color: #00f0f0;
+}

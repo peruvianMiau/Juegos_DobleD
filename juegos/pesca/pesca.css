@@ -103,3 +103,35 @@ canvas {
     font-size: 0.9rem;
     color: #e0e1dd;
 }
+
+.main-layout {
+    display: flex;
+    gap: 20px;
+    align-items: flex-start;
+    max-width: 1150px;
+    width: 100%;
+}
+
+.rules-sidebar {
+    background-color: #1b263b;
+    padding: 20px;
+    border-radius: 12px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.6);
+    width: 280px;
+    font-size: 0.9rem;
+    line-height: 1.5;
+    color: #cbd5e1;
+}
+
+.rules-sidebar h3 {
+    color: #00b4d8;
+    margin-top: 0;
+    margin-bottom: 12px;
+    font-size: 1.1rem;
+    border-bottom: 1px solid #415a77;
+    padding-bottom: 8px;
+}
+
+.rules-sidebar p {
+    margin-bottom: 10px;
+}

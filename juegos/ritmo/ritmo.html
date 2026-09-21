@@ -4,110 +4,165 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Rhythm Beats - Extreme Edition</title>
+    <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="ritmo.css">
     <script src="ritmo.js" defer></script>
 </head>
-<body>
-<div class="top-bar">
-    <a href="../../index.html" class="btn-back">⬅️ Volver al Menú</a>
-    <h1>Rhythm Beats 🎵 EXTREME</h1>
+<body class="min-h-screen bg-slate-950 text-slate-100 font-sans flex flex-col items-center justify-between p-3 sm:p-6 select-none">
+
+<!-- Header Unificado Estilo Blackjack -->
+<header class="w-full max-w-7xl flex items-center justify-between bg-slate-900/80 backdrop-blur border border-slate-800 rounded-2xl px-5 py-3 shadow-lg">
+    <a href="../../index.html" class="inline-flex items-center gap-2 text-emerald-400 hover:text-emerald-300 font-semibold text-sm sm:text-base transition-colors">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
+        </svg>
+        Volver al Menú
+    </a>
+    <h1 class="text-xl sm:text-2xl font-black bg-gradient-to-r from-purple-400 via-pink-400 to-cyan-400 bg-clip-text text-transparent">
+        RHYTHM BEATS 🎵 EXTREME
+    </h1>
+    <div class="flex items-center gap-2 bg-slate-800/80 px-3 py-1.5 rounded-xl border border-slate-700">
+        <span class="text-purple-400 font-bold">🎧 Ritmo:</span>
+        <span class="font-bold text-cyan-300 text-sm">Audio Engine</span>
+    </div>
+</header>
+
+<!-- Contenedor Principal: Juego + Reglas a la Derecha -->
+<div class="w-full max-w-7xl flex flex-col lg:flex-row gap-6 my-4 flex-1 items-start justify-center">
+
+    <!-- Área Central de Ritmo -->
+    <main class="flex-1 w-full bg-slate-900/60 border border-slate-800 rounded-3xl p-4 sm:p-6 shadow-2xl flex flex-col items-center gap-4">
+        
+        <div class="game-container w-full" id="game-container">
+            <!-- Panel de Configuración -->
+            <div id="setup-panel" class="setup-panel">
+                <h2>Cargar Canción & Configurar</h2>
+
+                <label for="audio-upload" class="btn-file">
+                    📁 Seleccionar Canción (MP3 / WAV)
+                </label>
+                <input type="file" id="audio-upload" accept="audio/*">
+                <span id="file-name">Ningún archivo seleccionado</span>
+
+                <div class="options-grid">
+                    <div class="option-item">
+                        <label for="difficulty">Dificultad:</label>
+                        <select id="difficulty" onchange="cambiarModoTeclas()">
+                            <option value="easy">Fácil (4 Teclas - Poca densidad)</option>
+                            <option value="medium" selected>Normal (4 Teclas)</option>
+                            <option value="hard">Difícil (4 Teclas + Holds)</option>
+                            <option value="extreme">🔥 EXTREMO (6 TECLAS + Holds)</option>
+                        </select>
+                    </div>
+
+                    <div class="option-item">
+                        <label for="speed">Velocidad de Caída:</label>
+                        <select id="speed">
+                            <option value="0.8">Lenta (1.0x)</option>
+                            <option value="1.2" selected>Normal (1.5x)</option>
+                            <option value="1.8">Rápida (2.0x)</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Configuración de Controles -->
+                <div class="keybinds-section">
+                    <h3>Personalizar Controles (<span id="key-count-label">4 Teclas</span>)</h3>
+                    <div class="keybinds-grid" id="keybinds-container">
+                        <!-- Se genera dinámicamente según el modo -->
+                    </div>
+                </div>
+
+                <div class="volume-control">
+                    <label for="init-volume">🔊 Volumen:</label>
+                    <input type="range" id="init-volume" min="0" max="1" step="0.05" value="0.8">
+                </div>
+
+                <button id="btn-start" class="btn-start" disabled>Analizar y Jugar 🚀</button>
+                <div id="loading-status" class="loading-status"></div>
+            </div>
+
+            <!-- Pantalla de Juego -->
+            <div id="play-area" class="play-area hidden">
+                <div class="in-game-controls">
+                    <button id="btn-pause" class="btn-pause">⏸️ Pausa (ESC)</button>
+                    <div class="volume-control">
+                        <label for="game-volume">🔊</label>
+                        <input type="range" id="game-volume" min="0" max="1" step="0.05" value="0.8">
+                    </div>
+                    <!-- Control de Offset en vivo -->
+                    <div class="offset-control">
+                        <label for="live-offset">⏱️ Offset:</label>
+                        <input type="range" id="live-offset" min="-200" max="200" step="5" value="-50">
+                        <span id="offset-val">-50ms</span>
+                    </div>
+                </div>
+
+                <div class="hud">
+                    <div class="score-box">PUNTOS: <span id="score">0</span></div>
+                    <div class="combo-box">COMBO: <span id="combo">0</span>x</div>
+                    <div class="accuracy-box">PRECISIÓN: <span id="accuracy">100</span>%</div>
+                </div>
+
+                <canvas id="rhythmCanvas" width="480" height="580"></canvas>
+
+                <div id="hit-feedback" class="hit-feedback"></div>
+            </div>
+
+            <!-- Overlay Pausa -->
+            <div id="pause-overlay" class="overlay hidden">
+                <h2>JUEGO EN PAUSA</h2>
+                <button id="btn-resume" class="btn-restart">Continuar ▶️</button>
+                <button onclick="location.reload()" class="btn-restart btn-secondary">Reiniciar 🔄</button>
+            </div>
+
+            <!-- Overlay Fin de Juego -->
+            <div id="game-over-overlay" class="overlay hidden">
+                <h2>¡Canción Finalizada! 🎉</h2>
+                <div class="results">
+                    <p>Puntuación: <strong id="res-score">0</strong></p>
+                    <p>Combo Máximo: <strong id="res-combo">0</strong>x</p>
+                    <p>Precisión Final: <strong id="res-accuracy">100%</strong></p>
+                </div>
+                <button onclick="location.reload()" class="btn-restart">Otra Canción 🔄</button>
+            </div>
+
+            <div class="controls-guide" id="controls-guide"></div>
+        </div>
+
+    </main>
+
+    <!-- Panel de Reglas en el Lado Derecho -->
+    <aside class="w-full lg:w-80 bg-slate-900/80 backdrop-blur border border-slate-800 rounded-3xl p-5 shadow-xl flex flex-col gap-4 text-slate-300 text-sm">
+        <div class="flex items-center gap-2 pb-3 border-b border-slate-800 text-purple-400 font-bold text-base">
+            <span class="text-xl">📜</span>
+            <h2>Reglas de Rhythm Beats</h2>
+        </div>
+
+        <div class="space-y-3 leading-relaxed">
+            <div class="bg-slate-950/60 p-3 rounded-xl border border-slate-800/60">
+                <h3 class="text-purple-400 font-semibold mb-1 text-xs uppercase tracking-wider">🎯 Objetivo</h3>
+                <p class="text-xs">Presiona la tecla correspondiente a cada columna en el instante exacto en que la nota cae y cruza la línea inferior.</p>
+            </div>
+
+            <div class="bg-slate-950/60 p-3 rounded-xl border border-slate-800/60">
+                <h3 class="text-cyan-400 font-semibold mb-1 text-xs uppercase tracking-wider">🎹 Modos y Teclas</h3>
+                <p class="text-xs">• <strong>Modo 4 Teclas:</strong> D, F, J, K.<br>• <strong>Modo 6 Teclas (Extremo):</strong> S, D, F, J, K, L.<br>Puedes personalizar las teclas antes de iniciar.</p>
+            </div>
+
+            <div class="bg-slate-950/60 p-3 rounded-xl border border-slate-800/60">
+                <h3 class="text-amber-400 font-semibold mb-1 text-xs uppercase tracking-wider">✨ Notas Sostenidas (Holds)</h3>
+                <p class="text-xs">Cuando caiga una nota con cola luminosa, mantén pulsada la tecla hasta que la estela termine de pasar.</p>
+            </div>
+
+            <div class="bg-slate-950/60 p-3 rounded-xl border border-slate-800/60">
+                <h3 class="text-emerald-400 font-semibold mb-1 text-xs uppercase tracking-wider">🔥 Combos & Precisión</h3>
+                <p class="text-xs">Los impactos "PERFECT" y "GREAT" incrementan tu multiplicador de combo para conseguir las puntuaciones más altas.</p>
+            </div>
+        </div>
+    </aside>
+
 </div>
 
-<div class="game-container" id="game-container">
-    <!-- Panel de Configuración -->
-    <div id="setup-panel" class="setup-panel">
-        <h2>Cargar Canción & Configurar</h2>
-
-        <label for="audio-upload" class="btn-file">
-            📁 Seleccionar Canción (MP3 / WAV)
-        </label>
-        <input type="file" id="audio-upload" accept="audio/*">
-        <span id="file-name">Ningún archivo seleccionado</span>
-
-        <div class="options-grid">
-            <div class="option-item">
-                <label for="difficulty">Dificultad:</label>
-                <select id="difficulty" onchange="cambiarModoTeclas()">
-                    <option value="easy">Fácil (4 Teclas - Poca densidad)</option>
-                    <option value="medium" selected>Normal (4 Teclas)</option>
-                    <option value="hard">Difícil (4 Teclas + Holds)</option>
-                    <option value="extreme">🔥 EXTREMO (6 TECLAS + Holds)</option>
-                </select>
-            </div>
-
-            <div class="option-item">
-                <label for="speed">Velocidad de Caída:</label>
-                <select id="speed">
-                    <option value="0.8">Lenta (1.0x)</option>
-                    <option value="1.2" selected>Normal (1.5x)</option>
-                    <option value="1.8">Rápida (2.0x)</option>
-                </select>
-            </div>
-        </div>
-
-        <!-- Configuración de Controles -->
-        <div class="keybinds-section">
-            <h3>Personalizar Controles (<span id="key-count-label">4 Teclas</span>)</h3>
-            <div class="keybinds-grid" id="keybinds-container">
-                <!-- Se genera dinámicamente según el modo -->
-            </div>
-        </div>
-
-        <div class="volume-control">
-            <label for="init-volume">🔊 Volumen:</label>
-            <input type="range" id="init-volume" min="0" max="1" step="0.05" value="0.8">
-        </div>
-
-        <button id="btn-start" class="btn-start" disabled>Analizar y Jugar 🚀</button>
-        <div id="loading-status" class="loading-status"></div>
-    </div>
-
-    <!-- Pantalla de Juego -->
-    <div id="play-area" class="play-area hidden">
-        <div class="in-game-controls">
-            <button id="btn-pause" class="btn-pause">⏸️ Pausa (ESC)</button>
-            <div class="volume-control">
-                <label for="game-volume">🔊</label>
-                <input type="range" id="game-volume" min="0" max="1" step="0.05" value="0.8">
-            </div>
-            <!-- Control de Offset en vivo -->
-            <div class="offset-control">
-                <label for="live-offset">⏱️ Offset:</label>
-                <input type="range" id="live-offset" min="-200" max="200" step="5" value="-50">
-                <span id="offset-val">-50ms</span>
-            </div>
-        </div>
-
-        <div class="hud">
-            <div class="score-box">PUNTOS: <span id="score">0</span></div>
-            <div class="combo-box">COMBO: <span id="combo">0</span>x</div>
-            <div class="accuracy-box">PRECISIÓN: <span id="accuracy">100</span>%</div>
-        </div>
-
-        <canvas id="rhythmCanvas" width="480" height="580"></canvas>
-
-        <div id="hit-feedback" class="hit-feedback"></div>
-    </div>
-
-    <!-- Overlay Pausa -->
-    <div id="pause-overlay" class="overlay hidden">
-        <h2>JUEGO EN PAUSA</h2>
-        <button id="btn-resume" class="btn-restart">Continuar ▶️</button>
-        <button onclick="location.reload()" class="btn-restart btn-secondary">Reiniciar 🔄</button>
-    </div>
-
-    <!-- Overlay Fin de Juego -->
-    <div id="game-over-overlay" class="overlay hidden">
-        <h2>¡Canción Finalizada! 🎉</h2>
-        <div class="results">
-            <p>Puntuación: <strong id="res-score">0</strong></p>
-            <p>Combo Máximo: <strong id="res-combo">0</strong>x</p>
-            <p>Precisión Final: <strong id="res-accuracy">100%</strong></p>
-        </div>
-        <button onclick="location.reload()" class="btn-restart">Otra Canción 🔄</button>
-    </div>
-
-    <div class="controls-guide" id="controls-guide"></div>
-</div>
 </body>
 </html>

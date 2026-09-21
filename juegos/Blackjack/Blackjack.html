@@ -12,7 +12,7 @@
 <body class="min-h-screen bg-slate-950 text-slate-100 font-sans flex flex-col items-center justify-between p-3 sm:p-6 select-none">
 
 <!-- Header / Barra de Navegación -->
-<header class="w-full max-w-5xl flex items-center justify-between bg-slate-900/80 backdrop-blur border border-slate-800 rounded-2xl px-5 py-3 shadow-lg">
+<header class="w-full max-w-7xl flex items-center justify-between bg-slate-900/80 backdrop-blur border border-slate-800 rounded-2xl px-5 py-3 shadow-lg">
     <a href="../../index.html" class="inline-flex items-center gap-2 text-emerald-400 hover:text-emerald-300 font-semibold text-sm sm:text-base transition-colors">
         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
@@ -28,89 +28,126 @@
     </div>
 </header>
 
-<!-- Mesa de Casino Principal -->
-<main class="w-full max-w-5xl my-4 flex-1 flex flex-col justify-center">
-    <div class="casino-table w-full rounded-3xl p-4 sm:p-8 flex flex-col justify-between gap-6 relative overflow-hidden">
+<!-- Contenedor Principal: Mesa de Casino + Panel de Reglas a la Derecha -->
+<div class="w-full max-w-7xl flex flex-col lg:flex-row gap-6 my-4 flex-1 items-start justify-center">
 
-        <!-- Marca de Agua de la Mesa -->
-        <div class="absolute inset-0 flex items-center justify-center pointer-events-none opacity-5">
-            <span class="text-8xl sm:text-9xl font-black tracking-widest text-white">21</span>
-        </div>
+    <!-- Mesa de Casino y Controles -->
+    <div class="flex-1 w-full flex flex-col gap-4">
+        <main class="w-full">
+            <div class="casino-table w-full rounded-3xl p-4 sm:p-8 flex flex-col justify-between gap-6 relative overflow-hidden">
 
-        <!-- Área del Dealer (Crupier) -->
-        <div class="flex flex-col items-center gap-2 z-10">
-            <div class="flex items-center gap-3">
-                <span class="text-xs sm:text-sm uppercase tracking-widest text-emerald-200 font-bold">Mano del Croupier</span>
-                <span id="dealer-score-badge" class="score-badge bg-black/40 text-emerald-300 text-xs font-bold px-2.5 py-1 rounded-full border border-emerald-500/30">
-                        Puntos: <span id="dealer-score">0</span>
-                    </span>
+                <!-- Marca de Agua de la Mesa -->
+                <div class="absolute inset-0 flex items-center justify-center pointer-events-none opacity-5">
+                    <span class="text-8xl sm:text-9xl font-black tracking-widest text-white">21</span>
+                </div>
+
+                <!-- Área del Dealer (Crupier) -->
+                <div class="flex flex-col items-center gap-2 z-10">
+                    <div class="flex items-center gap-3">
+                        <span class="text-xs sm:text-sm uppercase tracking-widest text-emerald-200 font-bold">Mano del Croupier</span>
+                        <span id="dealer-score-badge" class="score-badge bg-black/40 text-emerald-300 text-xs font-bold px-2.5 py-1 rounded-full border border-emerald-500/30">
+                            Puntos: <span id="dealer-score">0</span>
+                        </span>
+                    </div>
+                    <div id="dealer-cards" class="cards-container min-h-[120px] sm:min-h-[150px] flex items-center justify-center gap-2 sm:gap-4 py-2">
+                        <!-- Cartas del dealer se inyectan dinámicamente -->
+                    </div>
+                </div>
+
+                <!-- Banner Informativo del Resultado -->
+                <div id="status-banner" class="z-20 text-center py-2 px-6 rounded-2xl font-bold text-lg sm:text-2xl transition-all duration-300 transform opacity-0 scale-95 pointer-events-none">
+                    <span id="status-message"></span>
+                </div>
+
+                <!-- Área del Jugador -->
+                <div class="flex flex-col items-center gap-2 z-10">
+                    <div id="player-cards" class="cards-container min-h-[120px] sm:min-h-[150px] flex items-center justify-center gap-2 sm:gap-4 py-2">
+                        <!-- Cartas del jugador se inyectan dinámicamente -->
+                    </div>
+                    <div class="flex items-center gap-3">
+                        <span class="text-xs sm:text-sm uppercase tracking-widest text-emerald-200 font-bold">Tu Mano</span>
+                        <span id="player-score-badge" class="score-badge bg-black/40 text-emerald-300 text-xs font-bold px-2.5 py-1 rounded-full border border-emerald-500/30">
+                            Puntos: <span id="player-score">0</span>
+                        </span>
+                    </div>
+                </div>
+
             </div>
-            <div id="dealer-cards" class="cards-container min-h-[120px] sm:min-h-[150px] flex items-center justify-center gap-2 sm:gap-4 py-2">
-                <!-- Cartas del dealer se inyectan dinámicamente -->
-            </div>
-        </div>
+        </main>
 
-        <!-- Banner Informativo del Resultado -->
-        <div id="status-banner" class="z-20 text-center py-2 px-6 rounded-2xl font-bold text-lg sm:text-2xl transition-all duration-300 transform opacity-0 scale-95 pointer-events-none">
-            <span id="status-message"></span>
-        </div>
+        <!-- Barra de Controles y Apuestas -->
+        <footer class="w-full bg-slate-900/90 border border-slate-800 rounded-2xl p-4 sm:p-5 shadow-2xl flex flex-col lg:flex-row items-center justify-between gap-4">
 
-        <!-- Área del Jugador -->
-        <div class="flex flex-col items-center gap-2 z-10">
-            <div id="player-cards" class="cards-container min-h-[120px] sm:min-h-[150px] flex items-center justify-center gap-2 sm:gap-4 py-2">
-                <!-- Cartas del jugador se inyectan dinámicamente -->
-            </div>
-            <div class="flex items-center gap-3">
-                <span class="text-xs sm:text-sm uppercase tracking-widest text-emerald-200 font-bold">Tu Mano</span>
-                <span id="player-score-badge" class="score-badge bg-black/40 text-emerald-300 text-xs font-bold px-2.5 py-1 rounded-full border border-emerald-500/30">
-                        Puntos: <span id="player-score">0</span>
-                    </span>
-            </div>
-        </div>
+            <!-- Panel de Apuestas y Fichas Rápida -->
+            <div class="flex flex-wrap items-center justify-center gap-3 w-full lg:w-auto">
+                <span class="text-xs uppercase tracking-wider text-slate-400 font-semibold w-full sm:w-auto text-center sm:text-left">
+                    Apuesta:
+                </span>
+                <div class="relative flex items-center">
+                    <span class="absolute left-3 text-amber-400 font-bold">$</span>
+                    <input type="number" id="bet-input" min="10" step="10" value="50"
+                           class="bg-slate-950 text-amber-300 font-bold pl-7 pr-3 py-2 rounded-xl border border-slate-700 w-28 focus:outline-none focus:border-emerald-500 text-center">
+                </div>
 
+                <!-- Botones Rápidos de Fichas -->
+                <div class="flex items-center gap-1.5" id="chip-buttons">
+                    <button type="button" data-chip="10" class="chip btn-chip-10">+10</button>
+                    <button type="button" data-chip="25" class="chip btn-chip-25">+25</button>
+                    <button type="button" data-chip="50" class="chip btn-chip-50">+50</button>
+                    <button type="button" data-chip="100" class="chip btn-chip-100">+100</button>
+                    <button type="button" id="btn-clear-bet" class="text-xs px-2.5 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 transition">Borrar</button>
+                </div>
+            </div>
+
+            <!-- Acciones del Juego -->
+            <div class="flex flex-wrap items-center justify-center gap-2 sm:gap-3 w-full lg:w-auto">
+                <button id="btn-deal" class="btn-action bg-emerald-600 hover:bg-emerald-500 text-white font-bold px-6 py-2.5 rounded-xl shadow-lg transition">
+                    Repartir (Deal)
+                </button>
+                <button id="btn-hit" disabled class="btn-action bg-blue-600 hover:bg-blue-500 text-white font-bold px-5 py-2.5 rounded-xl shadow-lg transition opacity-50 cursor-not-allowed">
+                    Pedir (Hit)
+                </button>
+                <button id="btn-stand" disabled class="btn-action bg-amber-600 hover:bg-amber-500 text-white font-bold px-5 py-2.5 rounded-xl shadow-lg transition opacity-50 cursor-not-allowed">
+                    Plantarse (Stand)
+                </button>
+                <button id="btn-double" disabled class="btn-action bg-purple-600 hover:bg-purple-500 text-white font-bold px-5 py-2.5 rounded-xl shadow-lg transition opacity-50 cursor-not-allowed">
+                    Doblar
+                </button>
+            </div>
+        </footer>
     </div>
-</main>
 
-<!-- Barra de Controles y Apuestas -->
-<footer class="w-full max-w-5xl bg-slate-900/90 border border-slate-800 rounded-2xl p-4 sm:p-5 shadow-2xl flex flex-col lg:flex-row items-center justify-between gap-4">
-
-    <!-- Panel de Apuestas y Fichas Rápida -->
-    <div class="flex flex-wrap items-center justify-center gap-3 w-full lg:w-auto">
-            <span class="text-xs uppercase tracking-wider text-slate-400 font-semibold w-full sm:w-auto text-center sm:text-left">
-                Apuesta:
-            </span>
-        <div class="relative flex items-center">
-            <span class="absolute left-3 text-amber-400 font-bold">$</span>
-            <input type="number" id="bet-input" min="10" step="10" value="50"
-                   class="bg-slate-950 text-amber-300 font-bold pl-7 pr-3 py-2 rounded-xl border border-slate-700 w-28 focus:outline-none focus:border-emerald-500 text-center">
+    <!-- Panel de Reglas en el Lado Derecho -->
+    <aside class="w-full lg:w-80 bg-slate-900/80 backdrop-blur border border-slate-800 rounded-3xl p-5 shadow-xl flex flex-col gap-4 text-slate-300 text-sm">
+        <div class="flex items-center gap-2 pb-3 border-b border-slate-800 text-emerald-400 font-bold text-base">
+            <span class="text-xl">📜</span>
+            <h2>Reglas de Blackjack 21</h2>
         </div>
 
-        <!-- Botones Rápidos de Fichas -->
-        <div class="flex items-center gap-1.5" id="chip-buttons">
-            <button type="button" data-chip="10" class="chip btn-chip-10">+10</button>
-            <button type="button" data-chip="25" class="chip btn-chip-25">+25</button>
-            <button type="button" data-chip="50" class="chip btn-chip-50">+50</button>
-            <button type="button" data-chip="100" class="chip btn-chip-100">+100</button>
-            <button type="button" id="btn-clear-bet" class="text-xs px-2.5 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 transition">Borrar</button>
-        </div>
-    </div>
+        <div class="space-y-3 leading-relaxed">
+            <div class="bg-slate-950/60 p-3 rounded-xl border border-slate-800/60">
+                <h3 class="text-emerald-400 font-semibold mb-1 text-xs uppercase tracking-wider">🎯 Objetivo</h3>
+                <p class="text-xs">Sumar un total lo más cercano posible a <strong>21 puntos</strong> sin sobrepasarlo y superar la puntuación del crupier.</p>
+            </div>
 
-    <!-- Acciones del Juego -->
-    <div class="flex flex-wrap items-center justify-center gap-2 sm:gap-3 w-full lg:w-auto">
-        <button id="btn-deal" class="btn-action bg-emerald-600 hover:bg-emerald-500 text-white font-bold px-6 py-2.5 rounded-xl shadow-lg transition">
-            Repartir (Deal)
-        </button>
-        <button id="btn-hit" disabled class="btn-action bg-blue-600 hover:bg-blue-500 text-white font-bold px-5 py-2.5 rounded-xl shadow-lg transition opacity-50 cursor-not-allowed">
-            Pedir (Hit)
-        </button>
-        <button id="btn-stand" disabled class="btn-action bg-amber-600 hover:bg-amber-500 text-white font-bold px-5 py-2.5 rounded-xl shadow-lg transition opacity-50 cursor-not-allowed">
-            Plantarse (Stand)
-        </button>
-        <button id="btn-double" disabled class="btn-action bg-purple-600 hover:bg-purple-500 text-white font-bold px-5 py-2.5 rounded-xl shadow-lg transition opacity-50 cursor-not-allowed">
-            Doblar
-        </button>
-    </div>
-</footer>
+            <div class="bg-slate-950/60 p-3 rounded-xl border border-slate-800/60">
+                <h3 class="text-amber-400 font-semibold mb-1 text-xs uppercase tracking-wider">🃏 Valor de Cartas</h3>
+                <p class="text-xs">• <strong>Cartas 2 al 10:</strong> Su valor numérico.<br>• <strong>Figuras (J, Q, K):</strong> Valen 10 puntos.<br>• <strong>As (A):</strong> Vale 11 o 1 según más convenga.</p>
+            </div>
+
+            <div class="bg-slate-950/60 p-3 rounded-xl border border-slate-800/60">
+                <h3 class="text-cyan-400 font-semibold mb-1 text-xs uppercase tracking-wider">🎮 Acciones</h3>
+                <p class="text-xs">• <strong>Pedir:</strong> Recibe una carta adicional.<br>• <strong>Plantarse:</strong> Te quedas con tu puntuación.<br>• <strong>Doblar:</strong> Duplica la apuesta y recibe una única carta.</p>
+            </div>
+
+            <div class="bg-slate-950/60 p-3 rounded-xl border border-slate-800/60">
+                <h3 class="text-purple-400 font-semibold mb-1 text-xs uppercase tracking-wider">💰 Pagos</h3>
+                <p class="text-xs">• Victoria regular: <strong>1 a 1</strong>.<br>• <strong>Blackjack natural (21 en 2 cartas):</strong> Paga <strong>3 a 2</strong>.<br>• Empate: se devuelve la apuesta.</p>
+            </div>
+        </div>
+    </aside>
+
+</div>
 
 </body>
 </html>

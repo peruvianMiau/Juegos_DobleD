@@ -4,68 +4,123 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Street Combat - Arcade</title>
+    <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="lucha.css">
     <script src="lucha.js" defer></script>
 </head>
-<body>
-<div class="top-bar">
-    <a href="../../index.html" class="btn-back">⬅️ Volver al Menú</a>
-    <h1>Street Combat 2D</h1>
+<body class="min-h-screen bg-slate-950 text-slate-100 font-sans flex flex-col items-center justify-between p-3 sm:p-6 select-none">
+
+<!-- Header Unificado Estilo Blackjack -->
+<header class="w-full max-w-7xl flex items-center justify-between bg-slate-900/80 backdrop-blur border border-slate-800 rounded-2xl px-5 py-3 shadow-lg">
+    <a href="../../index.html" class="inline-flex items-center gap-2 text-emerald-400 hover:text-emerald-300 font-semibold text-sm sm:text-base transition-colors">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
+        </svg>
+        Volver al Menú
+    </a>
+    <h1 class="text-xl sm:text-2xl font-black bg-gradient-to-r from-red-500 via-amber-400 to-yellow-300 bg-clip-text text-transparent">
+        STREET COMBAT 2D 🥊
+    </h1>
+    <div class="flex items-center gap-2 bg-slate-800/80 px-3 py-1.5 rounded-xl border border-slate-700">
+        <span class="text-red-400 font-bold">⚔️ Modo:</span>
+        <span class="font-bold text-amber-300 text-sm">2 Jugadores Local</span>
+    </div>
+</header>
+
+<!-- Contenedor Principal: Juego + Reglas a la Derecha -->
+<div class="w-full max-w-7xl flex flex-col lg:flex-row gap-6 my-4 flex-1 items-start justify-center">
+
+    <!-- Escenario Arcade de Pelea -->
+    <main class="flex-1 w-full bg-slate-900/60 border border-slate-800 rounded-3xl p-4 sm:p-6 shadow-2xl flex flex-col items-center gap-4">
+        
+        <div class="arcade-container w-full">
+            <!-- HUD (Barras de vida y especial) -->
+            <div class="hud">
+                <!-- Jugador 1 -->
+                <div class="player-hud p1">
+                    <div class="player-name">JUGADOR 1</div>
+                    <div class="bar-container">
+                        <div id="p1-health" class="health-bar" style="width: 100%;"></div>
+                    </div>
+                    <div class="bar-container special">
+                        <div id="p1-special" class="special-bar" style="width: 0%;"></div>
+                    </div>
+                </div>
+
+                <!-- Timer / Versus -->
+                <div class="timer-box">
+                    <div id="timer">99</div>
+                </div>
+
+                <!-- Jugador 2 -->
+                <div class="player-hud p2">
+                    <div class="player-name">JUGADOR 2</div>
+                    <div class="bar-container">
+                        <div id="p2-health" class="health-bar" style="width: 100%;"></div>
+                    </div>
+                    <div class="bar-container special">
+                        <div id="p2-special" class="special-bar" style="width: 0%;"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Canvas del escenario de pelea -->
+            <canvas id="fightCanvas" width="1024" height="576" class="w-full h-auto rounded-2xl shadow-2xl"></canvas>
+
+            <!-- Mensaje de KO u Overlay -->
+            <div id="game-over-overlay" class="overlay">
+                <h2 id="winner-text">K.O.</h2>
+                <button onclick="reiniciarPelea()" class="btn-restart">Pelear de Nuevo</button>
+            </div>
+
+            <!-- Leyenda de Controles rápida -->
+            <div class="controls-guide">
+                <div class="p1-controls">
+                    <strong>Jugador 1:</strong><br>
+                    Mover: A / D | Saltar: W<br>
+                    Golpe: F | Especial: G
+                </div>
+                <div class="p2-controls">
+                    <strong>Jugador 2:</strong><br>
+                    Mover: ⬅️ / ➡️ | Saltar: ⬆️<br>
+                    Golpe: L / Num 1 | Especial: K / Num 2
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- Panel de Reglas en el Lado Derecho -->
+    <aside class="w-full lg:w-80 bg-slate-900/80 backdrop-blur border border-slate-800 rounded-3xl p-5 shadow-xl flex flex-col gap-4 text-slate-300 text-sm">
+        <div class="flex items-center gap-2 pb-3 border-b border-slate-800 text-emerald-400 font-bold text-base">
+            <span class="text-xl">📜</span>
+            <h2>Reglas de Street Combat</h2>
+        </div>
+
+        <div class="space-y-3 leading-relaxed">
+            <div class="bg-slate-950/60 p-3 rounded-xl border border-slate-800/60">
+                <h3 class="text-emerald-400 font-semibold mb-1 text-xs uppercase tracking-wider">🎯 Objetivo</h3>
+                <p class="text-xs">Derrota a tu adversario en combate cuerpo a cuerpo vaciando su barra de salud a 0 (K.O.) antes de que el tiempo expire.</p>
+            </div>
+
+            <div class="bg-slate-950/60 p-3 rounded-xl border border-slate-800/60">
+                <h3 class="text-amber-400 font-semibold mb-1 text-xs uppercase tracking-wider">⚡ Barra de Especial</h3>
+                <p class="text-xs">Al asestar golpes normales acumulas energía en tu barra azul. Cuando esté llena al 100%, podrás desatar tu potente ataque especial.</p>
+            </div>
+
+            <div class="bg-slate-950/60 p-3 rounded-xl border border-slate-800/60">
+                <h3 class="text-cyan-400 font-semibold mb-1 text-xs uppercase tracking-wider">⏱️ Límite de Tiempo</h3>
+                <p class="text-xs">Si el contador llega a 0 sin ningún K.O., la victoria se otorgará al luchador que conserve mayor porcentaje de vida.</p>
+            </div>
+
+            <div class="bg-slate-950/60 p-3 rounded-xl border border-slate-800/60">
+                <h3 class="text-purple-400 font-semibold mb-1 text-xs uppercase tracking-wider">🥊 Combos y Distancia</h3>
+                <p class="text-xs">Salta para esquivar golpes y acércate para conectar combinaciones continuas que atrapen a tu rival.</p>
+            </div>
+        </div>
+    </aside>
+
 </div>
 
-<div class="arcade-container">
-    <!-- HUD (Barras de vida y especial) -->
-    <div class="hud">
-        <!-- Jugador 1 -->
-        <div class="player-hud p1">
-            <div class="player-name">JUGADOR 1</div>
-            <div class="bar-container">
-                <div id="p1-health" class="health-bar" style="width: 100%;"></div>
-            </div>
-            <div class="bar-container special">
-                <div id="p1-special" class="special-bar" style="width: 0%;"></div>
-            </div>
-        </div>
-
-        <!-- Timer / Versus -->
-        <div class="timer-box">
-            <div id="timer">99</div>
-        </div>
-
-        <!-- Jugador 2 -->
-        <div class="player-hud p2">
-            <div class="player-name">JUGADOR 2</div>
-            <div class="bar-container">
-                <div id="p2-health" class="health-bar" style="width: 100%;"></div>
-            </div>
-            <div class="bar-container special">
-                <div id="p2-special" class="special-bar" style="width: 0%;"></div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Canvas del escenario de pelea -->
-    <canvas id="fightCanvas" width="1024" height="576"></canvas>
-
-    <!-- Mensaje de KO u Overlay -->
-    <div id="game-over-overlay" class="overlay">
-        <h2 id="winner-text">K.O.</h2>
-        <button onclick="reiniciarPelea()" class="btn-restart">Pelear de Nuevo</button>
-    </div>
-
-    <!-- Leyenda de Controles -->
-    <div class="controls-guide">
-        <div class="p1-controls">
-            <strong>Jugador 1:</strong><br>
-            Mover: A / D | Saltar: W<br>
-            Golpe: F | Especial: G
-        </div>
-        <div class="p2-controls">
-            <strong>Jugador 2:</strong><br>
-            Mover: ⬅️ / ➡️ | Saltar: ⬆️<br>
-            Golpe: L / Num 1 | Especial: K / Num 2
-        </div>
-    </div>
-</div>
 </body>
 </html>
