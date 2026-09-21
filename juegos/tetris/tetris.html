@@ -3,18 +3,27 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Tetris Arcade - Mi Plataforma</title>
+    <title>Tetris Arcade - Casino Arcade</title>
+    <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="tetris.css">
     <script src="tetris.js" defer></script>
 </head>
-<body>
-<div class="top-bar">
-    <a href="../../index.html" class="btn-back">⬅️ Volver al Menú</a>
-    <h1>Tetris Arcade 🧩</h1>
-</div>
+<body class="min-h-screen bg-slate-950 text-slate-100 font-sans flex flex-col items-center justify-start gap-6 p-3 sm:p-6 select-none">
 
-<div class="game-container">
-    <!-- Canvas de Tetris mas grande (360x600 px) -->
+<header class="w-full max-w-5xl flex items-center justify-between bg-slate-900/80 backdrop-blur border border-slate-800 rounded-2xl px-5 py-3 shadow-lg">
+    <a href="../../index.html" class="inline-flex items-center gap-2 text-emerald-400 hover:text-emerald-300 font-semibold text-sm sm:text-base transition-colors">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
+        </svg>
+        Volver al Menú
+    </a>
+    <h1 class="text-xl sm:text-2xl font-black bg-gradient-to-r from-emerald-400 to-amber-300 bg-clip-text text-transparent">
+        TETRIS ARCADE
+    </h1>
+    <div class="w-[120px]"></div>
+</header>
+
+<main class="game-container">
     <canvas id="tetris" width="360" height="600"></canvas>
 
     <div class="info-panel">
@@ -41,6 +50,7 @@
             <strong>ESPACIO</strong> : Caída instantánea
         </div>
     </div>
-</div>
+</main>
+
 </body>
 </html>

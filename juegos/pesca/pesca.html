@@ -4,27 +4,34 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Pesca Nocturna - Arcade</title>
+    <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="pesca.css">
     <script src="pesca.js" defer></script>
 </head>
-<body>
-<div class="top-bar">
-    <a href="../../index.html" class="btn-back">⬅️ Volver al Menú</a>
-    <h1>Aventura de Pesca 🎣</h1>
-</div>
+<body class="min-h-screen bg-slate-950 text-slate-100 font-sans flex flex-col items-center justify-start gap-6 p-3 sm:p-6 select-none">
+
+<header class="w-full max-w-5xl flex items-center justify-between bg-slate-900/80 backdrop-blur border border-slate-800 rounded-2xl px-5 py-3 shadow-lg">
+    <a href="../../index.html" class="inline-flex items-center gap-2 text-emerald-400 hover:text-emerald-300 font-semibold text-sm sm:text-base transition-colors">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
+        </svg>
+        Volver al Menú
+    </a>
+    <h1 class="text-xl sm:text-2xl font-black bg-gradient-to-r from-emerald-400 to-amber-300 bg-clip-text text-transparent">
+        PESCA ARCADE
+    </h1>
+    <div class="w-[120px]"></div>
+</header>
 
 <div class="game-container">
-    <!-- HUD Informativo -->
     <div class="hud">
         <div class="hud-item">Puntos: <span id="score">0</span></div>
         <div class="hud-item">Tiempo: <span id="timer">60</span>s</div>
         <div class="hud-item">Capturas: <span id="fish-count">0</span></div>
     </div>
 
-    <!-- Canvas del Juego -->
     <canvas id="fishingCanvas" width="800" height="500"></canvas>
 
-    <!-- Overlay de Game Over -->
     <div id="game-over-overlay" class="overlay">
         <h2>¡Tiempo Agotado! 🐟</h2>
         <p>Puntuación Final: <span id="final-score">0</span></p>
@@ -35,5 +42,6 @@
         <strong>Controles:</strong> Usa <strong>⬅️ ➡️ (o A/D)</strong> para mover el barco. Usa <strong>⬇️ (o S)</strong> para bajar el anzuelo y <strong>⬆️ (o W)</strong> para recoger la línea.
     </div>
 </div>
+
 </body>
 </html>
