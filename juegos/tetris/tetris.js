@@ -11,104 +11,286 @@ context.scale(30, 30);
 nextContext.scale(30, 30);
 
 const PIEZAS = 'ILJOTSZ';
+
 const COLORES = [
     null, '#00f0f0', '#0000f0', '#f0a000', '#f0f000', '#00f000', '#a000f0', '#f00000'
 ];
 
 let juegoTerminado = false;
-let audioCtx;
-let musicaInterval;
 
-// --- SISTEMA DE AUDIO (Web Audio API - Tema Original Korobeiniki Mejorado) ---
+// SISTEMA DE AUDIO
+let audioCtx;
+let musicaTimeout;
+
+// Configuración rápida de la música
+const MUSICA = {
+    volumen: 0.08,
+    // Velocidad de la música.
+    // 1 = velocidad normal, 1.15 = más rápida, 0.85 = más lenta
+    velocidad: 0.9,
+
+    instrumento: 'square'
+};
+
+// MELODÍA DE TETRIS
+const melodia = [
+    // Parte A
+    { f: 659.25, d: 0.25 },
+    { f: 493.88, d: 0.125 },
+    { f: 523.25, d: 0.125 },
+    { f: 587.33, d: 0.25 },
+
+    { f: 523.25, d: 0.125 },
+    { f: 493.88, d: 0.125 },
+    { f: 440.00, d: 0.25 },
+    { f: 440.00, d: 0.125 },
+
+    { f: 523.25, d: 0.125 },
+    { f: 659.25, d: 0.25 },
+    { f: 587.33, d: 0.125 },
+    { f: 523.25, d: 0.125 },
+
+    { f: 493.88, d: 0.375 },
+    { f: 523.25, d: 0.125 },
+    { f: 587.33, d: 0.25 },
+    { f: 659.25, d: 0.25 },
+
+    { f: 523.25, d: 0.25 },
+    { f: 440.00, d: 0.25 },
+    { f: 440.00, d: 0.25 },
+    { f: 0, d: 0.125 },
+
+    // Parte B
+    { f: 587.33, d: 0.375 },
+    { f: 698.46, d: 0.125 },
+    { f: 880.00, d: 0.25 },
+    { f: 783.99, d: 0.125 },
+
+    { f: 698.46, d: 0.125 },
+    { f: 659.25, d: 0.375 },
+    { f: 523.25, d: 0.125 },
+    { f: 659.25, d: 0.25 },
+
+    { f: 587.33, d: 0.125 },
+    { f: 523.25, d: 0.125 },
+    { f: 493.88, d: 0.25 },
+    { f: 493.88, d: 0.125 },
+
+    { f: 523.25, d: 0.125 },
+    { f: 587.33, d: 0.25 },
+    { f: 659.25, d: 0.25 },
+    { f: 523.25, d: 0.25 },
+
+    { f: 440.00, d: 0.25 },
+    { f: 440.00, d: 0.25 },
+    { f: 0, d: 0.125 }
+];
+
+// INICIAR AUDIO
 function iniciarAudio() {
+
     if (!audioCtx) {
-        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        audioCtx = new (
+            window.AudioContext ||
+            window.webkitAudioContext
+        )();
+    }
+
+    if (audioCtx.state === 'suspended') {
+        audioCtx.resume();
+    }
+
+    if (!musicaTimeout) {
         reproducirMusicaFondo();
     }
 }
 
+// MÚSICA
 function reproducirMusicaFondo() {
-    if (juegoTerminado || !audioCtx) return;
 
-    // Partitura clásica completa del Tema A de Tetris
-    const melodia = [
-        // Parte A
-        { f: 659.25, d: 0.25 }, { f: 493.88, d: 0.125 }, { f: 523.25, d: 0.125 }, { f: 587.33, d: 0.25 },
-        { f: 523.25, d: 0.125 }, { f: 493.88, d: 0.125 }, { f: 440.00, d: 0.25 }, { f: 440.00, d: 0.125 },
-        { f: 523.25, d: 0.125 }, { f: 659.25, d: 0.25 }, { f: 587.33, d: 0.125 }, { f: 523.25, d: 0.125 },
-        { f: 493.88, d: 0.375 }, { f: 523.25, d: 0.125 }, { f: 587.33, d: 0.25 }, { f: 659.25, d: 0.25 },
-        { f: 523.25, d: 0.25 }, { f: 440.00, d: 0.25 }, { f: 440.00, d: 0.25 }, { f: 0, d: 0.125 },
-
-        { f: 587.33, d: 0.375 }, { f: 698.46, d: 0.125 }, { f: 880.00, d: 0.25 }, { f: 783.99, d: 0.125 },
-        { f: 698.46, d: 0.125 }, { f: 659.25, d: 0.375 }, { f: 523.25, d: 0.125 }, { f: 659.25, d: 0.25 },
-        { f: 587.33, d: 0.125 }, { f: 523.25, d: 0.125 }, { f: 493.88, d: 0.25 }, { f: 493.88, d: 0.125 },
-        { f: 523.25, d: 0.125 }, { f: 587.33, d: 0.25 }, { f: 659.25, d: 0.25 }, { f: 523.25, d: 0.25 },
-        { f: 440.00, d: 0.25 }, { f: 440.00, d: 0.25 }, { f: 0, d: 0.125 }
-    ];
+    if (juegoTerminado || !audioCtx) {
+        return;
+    }
 
     let paso = 0;
 
-    clearInterval(musicaInterval);
-    musicaInterval = setInterval(() => {
-        if (juegoTerminado || !audioCtx) return;
+    function tocarSiguiente() {
 
-        const nota = melodia[paso % melodia.length];
+        if (juegoTerminado || !audioCtx) {
+            return;
+        }
+
+        const nota =
+            melodia[paso % melodia.length];
+
+        const duracion =
+            nota.d / MUSICA.velocidad;
+
         if (nota.f > 0) {
-            const osc = audioCtx.createOscillator();
-            const gain = audioCtx.createGain();
 
-            osc.type = 'square';
-            osc.frequency.setValueAtTime(nota.f, audioCtx.currentTime);
+            const osc =
+                audioCtx.createOscillator();
 
-            // VOLUMEN DE MÚSICA SUBIDO (de 0.025 a 0.08)
-            gain.gain.setValueAtTime(0.08, audioCtx.currentTime);
-            gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + nota.d);
+            const gain =
+                audioCtx.createGain();
+
+            osc.type =
+                MUSICA.instrumento;
+
+            osc.frequency.setValueAtTime(
+                nota.f,
+                audioCtx.currentTime
+            );
+
+            gain.gain.setValueAtTime(
+                MUSICA.volumen,
+                audioCtx.currentTime
+            );
+
+            gain.gain.exponentialRampToValueAtTime(
+                0.001,
+                audioCtx.currentTime + duracion
+            );
 
             osc.connect(gain);
             gain.connect(audioCtx.destination);
 
             osc.start();
-            osc.stop(audioCtx.currentTime + nota.d);
+
+            osc.stop(
+                audioCtx.currentTime + duracion
+            );
         }
 
         paso++;
-    }, 180); // Ligeramente más rápido para dar dinamismo
+
+        musicaTimeout = setTimeout(
+            tocarSiguiente,
+            duracion * 1000
+        );
+    }
+    tocarSiguiente();
 }
 
+
+// EFECTOS DE SONIDO
 function sonarEfecto(tipo) {
+
     if (!audioCtx) return;
-    const osc = audioCtx.createOscillator();
-    const gain = audioCtx.createGain();
+
+    const osc =
+        audioCtx.createOscillator();
+
+    const gain =
+        audioCtx.createGain();
+
     osc.connect(gain);
     gain.connect(audioCtx.destination);
 
     if (tipo === 'mover') {
+
         osc.type = 'sine';
-        osc.frequency.setValueAtTime(350, audioCtx.currentTime);
-        gain.gain.setValueAtTime(0.08, audioCtx.currentTime); // Volumen subido
-        gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.05);
-    } else if (tipo === 'rotar') {
+
+        osc.frequency.setValueAtTime(
+            350,
+            audioCtx.currentTime
+        );
+
+        gain.gain.setValueAtTime(
+            0.08,
+            audioCtx.currentTime
+        );
+
+        gain.gain.exponentialRampToValueAtTime(
+            0.001,
+            audioCtx.currentTime + 0.05
+        );
+
+    }
+
+    else if (tipo === 'rotar') {
+
         osc.type = 'triangle';
-        osc.frequency.setValueAtTime(450, audioCtx.currentTime);
-        osc.frequency.exponentialRampToValueAtTime(700, audioCtx.currentTime + 0.08);
-        gain.gain.setValueAtTime(0.1, audioCtx.currentTime); // Volumen subido
-        gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.08);
-    } else if (tipo === 'linea') {
+
+        osc.frequency.setValueAtTime(
+            450,
+            audioCtx.currentTime
+        );
+
+        osc.frequency.exponentialRampToValueAtTime(
+            700,
+            audioCtx.currentTime + 0.08
+        );
+
+        gain.gain.setValueAtTime(
+            0.1,
+            audioCtx.currentTime
+        );
+
+        gain.gain.exponentialRampToValueAtTime(
+            0.001,
+            audioCtx.currentTime + 0.08
+        );
+
+    }
+
+    else if (tipo === 'linea') {
+
         osc.type = 'square';
-        osc.frequency.setValueAtTime(523.25, audioCtx.currentTime);
-        osc.frequency.exponentialRampToValueAtTime(1046.50, audioCtx.currentTime + 0.25);
-        gain.gain.setValueAtTime(0.2, audioCtx.currentTime); // Volumen subido
-        gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.25);
-    } else if (tipo === 'gameover') {
+
+        osc.frequency.setValueAtTime(
+            523.25,
+            audioCtx.currentTime
+        );
+
+        osc.frequency.exponentialRampToValueAtTime(
+            1046.50,
+            audioCtx.currentTime + 0.25
+        );
+
+        gain.gain.setValueAtTime(
+            0.2,
+            audioCtx.currentTime
+        );
+
+        gain.gain.exponentialRampToValueAtTime(
+            0.001,
+            audioCtx.currentTime + 0.25
+        );
+
+    }
+
+    else if (tipo === 'gameover') {
+
         osc.type = 'sawtooth';
-        osc.frequency.setValueAtTime(280, audioCtx.currentTime);
-        osc.frequency.exponentialRampToValueAtTime(90, audioCtx.currentTime + 0.6);
-        gain.gain.setValueAtTime(0.25, audioCtx.currentTime); // Volumen subido
-        gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.6);
+
+        osc.frequency.setValueAtTime(
+            280,
+            audioCtx.currentTime
+        );
+
+        osc.frequency.exponentialRampToValueAtTime(
+            90,
+            audioCtx.currentTime + 0.6
+        );
+
+        gain.gain.setValueAtTime(
+            0.25,
+            audioCtx.currentTime
+        );
+
+        gain.gain.exponentialRampToValueAtTime(
+            0.001,
+            audioCtx.currentTime + 0.6
+        );
     }
 
     osc.start();
-    osc.stop(audioCtx.currentTime + 0.6);
+
+    osc.stop(
+        audioCtx.currentTime +
+        (tipo === 'gameover' ? 0.6 : 0.25)
+    );
 }
 
 // --- LÓGICA DEL JUEGO ---
@@ -247,6 +429,12 @@ function reiniciarJuego() {
     gameOverElement.style.display = 'none';
     jugador.siguiente = null;
     reiniciarJugador();
+
+    if (musicaTimeout) {
+        clearTimeout(musicaTimeout);
+        musicaTimeout = null;
+    }
+
     reproducirMusicaFondo();
 }
 
