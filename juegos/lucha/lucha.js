@@ -2,69 +2,200 @@ const canvas = document.getElementById('fightCanvas');
 const ctx = canvas.getContext('2d');
 
 const GRAVEDAD = 0.7;
-const ALTO_SUELO = 96; // Altura desde el fondo del canvas
+const ALTO_SUELO = 96;
 
-// Clases principales
+// Sistema de Partículas para Efectos Visuales (VFX)
+let particulas = [];
+let efectosTexto = [];
+let contadorSacudida = 0;
+
+function agregarChispas(x, y, color) {
+    for (let i = 0; i < 15; i++) {
+        particulas.push({
+            x: x,
+            y: y,
+            vx: (Math.random() - 0.5) * 12,
+            vy: (Math.random() - 0.5) * 12,
+            tamano: Math.random() * 5 + 2,
+            color: color,
+            vida: 1.0
+        });
+    }
+}
+
+function agregarTextoImpacto(x, y, texto, color) {
+    efectosTexto.push({
+        x: x,
+        y: y,
+        texto: texto,
+        color: color,
+        vida: 1.0,
+        vy: -2
+    });
+}
+
+function actualizarParticulas() {
+    for (let i = particulas.length - 1; i >= 0; i--) {
+        let p = particulas[i];
+        p.x += p.vx;
+        p.y += p.vy;
+        p.vida -= 0.04;
+        if (p.vida <= 0) {
+            particulas.splice(i, 1);
+        } else {
+            ctx.save();
+            ctx.globalAlpha = p.vida;
+            ctx.fillStyle = p.color;
+            ctx.shadowColor = p.color;
+            ctx.shadowBlur = 8;
+            ctx.beginPath();
+            ctx.arc(p.x, p.y, p.tamano, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.restore();
+        }
+    }
+
+    for (let i = efectosTexto.length - 1; i >= 0; i--) {
+        let t = efectosTexto[i];
+        t.y += t.vy;
+        t.vida -= 0.03;
+        if (t.vida <= 0) {
+            efectosTexto.splice(i, 1);
+        } else {
+            ctx.save();
+            ctx.globalAlpha = t.vida;
+            ctx.font = '900 24px "Segoe UI", Arial, sans-serif';
+            ctx.fillStyle = t.color;
+            ctx.shadowColor = '#000';
+            ctx.shadowBlur = 6;
+            ctx.fillText(t.texto, t.x, t.y);
+            ctx.restore();
+        }
+    }
+}
+
+// Clase Peleador Avanzada con Gráficos Articulados
 class Peleador {
-    constructor({ pos, vel, color, offsetAtaque, mirandoDerecha }) {
+    constructor({ pos, vel, colorCuerpo, colorAcento, offsetAtaque, mirandoDerecha, esP2 }) {
         this.pos = pos;
         this.vel = vel;
-        this.ancho = 50;
-        this.alto = 130;
-        this.color = color;
+        this.ancho = 60;
+        this.alto = 135;
+        this.colorCuerpo = colorCuerpo;
+        this.colorAcento = colorAcento;
         this.vida = 100;
-        this.especial = 0; // 0 a 100
+        this.especial = 0;
 
         this.mirandoDerecha = mirandoDerecha;
         this.estaAtacando = false;
         this.esEspecial = false;
+        this.enElSuelo = false;
+        this.esP2 = esP2;
+
         this.cajaAtaque = {
             pos: { x: this.pos.x, y: this.pos.y },
             offset: offsetAtaque,
-            ancho: 100,
+            ancho: 110,
             alto: 50
         };
 
-        this.enElSuelo = false;
+        this.anguloPierna = 0;
     }
 
     dibujar() {
-        // Cuerpo
-        ctx.fillStyle = this.color;
-        ctx.fillRect(this.pos.x, this.pos.y, this.ancho, this.alto);
+        ctx.save();
 
-        // Ojo / Indicador de dirección
-        ctx.fillStyle = '#ffffff';
-        const ojoX = this.mirandoDerecha ? this.pos.x + 35 : this.pos.x + 5;
-        ctx.fillRect(ojoX, this.pos.y + 15, 10, 10);
+        const x = this.pos.x;
+        const y = this.pos.y;
+        const dir = this.mirandoDerecha ? 1 : -1;
 
-        // Ataque Normal
+        // Aura de Poder cuando el Especial está al 100%
+        if (this.especial >= 100) {
+            ctx.save();
+            ctx.shadowColor = this.colorAcento;
+            ctx.shadowBlur = 20;
+            ctx.strokeStyle = this.colorAcento;
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+            ctx.ellipse(x + this.ancho / 2, y + this.alto / 2, this.ancho / 1.2, this.alto / 1.8, 0, 0, Math.PI * 2);
+            ctx.stroke();
+            ctx.restore();
+        }
+
+        // Sombra en el suelo
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.4)';
+        ctx.beginPath();
+        ctx.ellipse(x + this.ancho / 2, canvas.height - ALTO_SUELO + 5, 35, 10, 0, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Piernas (Animadas al caminar)
+        ctx.fillStyle = '#1a1a2e';
+        const offsetCaminar = Math.sin(Date.now() * 0.01) * (this.vel.x !== 0 ? 15 : 0);
+        ctx.fillRect(x + 10 + offsetCaminar, y + 80, 16, 55);
+        ctx.fillRect(x + 34 - offsetCaminar, y + 80, 16, 55);
+
+        // Torso / Armadura
+        let gradienteTorso = ctx.createLinearGradient(x, y, x + this.ancho, y + 80);
+        gradienteTorso.addColorStop(0, this.colorCuerpo);
+        gradienteTorso.addColorStop(1, '#0f0f1b');
+        ctx.fillStyle = gradienteTorso;
+        ctx.fillRect(x + 8, y + 30, this.ancho - 16, 55);
+
+        // Acentos / Pechera
+        ctx.fillStyle = this.colorAcento;
+        ctx.fillRect(x + 14, y + 35, this.ancho - 28, 12);
+
+        // Cabeza / Casco
+        ctx.fillStyle = this.colorCuerpo;
+        ctx.beginPath();
+        ctx.arc(x + this.ancho / 2, y + 16, 18, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Visor Neón (Ojos)
+        ctx.fillStyle = this.colorAcento;
+        ctx.shadowColor = this.colorAcento;
+        ctx.shadowBlur = 10;
+        const visorX = dir === 1 ? x + this.ancho / 2 : x + this.ancho / 2 - 12;
+        ctx.fillRect(visorX, y + 10, 12, 6);
+        ctx.shadowBlur = 0;
+
+        // Brazos y Ataque Normal
+        ctx.fillStyle = this.colorCuerpo;
         if (this.estaAtacando) {
-            ctx.fillStyle = '#f9d423';
-            ctx.fillRect(
-                this.cajaAtaque.pos.x,
-                this.cajaAtaque.pos.y,
-                this.cajaAtaque.ancho,
-                this.cajaAtaque.alto
-            );
+            // Brazo extendido dando un golpe potente
+            const puñoX = dir === 1 ? x + this.ancho : x - 45;
+            ctx.fillStyle = this.colorAcento;
+            ctx.shadowColor = this.colorAcento;
+            ctx.shadowBlur = 15;
+            ctx.fillRect(puñoX, y + 32, 45, 20);
+            ctx.shadowBlur = 0;
+        } else {
+            // Guardia estándar
+            const guardiaX = dir === 1 ? x + this.ancho - 15 : x - 5;
+            ctx.fillRect(guardiaX, y + 35, 18, 30);
         }
 
-        // Ataque Especial (Ráfaga de energía)
+        // Renderizado del Ráfaga de Ataque Especial
         if (this.esEspecial) {
-            ctx.fillStyle = '#00c6ff';
-            ctx.fillRect(
-                this.cajaAtaque.pos.x,
-                this.cajaAtaque.pos.y - 20,
-                this.cajaAtaque.ancho * 1.5,
-                this.cajaAtaque.alto + 40
-            );
+            const ataqueX = dir === 1 ? x + this.ancho : x - 180;
+            let gradEspecial = ctx.createLinearGradient(ataqueX, y, ataqueX + 180, y);
+            gradEspecial.addColorStop(0, 'rgba(255, 255, 255, 0.9)');
+            gradEspecial.addColorStop(0.5, this.colorAcento);
+            gradEspecial.addColorStop(1, 'transparent');
+
+            ctx.fillStyle = gradEspecial;
+            ctx.shadowColor = this.colorAcento;
+            ctx.shadowBlur = 25;
+            ctx.beginPath();
+            ctx.ellipse(ataqueX + 90, y + 45, 90, 35, 0, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.shadowBlur = 0;
         }
+
+        ctx.restore();
     }
 
     actualizar() {
-        this.dibujar();
-
-        // Actualizar orientación
         if (this.mirandoDerecha) {
             this.cajaAtaque.pos.x = this.pos.x + this.cajaAtaque.offset.x;
         } else {
@@ -72,11 +203,9 @@ class Peleador {
         }
         this.cajaAtaque.pos.y = this.pos.y + this.cajaAtaque.offset.y;
 
-        // Movimiento
         this.pos.x += this.vel.x;
         this.pos.y += this.vel.y;
 
-        // Aplicar Gravedad
         if (this.pos.y + this.alto + this.vel.y >= canvas.height - ALTO_SUELO) {
             this.vel.y = 0;
             this.pos.y = canvas.height - ALTO_SUELO - this.alto;
@@ -86,62 +215,58 @@ class Peleador {
             this.enElSuelo = false;
         }
 
-        // Limites de pantalla
         if (this.pos.x < 0) this.pos.x = 0;
         if (this.pos.x + this.ancho > canvas.width) this.pos.x = canvas.width - this.ancho;
+
+        this.dibujar();
     }
 
     atacar() {
         if (this.estaAtacando || this.esEspecial) return;
         this.estaAtacando = true;
-        setTimeout(() => {
-            this.estaAtacando = false;
-        }, 150);
+        setTimeout(() => { this.estaAtacando = false; }, 150);
     }
 
     lanzarEspecial() {
         if (this.especial < 100 || this.estaAtacando || this.esEspecial) return;
         this.especial = 0;
         this.esEspecial = true;
-        setTimeout(() => {
-            this.esEspecial = false;
-        }, 300);
+        setTimeout(() => { this.esEspecial = false; }, 320);
     }
 }
 
-// Inicialización de Jugadores
+// Inicialización de Jugadores con Nuevos Paletas Neón
 const jugador1 = new Peleador({
     pos: { x: 150, y: 0 },
     vel: { x: 0, y: 0 },
-    color: '#0072ff',
-    offsetAtaque: { x: 50, y: 20 },
-    mirandoDerecha: true
+    colorCuerpo: '#1d3557',
+    colorAcento: '#00f0ff',
+    offsetAtaque: { x: 60, y: 20 },
+    mirandoDerecha: true,
+    esP2: false
 });
 
 const jugador2 = new Peleador({
     pos: { x: 800, y: 0 },
     vel: { x: 0, y: 0 },
-    color: '#ff4e50',
-    offsetAtaque: { x: 50, y: 20 },
-    mirandoDerecha: false
+    colorCuerpo: '#6b0504',
+    colorAcento: '#ff0055',
+    offsetAtaque: { x: 60, y: 20 },
+    mirandoDerecha: false,
+    esP2: true
 });
 
-// Control del Teclado
-const teclas = {
-    a: false, d: false,
-    ArrowLeft: false, ArrowRight: false
-};
+// Teclado
+const teclas = { a: false, d: false, ArrowLeft: false, ArrowRight: false };
 
 window.addEventListener('keydown', (e) => {
     switch (e.key) {
-        // JUGADOR 1
         case 'a': case 'A': teclas.a = true; break;
         case 'd': case 'D': teclas.d = true; break;
         case 'w': case 'W': if (jugador1.enElSuelo) jugador1.vel.y = -16; break;
         case 'f': case 'F': jugador1.atacar(); break;
         case 'g': case 'G': jugador1.lanzarEspecial(); break;
 
-        // JUGADOR 2
         case 'ArrowLeft': teclas.ArrowLeft = true; break;
         case 'ArrowRight': teclas.ArrowRight = true; break;
         case 'ArrowUp': if (jugador2.enElSuelo) jugador2.vel.y = -16; break;
@@ -159,18 +284,71 @@ window.addEventListener('keyup', (e) => {
     }
 });
 
-// Colisión
 function colisionHitbox(atacan, reciben) {
-    const hitboxAncho = atacan.esEspecial ? atacan.cajaAtaque.ancho * 1.5 : atacan.cajaAtaque.ancho;
+    const anchoAtaque = atacan.esEspecial ? atacan.cajaAtaque.ancho * 1.6 : atacan.cajaAtaque.ancho;
     return (
         atacan.cajaAtaque.pos.x < reciben.pos.x + reciben.ancho &&
-        atacan.cajaAtaque.pos.x + hitboxAncho > reciben.pos.x &&
+        atacan.cajaAtaque.pos.x + anchoAtaque > reciben.pos.x &&
         atacan.cajaAtaque.pos.y < reciben.pos.y + reciben.alto &&
         atacan.cajaAtaque.pos.y + atacan.cajaAtaque.alto > reciben.pos.y
     );
 }
 
-// Cronómetro del juego
+// Dibujado del Escenario Futurista / Synthwave
+function dibujarEscenario() {
+    // Cielo Nocturno
+    let gradienteCielo = ctx.createLinearGradient(0, 0, 0, canvas.height);
+    gradienteCielo.addColorStop(0, '#05050f');
+    gradienteCielo.addColorStop(0.6, '#1a0b2e');
+    gradienteCielo.addColorStop(1, '#11001c');
+    ctx.fillStyle = gradienteCielo;
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    // Sol Synthwave / Luna Neón
+    ctx.save();
+    let gradSol = ctx.createLinearGradient(512, 100, 512, 300);
+    gradSol.addColorStop(0, '#ff0055');
+    gradSol.addColorStop(1, '#ff9900');
+    ctx.fillStyle = gradSol;
+    ctx.shadowColor = '#ff0055';
+    ctx.shadowBlur = 30;
+    ctx.beginPath();
+    ctx.arc(512, 220, 80, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+
+    // Siluetas de Edificios
+    ctx.fillStyle = '#0a0a14';
+    ctx.fillRect(80, 220, 90, 260);
+    ctx.fillRect(220, 180, 110, 300);
+    ctx.fillRect(680, 200, 100, 280);
+    ctx.fillRect(820, 240, 120, 240);
+
+    // Suelo de Rejilla Neón
+    ctx.fillStyle = '#120024';
+    ctx.fillRect(0, canvas.height - ALTO_SUELO, canvas.width, ALTO_SUELO);
+
+    ctx.strokeStyle = '#00f0ff';
+    ctx.lineWidth = 3;
+    ctx.shadowColor = '#00f0ff';
+    ctx.shadowBlur = 10;
+    ctx.beginPath();
+    ctx.moveTo(0, canvas.height - ALTO_SUELO);
+    ctx.lineTo(canvas.width, canvas.height - ALTO_SUELO);
+    ctx.stroke();
+    ctx.shadowBlur = 0;
+
+    // Líneas Perspectiva en el Suelo
+    ctx.strokeStyle = 'rgba(0, 240, 255, 0.2)';
+    ctx.lineWidth = 1;
+    for (let i = 0; i <= canvas.width; i += 60) {
+        ctx.beginPath();
+        ctx.moveTo(i, canvas.height - ALTO_SUELO);
+        ctx.lineTo(i + (i - canvas.width / 2) * 0.5, canvas.height);
+        ctx.stroke();
+    }
+}
+
 let tiempoRestante = 99;
 let temporizadorID;
 
@@ -219,72 +397,77 @@ function reiniciarPelea() {
     iniciarCronometro();
 }
 
-// Bucle principal de animación
+// Bucle Principal
 function animar() {
     requestAnimationFrame(animar);
 
-    // Fondo / Escenario
-    ctx.fillStyle = '#1b1b2f';
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.save();
+    // Efecto Screen Shake
+    if (contadorSacudida > 0) {
+        ctx.translate((Math.random() - 0.5) * 10, (Math.random() - 0.5) * 10);
+        contadorSacudida--;
+    }
 
-    // Suelo
-    ctx.fillStyle = '#162447';
-    ctx.fillRect(0, canvas.height - ALTO_SUELO, canvas.width, ALTO_SUELO);
-    ctx.fillStyle = '#e43f5a';
-    ctx.fillRect(0, canvas.height - ALTO_SUELO, canvas.width, 6);
+    dibujarEscenario();
 
-    // Movimiento P1
+    // Movimiento
     jugador1.vel.x = 0;
     if (teclas.a) jugador1.vel.x = -6;
     if (teclas.d) jugador1.vel.x = 6;
 
-    // Movimiento P2
     jugador2.vel.x = 0;
     if (teclas.ArrowLeft) jugador2.vel.x = -6;
     if (teclas.ArrowRight) jugador2.vel.x = 6;
 
-    // Orientar direcciones según posición
     jugador1.mirandoDerecha = jugador1.pos.x < jugador2.pos.x;
     jugador2.mirandoDerecha = jugador2.pos.x < jugador1.pos.x;
 
-    // Actualizar personajes
     jugador1.actualizar();
     jugador2.actualizar();
 
-    // Detección de golpes P1 -> P2
+    // Colisión P1 -> P2
     if ((jugador1.estaAtacando || jugador1.esEspecial) && colisionHitbox(jugador1, jugador2)) {
-        const danio = jugador1.esEspecial ? 25 : 8;
+        const danio = jugador1.esEspecial ? 28 : 9;
         jugador2.vida = Math.max(0, jugador2.vida - danio);
         document.getElementById('p2-health').style.width = jugador2.vida + '%';
 
-        // Cargar barra especial del atacante
-        jugador1.especial = Math.min(100, jugador1.especial + 15);
+        jugador1.especial = Math.min(100, jugador1.especial + 18);
         document.getElementById('p1-special').style.width = jugador1.especial + '%';
+
+        // Efectos Visuales
+        agregarChispas(jugador2.pos.x + 20, jugador2.pos.y + 40, '#00f0ff');
+        agregarTextoImpacto(jugador2.pos.x, jugador2.pos.y - 10, jugador1.esEspecial ? '¡ULTRA!' : 'HIT!', '#00f0ff');
+        contadorSacudida = jugador1.esEspecial ? 12 : 5;
 
         jugador1.estaAtacando = false;
         jugador1.esEspecial = false;
     }
 
-    // Detección de golpes P2 -> P1
+    // Colisión P2 -> P1
     if ((jugador2.estaAtacando || jugador2.esEspecial) && colisionHitbox(jugador2, jugador1)) {
-        const danio = jugador2.esEspecial ? 25 : 8;
+        const danio = jugador2.esEspecial ? 28 : 9;
         jugador1.vida = Math.max(0, jugador1.vida - danio);
         document.getElementById('p1-health').style.width = jugador1.vida + '%';
 
-        // Cargar barra especial del atacante
-        jugador2.especial = Math.min(100, jugador2.especial + 15);
+        jugador2.especial = Math.min(100, jugador2.especial + 18);
         document.getElementById('p2-special').style.width = jugador2.especial + '%';
+
+        // Efectos Visuales
+        agregarChispas(jugador1.pos.x + 20, jugador1.pos.y + 40, '#ff0055');
+        agregarTextoImpacto(jugador1.pos.x, jugador1.pos.y - 10, jugador2.esEspecial ? '¡ULTRA!' : 'HIT!', '#ff0055');
+        contadorSacudida = jugador2.esEspecial ? 12 : 5;
 
         jugador2.estaAtacando = false;
         jugador2.esEspecial = false;
     }
 
-    // Comprobar Fin de Juego
+    actualizarParticulas();
+    ctx.restore();
+
     if (jugador1.vida <= 0 || jugador2.vida <= 0) {
         determinarGanador();
     }
 }
 
-// Iniciar Juego
 iniciarCronometro();
 animar();
