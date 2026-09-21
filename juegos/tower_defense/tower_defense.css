@@ -1,0 +1,33 @@
+/* Estilos para Tower Defense */
+
+.tower-btn {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 12px;
+    background: #090d16;
+    border: 2px solid #334155;
+    border-radius: 12px;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.tower-btn:hover {
+    border-color: #f59e0b;
+    background: #1e293b;
+    transform: translateY(-2px);
+}
+
+.tower-btn.active {
+    border-color: #f59e0b;
+    background: #1e293b;
+    box-shadow: 0 0 12px rgba(245, 158, 11, 0.4);
+}
+
+.tower-icon {
+    font-size: 1.25rem;
+}
+
+canvas {
+    image-rendering: pixelated;
+}

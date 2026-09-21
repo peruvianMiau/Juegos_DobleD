@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dungeon Crawler - Las Mazmorras Sombrías</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="dungeon_crawler.css">
+    <script src="dungeon_crawler.js" defer></script>
+</head>
+<body class="min-h-screen bg-slate-950 text-slate-100 font-sans flex flex-col items-center justify-between p-3 sm:p-6 select-none">
+
+<!-- Header Unificado Estilo Blackjack -->
+<header class="w-full max-w-7xl flex items-center justify-between bg-slate-900/80 backdrop-blur border border-slate-800 rounded-2xl px-5 py-3 shadow-lg">
+    <a href="../../index.html" class="inline-flex items-center gap-2 text-rose-400 hover:text-rose-300 font-semibold text-sm sm:text-base transition-colors">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
+        </svg>
+        Volver al Menú
+    </a>
+    <h1 class="text-xl sm:text-2xl font-black bg-gradient-to-r from-red-400 via-rose-500 to-amber-500 bg-clip-text text-transparent">
+        DUNGEON CRAWLER 🗝️
+    </h1>
+    <div class="flex items-center gap-3">
+        <div class="flex items-center gap-1.5 bg-slate-800/80 px-3 py-1.5 rounded-xl border border-slate-700">
+            <span class="text-rose-400 font-bold">❤️</span>
+            <span id="player-hp-display" class="font-black text-rose-300 text-sm sm:text-base">100 / 100</span>
+        </div>
+        <div class="flex items-center gap-1.5 bg-slate-800/80 px-3 py-1.5 rounded-xl border border-slate-700">
+            <span class="text-amber-400 font-bold">🔑</span>
+            <span id="player-keys-display" class="font-black text-amber-300 text-sm sm:text-base">0</span>
+        </div>
+        <div class="flex items-center gap-1.5 bg-slate-800/80 px-3 py-1.5 rounded-xl border border-slate-700">
+            <span class="text-yellow-400 font-bold">🧪</span>
+            <span id="player-pots-display" class="font-black text-yellow-300 text-sm sm:text-base">1</span>
+        </div>
+    </div>
+</header>
+
+<!-- Contenedor Principal: Mazmorra Canvas + Reglas a la Derecha -->
+<div class="w-full max-w-7xl flex flex-col lg:flex-row gap-6 my-4 flex-1 items-start justify-center">
+
+    <!-- Área de la Mazmorra (Centro) -->
+    <main class="flex-1 w-full bg-slate-900/60 border border-slate-800 rounded-3xl p-4 sm:p-5 shadow-2xl flex flex-col items-center gap-4">
+
+        <!-- Barra de Estado / Piso / Mensaje de Acción -->
+        <div class="w-full bg-slate-950/80 border border-slate-800 rounded-2xl p-3 flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <span class="text-xs font-bold text-slate-400 uppercase tracking-wider">Mazmorra:</span>
+                <span id="floor-display" class="px-2.5 py-0.5 rounded-lg bg-rose-950 text-rose-400 font-black text-xs border border-rose-600/40">
+                    Piso 1 - Mazmorra del Señor Oscuro
+                </span>
+            </div>
+            <div class="flex items-center gap-2">
+                <button onclick="beberPocion()" class="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white font-black text-xs rounded-xl transition shadow flex items-center gap-1">
+                    <span>🧪</span> Usar Poción (P)
+                </button>
+                <button onclick="generarNuevaMazmorra()" class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold text-xs rounded-xl transition border border-slate-700">
+                    🔄 Reiniciar Mapa
+                </button>
+            </div>
+        </div>
+
+        <!-- Canvas de la Mazmorra -->
+        <div class="relative w-full flex justify-center items-center bg-black rounded-2xl border-2 border-slate-800 overflow-hidden shadow-2xl">
+            <canvas id="dungeonCanvas" width="640" height="480" class="w-full max-w-[640px] h-auto block"></canvas>
+
+            <!-- Mensaje Flotante de Acción / Log Rápido -->
+            <div id="dungeon-banner" class="absolute bottom-3 left-1/2 -translate-x-1/2 bg-slate-950/90 border border-slate-700 px-4 py-1.5 rounded-xl text-xs font-bold text-amber-300 pointer-events-none transition-all duration-200">
+                Usa W, A, S, D o las flechas para explorar la mazmorra.
+            </div>
+
+            <!-- Overlay de Victoria / Fin del Juego -->
+            <div id="dungeon-modal" class="hidden absolute inset-0 bg-slate-950/90 backdrop-blur-md flex flex-col items-center justify-center p-6 text-center gap-4 z-30">
+                <h2 id="dungeon-modal-title" class="text-3xl sm:text-4xl font-black text-amber-400"></h2>
+                <p id="dungeon-modal-msg" class="text-slate-300 text-sm max-w-sm"></p>
+                <button onclick="generarNuevaMazmorra()" class="px-6 py-3 bg-rose-600 hover:bg-rose-500 text-white font-black text-base rounded-xl transition shadow-lg">
+                    🔄 Explorar Otra Mazmorra
+                </button>
+            </div>
+        </div>
+
+        <!-- Controles Táctiles D-Pad para Dispositivos Móviles -->
+        <div class="flex flex-col items-center gap-1 sm:hidden">
+            <button onclick="moverJugador(0, -1)" class="dpad-btn">▲</button>
+            <div class="flex items-center gap-3">
+                <button onclick="moverJugador(-1, 0)" class="dpad-btn">◀</button>
+                <button onclick="moverJugador(0, 1)" class="dpad-btn">▼</button>
+                <button onclick="moverJugador(1, 0)" class="dpad-btn">▶</button>
+            </div>
+        </div>
+
+        <!-- Leyenda de Iconos de la Mazmorra -->
+        <div class="w-full flex items-center justify-center gap-4 text-xs text-slate-400 flex-wrap bg-slate-950/60 p-2.5 rounded-xl border border-slate-800">
+            <span class="flex items-center gap-1">🧙 Tú</span>
+            <span class="flex items-center gap-1">🚪 Puerta con Candado</span>
+            <span class="flex items-center gap-1">🔑 Llave</span>
+            <span class="flex items-center gap-1">📦 Cofre</span>
+            <span class="flex items-center gap-1">⚡ Trampa</span>
+            <span class="flex items-center gap-1">💀 Enemigos</span>
+            <span class="flex items-center gap-1">👑 Jefe</span>
+        </div>
+
+    </main>
+
+    <!-- Panel de Reglas en el Lado Derecho -->
+    <aside class="w-full lg:w-80 bg-slate-900/80 backdrop-blur border border-slate-800 rounded-3xl p-5 shadow-xl flex flex-col gap-4 text-slate-300 text-sm">
+        <div class="flex items-center gap-2 pb-3 border-b border-slate-800 text-rose-400 font-bold text-base">
+            <span class="text-xl">📜</span>
+            <h2>Reglas de Dungeon Crawler</h2>
+        </div>
+
+        <div class="space-y-3 leading-relaxed">
+            <div class="bg-slate-950/60 p-3 rounded-xl border border-slate-800/60">
+                <h3 class="text-rose-400 font-semibold mb-1 text-xs uppercase tracking-wider">🗺️ 1. Mapa Aleatorio & Niebla</h3>
+                <p class="text-xs">Cada partida genera una mazmorra única con habitaciones y pasillos. La <strong>niebla de guerra</strong> se disipa a tu alrededor conforme exploras.</p>
+            </div>
+
+            <div class="bg-slate-950/60 p-3 rounded-xl border border-slate-800/60">
+                <h3 class="text-amber-400 font-semibold mb-1 text-xs uppercase tracking-wider">🔑 2. Llaves y Puertas</h3>
+                <p class="text-xs">Las puertas de hierro están cerradas con candado. Busca la <strong>Llave (🔑)</strong> oculta en los pasillos o cofres para desbloquear la entrada al santuario.</p>
+            </div>
+
+            <div class="bg-slate-950/60 p-3 rounded-xl border border-slate-800/60">
+                <h3 class="text-yellow-400 font-semibold mb-1 text-xs uppercase tracking-wider">📦 3. Cofres y Trampas</h3>
+                <p class="text-xs">Abre los cofres para conseguir pociones curativas o llaves. Ten cuidado con las <strong>trampas de pinchos (⚡)</strong>: perderás 15 de vida al pisarlas.</p>
+            </div>
+
+            <div class="bg-slate-950/60 p-3 rounded-xl border border-slate-800/60">
+                <h3 class="text-purple-400 font-semibold mb-1 text-xs uppercase tracking-wider">💀 4. Enemigos y el Jefe Final</h3>
+                <p class="text-xs">Acércate a un enemigo para atacarlo. Al otro lado de la puerta te espera el <strong>Señor Oscuro (Jefe)</strong>. ¡Derrótalo para ganar la partida!</p>
+            </div>
+        </div>
+    </aside>
+
+</div>
+
+</body>
+</html>
