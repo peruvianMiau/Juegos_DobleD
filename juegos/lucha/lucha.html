@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Street Combat - Arcade</title>
+    <link rel="stylesheet" href="lucha.css">
+    <script src="lucha.js" defer></script>
+</head>
+<body>
+<div class="top-bar">
+    <a href="../../index.html" class="btn-back">⬅️ Volver al Menú</a>
+    <h1>Street Combat 2D</h1>
+</div>
+
+<div class="arcade-container">
+    <!-- HUD (Barras de vida y especial) -->
+    <div class="hud">
+        <!-- Jugador 1 -->
+        <div class="player-hud p1">
+            <div class="player-name">JUGADOR 1</div>
+            <div class="bar-container">
+                <div id="p1-health" class="health-bar" style="width: 100%;"></div>
+            </div>
+            <div class="bar-container special">
+                <div id="p1-special" class="special-bar" style="width: 0%;"></div>
+            </div>
+        </div>
+
+        <!-- Timer / Versus -->
+        <div class="timer-box">
+            <div id="timer">99</div>
+        </div>
+
+        <!-- Jugador 2 -->
+        <div class="player-hud p2">
+            <div class="player-name">JUGADOR 2</div>
+            <div class="bar-container">
+                <div id="p2-health" class="health-bar" style="width: 100%;"></div>
+            </div>
+            <div class="bar-container special">
+                <div id="p2-special" class="special-bar" style="width: 0%;"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Canvas del escenario de pelea -->
+    <canvas id="fightCanvas" width="1024" height="576"></canvas>
+
+    <!-- Mensaje de KO u Overlay -->
+    <div id="game-over-overlay" class="overlay">
+        <h2 id="winner-text">K.O.</h2>
+        <button onclick="reiniciarPelea()" class="btn-restart">Pelear de Nuevo</button>
+    </div>
+
+    <!-- Leyenda de Controles -->
+    <div class="controls-guide">
+        <div class="p1-controls">
+            <strong>Jugador 1:</strong><br>
+            Mover: A / D | Saltar: W<br>
+            Golpe: F | Especial: G
+        </div>
+        <div class="p2-controls">
+            <strong>Jugador 2:</strong><br>
+            Mover: ⬅️ / ➡️ | Saltar: ⬆️<br>
+            Golpe: L / Num 1 | Especial: K / Num 2
+        </div>
+    </div>
+</div>
+</body>
+</html>

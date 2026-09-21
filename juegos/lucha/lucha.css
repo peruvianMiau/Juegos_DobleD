@@ -1,0 +1,160 @@
+body {
+    background-color: #0b0c10;
+    color: #ffffff;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin: 0;
+    padding: 15px;
+}
+
+.top-bar {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    margin-bottom: 15px;
+}
+
+.btn-back {
+    color: #66fcf1;
+    text-decoration: none;
+    font-weight: bold;
+    font-size: 1.1rem;
+}
+
+.arcade-container {
+    position: relative;
+    background-color: #1f2833;
+    padding: 15px;
+    border-radius: 12px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.7);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+/* HUD */
+.hud {
+    display: flex;
+    width: 1024px;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+}
+
+.player-hud {
+    width: 42%;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.player-hud.p2 {
+    align-items: flex-end;
+}
+
+.player-name {
+    font-weight: bold;
+    font-size: 1.1rem;
+    color: #c5c6c7;
+}
+
+.bar-container {
+    width: 100%;
+    height: 22px;
+    background-color: #45a29e;
+    border: 2px solid #ffffff;
+    border-radius: 4px;
+    overflow: hidden;
+}
+
+.health-bar {
+    height: 100%;
+    background: linear-gradient(90deg, #ff4e50, #f9d423);
+    transition: width 0.2s ease-out;
+}
+
+.player-hud.p2 .health-bar {
+    float: right;
+}
+
+.bar-container.special {
+    height: 10px;
+    background-color: #111;
+    border: 1px solid #66fcf1;
+}
+
+.special-bar {
+    height: 100%;
+    background: linear-gradient(90deg, #00c6ff, #0072ff);
+    transition: width 0.1s ease-out;
+}
+
+.timer-box {
+    width: 60px;
+    height: 60px;
+    background-color: #0b0c10;
+    border: 3px solid #66fcf1;
+    border-radius: 50%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 1.8rem;
+    font-weight: bold;
+    color: #66fcf1;
+}
+
+canvas {
+    border: 3px solid #45a29e;
+    border-radius: 4px;
+    background-color: #000;
+}
+
+/* OVERLAY DE GAME OVER */
+.overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.85);
+    display: none;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    border-radius: 12px;
+}
+
+.overlay h2 {
+    font-size: 3.5rem;
+    color: #ff4e50;
+    margin-bottom: 20px;
+    text-shadow: 0 0 10px #ff0000;
+}
+
+.btn-restart {
+    padding: 12px 30px;
+    font-size: 1.2rem;
+    font-weight: bold;
+    color: #0b0c10;
+    background-color: #66fcf1;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: transform 0.2s;
+}
+
+.btn-restart:hover {
+    transform: scale(1.08);
+}
+
+/* LEYENDA */
+.controls-guide {
+    display: flex;
+    justify-content: space-between;
+    width: 100%;
+    margin-top: 15px;
+    font-size: 0.9rem;
+    color: #c5c6c7;
+}

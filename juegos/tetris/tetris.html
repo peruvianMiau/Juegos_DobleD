@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tetris - Mi Plataforma</title>
+    <link rel="stylesheet" href="tetris.css">
+    <!-- Se agrega defer para asegurar que el canvas se cargue antes de ejecutar el JS -->
+    <script src="tetris.js" defer></script>
+</head>
+<body>
+<div class="top-bar">
+    <a href="../../index.html" class="btn-back">⬅️ Volver al Menú</a>
+    <h1>Tetris Arcade</h1>
+</div>
+
+<div class="game-container">
+    <canvas id="tetris" width="240" height="400"></canvas>
+
+    <div class="info-panel">
+        <div class="score-board">
+            Puntos: <span id="score">0</span>
+        </div>
+        <div id="game-over">GAME OVER</div>
+        <div class="controls">
+            <strong>Controles:</strong><br>
+            ⬅️ / ➡️ : Mover<br>
+            ⬇️ : Caída rápida<br>
+            ⬆️ / Z : Rotar
+        </div>
+    </div>
+</div>
+</body>
+</html>
