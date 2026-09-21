@@ -14,7 +14,8 @@
 </div>
 
 <div class="game-container">
-    <canvas id="tetris" width="240" height="400"></canvas>
+    <!-- Canvas de Tetris mas grande (360x600 px) -->
+    <canvas id="tetris" width="360" height="600"></canvas>
 
     <div class="info-panel">
         <div class="score-board">
@@ -24,7 +25,7 @@
 
         <div class="next-piece-box">
             <h3>SIGUIENTE</h3>
-            <canvas id="next" width="80" height="80"></canvas>
+            <canvas id="next" width="120" height="120"></canvas>
         </div>
 
         <div id="game-over">
@@ -34,10 +35,10 @@
 
         <div class="controls">
             <strong>Controles:</strong><br>
-            ⬅️ / ➡️ : Mover<br>
-            ⬇️ : Caída rápida<br>
-            ⬆️ / Z : Rotar<br>
-            ESPACIO : Caída instantánea
+            ⬅️ ➡️ / <strong>A - D</strong> : Mover<br>
+            ⬇️ / <strong>S</strong> : Caída rápida<br>
+            ⬆️ / <strong>W</strong> : Rotar<br>
+            <strong>ESPACIO</strong> : Caída instantánea
         </div>
     </div>
 </div>

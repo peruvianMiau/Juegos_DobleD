@@ -7,8 +7,8 @@ const nextContext = nextCanvas.getContext('2d');
 const scoreElement = document.getElementById('score');
 const gameOverElement = document.getElementById('game-over');
 
-context.scale(20, 20);
-nextContext.scale(20, 20);
+context.scale(30, 30);
+nextContext.scale(30, 30);
 
 const PIEZAS = 'ILJOTSZ';
 const COLORES = [
@@ -19,7 +19,7 @@ let juegoTerminado = false;
 let audioCtx;
 let musicaInterval;
 
-// --- SISTEMA DE AUDIO (Web Audio API) ---
+// --- SISTEMA DE AUDIO (Web Audio API - Tema Original Korobeiniki Mejorado) ---
 function iniciarAudio() {
     if (!audioCtx) {
         audioCtx = new (window.AudioContext || window.webkitAudioContext)();
@@ -30,34 +30,49 @@ function iniciarAudio() {
 function reproducirMusicaFondo() {
     if (juegoTerminado || !audioCtx) return;
 
-    // Melodía tipo Korobeiniki (Tema de Tetris)
-    const notas = [
-        659.25, 493.88, 523.25, 587.33, 523.25, 493.88, 440.00, 440.00,
-        523.25, 659.25, 587.33, 523.25, 493.88, 523.25, 587.33, 659.25,
-        523.25, 440.00, 440.00
+    // Partitura clásica completa del Tema A de Tetris
+    const melodia = [
+        // Parte A
+        { f: 659.25, d: 0.25 }, { f: 493.88, d: 0.125 }, { f: 523.25, d: 0.125 }, { f: 587.33, d: 0.25 },
+        { f: 523.25, d: 0.125 }, { f: 493.88, d: 0.125 }, { f: 440.00, d: 0.25 }, { f: 440.00, d: 0.125 },
+        { f: 523.25, d: 0.125 }, { f: 659.25, d: 0.25 }, { f: 587.33, d: 0.125 }, { f: 523.25, d: 0.125 },
+        { f: 493.88, d: 0.375 }, { f: 523.25, d: 0.125 }, { f: 587.33, d: 0.25 }, { f: 659.25, d: 0.25 },
+        { f: 523.25, d: 0.25 }, { f: 440.00, d: 0.25 }, { f: 440.00, d: 0.25 }, { f: 0, d: 0.125 },
+
+        { f: 587.33, d: 0.375 }, { f: 698.46, d: 0.125 }, { f: 880.00, d: 0.25 }, { f: 783.99, d: 0.125 },
+        { f: 698.46, d: 0.125 }, { f: 659.25, d: 0.375 }, { f: 523.25, d: 0.125 }, { f: 659.25, d: 0.25 },
+        { f: 587.33, d: 0.125 }, { f: 523.25, d: 0.125 }, { f: 493.88, d: 0.25 }, { f: 493.88, d: 0.125 },
+        { f: 523.25, d: 0.125 }, { f: 587.33, d: 0.25 }, { f: 659.25, d: 0.25 }, { f: 523.25, d: 0.25 },
+        { f: 440.00, d: 0.25 }, { f: 440.00, d: 0.25 }, { f: 0, d: 0.125 }
     ];
+
     let paso = 0;
 
     clearInterval(musicaInterval);
     musicaInterval = setInterval(() => {
         if (juegoTerminado || !audioCtx) return;
-        const osc = audioCtx.createOscillator();
-        const gain = audioCtx.createGain();
 
-        osc.type = 'square';
-        osc.frequency.setValueAtTime(notas[paso % notas.length], audioCtx.currentTime);
+        const nota = melodia[paso % melodia.length];
+        if (nota.f > 0) {
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
 
-        gain.gain.setValueAtTime(0.02, audioCtx.currentTime);
-        gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.2);
+            osc.type = 'square';
+            osc.frequency.setValueAtTime(nota.f, audioCtx.currentTime);
 
-        osc.connect(gain);
-        gain.connect(audioCtx.destination);
+            // VOLUMEN DE MÚSICA SUBIDO (de 0.025 a 0.08)
+            gain.gain.setValueAtTime(0.08, audioCtx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + nota.d);
 
-        osc.start();
-        osc.stop(audioCtx.currentTime + 0.2);
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+
+            osc.start();
+            osc.stop(audioCtx.currentTime + nota.d);
+        }
 
         paso++;
-    }, 250);
+    }, 180); // Ligeramente más rápido para dar dinamismo
 }
 
 function sonarEfecto(tipo) {
@@ -69,34 +84,34 @@ function sonarEfecto(tipo) {
 
     if (tipo === 'mover') {
         osc.type = 'sine';
-        osc.frequency.setValueAtTime(300, audioCtx.currentTime);
-        gain.gain.setValueAtTime(0.03, audioCtx.currentTime);
+        osc.frequency.setValueAtTime(350, audioCtx.currentTime);
+        gain.gain.setValueAtTime(0.08, audioCtx.currentTime); // Volumen subido
         gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.05);
     } else if (tipo === 'rotar') {
         osc.type = 'triangle';
-        osc.frequency.setValueAtTime(400, audioCtx.currentTime);
-        osc.frequency.exponentialRampToValueAtTime(600, audioCtx.currentTime + 0.08);
-        gain.gain.setValueAtTime(0.05, audioCtx.currentTime);
+        osc.frequency.setValueAtTime(450, audioCtx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(700, audioCtx.currentTime + 0.08);
+        gain.gain.setValueAtTime(0.1, audioCtx.currentTime); // Volumen subido
         gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.08);
     } else if (tipo === 'linea') {
         osc.type = 'square';
         osc.frequency.setValueAtTime(523.25, audioCtx.currentTime);
-        osc.frequency.exponentialRampToValueAtTime(880, audioCtx.currentTime + 0.2);
-        gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
-        gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.2);
+        osc.frequency.exponentialRampToValueAtTime(1046.50, audioCtx.currentTime + 0.25);
+        gain.gain.setValueAtTime(0.2, audioCtx.currentTime); // Volumen subido
+        gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.25);
     } else if (tipo === 'gameover') {
         osc.type = 'sawtooth';
-        osc.frequency.setValueAtTime(300, audioCtx.currentTime);
-        osc.frequency.exponentialRampToValueAtTime(100, audioCtx.currentTime + 0.5);
-        gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
-        gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.5);
+        osc.frequency.setValueAtTime(280, audioCtx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(90, audioCtx.currentTime + 0.6);
+        gain.gain.setValueAtTime(0.25, audioCtx.currentTime); // Volumen subido
+        gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.6);
     }
 
     osc.start();
-    osc.stop(audioCtx.currentTime + 0.3);
+    osc.stop(audioCtx.currentTime + 0.6);
 }
 
-// --- LÓGICA DE JUEGO ---
+// --- LÓGICA DEL JUEGO ---
 function crearMatriz(w, h) {
     const matriz = [];
     while (h--) { matriz.push(new Array(w).fill(0)); }
@@ -258,14 +273,13 @@ function dibujarMatriz(matriz, offset, ctx = context) {
                 ctx.fillStyle = COLORES[valor];
                 ctx.fillRect(x + offset.x, y + offset.y, 1, 1);
 
-                // Bordes para biselado visual 3D
-                ctx.fillStyle = 'rgba(255, 255, 255, 0.2)';
-                ctx.fillRect(x + offset.x, y + offset.y, 1, 0.1);
-                ctx.fillRect(x + offset.x, y + offset.y, 0.1, 1);
+                ctx.fillStyle = 'rgba(255, 255, 255, 0.25)';
+                ctx.fillRect(x + offset.x, y + offset.y, 1, 0.08);
+                ctx.fillRect(x + offset.x, y + offset.y, 0.08, 1);
 
-                ctx.fillStyle = 'rgba(0, 0, 0, 0.3)';
-                ctx.fillRect(x + offset.x, y + offset.y + 0.9, 1, 0.1);
-                ctx.fillRect(x + offset.x + 0.9, y + offset.y, 0.1, 1);
+                ctx.fillStyle = 'rgba(0, 0, 0, 0.35)';
+                ctx.fillRect(x + offset.x, y + offset.y + 0.92, 1, 0.08);
+                ctx.fillRect(x + offset.x + 0.92, y + offset.y, 0.08, 1);
             }
         });
     });
@@ -283,9 +297,8 @@ function dibujar() {
     context.fillStyle = '#0d1b2a';
     context.fillRect(0, 0, canvas.width, canvas.height);
 
-    // Grid discreto de fondo
-    context.strokeStyle = 'rgba(255, 255, 255, 0.03)';
-    context.lineWidth = 0.05;
+    context.strokeStyle = 'rgba(255, 255, 255, 0.04)';
+    context.lineWidth = 0.04;
     for (let x = 0; x < 12; x++) {
         context.beginPath();
         context.moveTo(x, 0);
@@ -326,11 +339,13 @@ document.addEventListener('keydown', event => {
     iniciarAudio();
     if (juegoTerminado) return;
 
-    if (event.keyCode === 37) moverJugador(-1);
-    else if (event.keyCode === 39) moverJugador(1);
-    else if (event.keyCode === 40) caidaJugador();
-    else if (event.keyCode === 38 || event.keyCode === 90) rotarJugador(1);
-    else if (event.keyCode === 32) caidaRapida(); // Tecla Espacio
+    const key = event.key.toLowerCase();
+
+    if (key === 'arrowleft' || key === 'a') moverJugador(-1);
+    else if (key === 'arrowright' || key === 'd') moverJugador(1);
+    else if (key === 'arrowdown' || key === 's') caidaJugador();
+    else if (key === 'arrowup' || key === 'w') rotarJugador(1);
+    else if (key === ' ') caidaRapida();
 });
 
 reiniciarJugador();
