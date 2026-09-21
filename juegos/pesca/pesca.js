@@ -13,19 +13,23 @@ let tiempoRestante = 60;
 let juegoTerminado = false;
 let temporizadorID;
 
-// Estado del anzuelo
+// Estado del barco y anzuelo
+const bote = { x: 350, y: 60, ancho: 100, alto: 30, velocidad: 5 };
 const anzuelo = {
     x: 400,
     y: 100,
     radio: 8,
-    velY: 0,
-    bajando: false,
-    recomponiendo: false,
+    velocidadVertical: 4,
     pezEnganchado: null
 };
 
-// Bote y Pescador
-const bote = { x: 350, y: 70, ancho: 100, alto: 30 };
+// Control de teclas presionadas
+const teclas = {
+    Izquierda: false,
+    Derecha: false,
+    Arriba: false,
+    Abajo: false
+};
 
 // Lista de peces en movimiento
 let peces = [];
@@ -46,20 +50,24 @@ function crearPez() {
     });
 }
 
-// Eventos de ratón
-let presionado = false;
-
-canvas.addEventListener('mousedown', (e) => {
+// Escuchadores de eventos para el teclado
+window.addEventListener('keydown', (e) => {
     if (juegoTerminado) return;
-    presionado = true;
-    if (!anzuelo.bajando && anzuelo.y <= 100) {
-        anzuelo.bajando = true;
-    }
+    if (['ArrowLeft', 'a', 'A'].includes(e.key)) teclas.Izquierda = true;
+    if (['ArrowRight', 'd', 'D'].includes(e.key)) teclas.Derecha = true;
+    if (['ArrowUp', 'w', 'W'].includes(e.key)) teclas.Arriba = true;
+    if (['ArrowDown', 's', 'S'].includes(e.key)) teclas.Abajo = true;
 });
 
-canvas.addEventListener('mouseup', () => { presionado = false; });
+window.addEventListener('keyup', (e) => {
+    if (['ArrowLeft', 'a', 'A'].includes(e.key)) teclas.Izquierda = false;
+    if (['ArrowRight', 'd', 'D'].includes(e.key)) teclas.Derecha = false;
+    if (['ArrowUp', 'w', 'W'].includes(e.key)) teclas.Arriba = false;
+    if (['ArrowDown', 's', 'S'].includes(e.key)) teclas.Abajo = false;
+});
 
 function iniciarTemporizador() {
+    clearInterval(temporizadorID);
     temporizadorID = setInterval(() => {
         if (tiempoRestante > 0) {
             tiempoRestante--;
@@ -83,9 +91,10 @@ function reiniciarJuego() {
     tiempoRestante = 60;
     juegoTerminado = false;
     peces = [];
+    bote.x = 350;
+    anzuelo.x = bote.x + bote.ancho / 2;
     anzuelo.y = 100;
     anzuelo.pezEnganchado = null;
-    anzuelo.bajando = false;
 
     scoreEl.innerText = '0';
     fishCountEl.innerText = '0';
@@ -95,32 +104,43 @@ function reiniciarJuego() {
     iniciarTemporizador();
 }
 
-function actualizarAnzuelo() {
-    // Si presiona el clic, sube el anzuelo rápidamente
-    if (presionado || anzuelo.pezEnganchado) {
-        anzuelo.y -= 4;
-        anzuelo.bajando = false;
-    } else if (anzuelo.bajando) {
-        anzuelo.y += 3;
-        if (anzuelo.y >= canvas.height - 20) {
-            anzuelo.bajando = false;
-        }
-    } else if (anzuelo.y > 100) {
-        anzuelo.y -= 2; // Sube lentamente si no se presiona nada
+function actualizarMovimiento() {
+    // Movimiento Horizontal (Bote + Anzuelo)
+    if (teclas.Izquierda && bote.x > 0) {
+        bote.x -= bote.velocidad;
+        anzuelo.x -= bote.velocidad;
+    }
+    if (teclas.Derecha && bote.x + bote.ancho < canvas.width) {
+        bote.x += bote.velocidad;
+        anzuelo.x += bote.velocidad;
     }
 
+    // Movimiento Vertical (Anzuelo)
+    if (teclas.Abajo && anzuelo.y < canvas.height - 20) {
+        anzuelo.y += anzuelo.velocidadVertical;
+    }
+    if (teclas.Arriba && anzuelo.y > 100) {
+        anzuelo.y -= anzuelo.velocidadVertical;
+    }
+
+    // Procesar captura cuando el anzuelo sube a la superficie
     if (anzuelo.y <= 100) {
         anzuelo.y = 100;
-        // Si llegó arriba con pez, procesar captura
         if (anzuelo.pezEnganchado) {
             puntuacion = Math.max(0, puntuacion + anzuelo.pezEnganchado.puntos);
             if (anzuelo.pezEnganchado.puntos > 0) capturas++;
             scoreEl.innerText = puntuacion;
             fishCountEl.innerText = capturas;
+
+            // Eliminar el pez capturado del array
+            const idx = peces.indexOf(anzuelo.pezEnganchado);
+            if (idx !== -1) peces.splice(idx, 1);
+
             anzuelo.pezEnganchado = null;
         }
     }
 
+    // Acompañar posición del pez enganchado
     if (anzuelo.pezEnganchado) {
         anzuelo.pezEnganchado.x = anzuelo.x;
         anzuelo.pezEnganchado.y = anzuelo.y + 10;
@@ -137,7 +157,7 @@ function actualizarPeces() {
             pez.x += pez.velocidad * pez.dir;
         }
 
-        // Colisión con anzuelo
+        // Detectar colisión con el anzuelo
         if (!anzuelo.pezEnganchado && anzuelo.y > 110) {
             const dist = Math.hypot(anzuelo.x - pez.x, anzuelo.y - pez.y);
             if (dist < pez.tamaño + anzuelo.radio) {
@@ -157,7 +177,7 @@ function actualizarPeces() {
 function dibujar() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-    // Dibujar Agua Superficie
+    // Agua Superficie
     ctx.fillStyle = '#87ceeb';
     ctx.fillRect(0, 0, canvas.width, 90);
 
@@ -175,7 +195,7 @@ function dibujar() {
     ctx.strokeStyle = '#ffffff';
     ctx.lineWidth = 1.5;
     ctx.beginPath();
-    ctx.moveTo(anzuelo.x, bote.y);
+    ctx.moveTo(anzuelo.x, bote.y + bote.alto / 2);
     ctx.lineTo(anzuelo.x, anzuelo.y);
     ctx.stroke();
 
@@ -206,7 +226,7 @@ function dibujar() {
 
 function bucleJuego() {
     if (!juegoTerminado) {
-        actualizarAnzuelo();
+        actualizarMovimiento();
         actualizarPeces();
         dibujar();
     }
@@ -215,3 +235,4 @@ function bucleJuego() {
 
 iniciarTemporizador();
 bucleJuego();
+
