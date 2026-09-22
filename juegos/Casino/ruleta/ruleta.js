@@ -23,7 +23,7 @@ function guardarSaldo(nuevoSaldo) {
 }
 
 let fichas = obtenerSaldo();
-let fichaSeleccionada = 50;
+let fichaSeleccionada = 10;
 let apuestas = {}; // { 'num-7': 50, 'red': 100, ... }
 let totalApostado = 0;
 let estaGirando = false;
@@ -114,6 +114,9 @@ function seleccionarFicha(valor) {
 function colocarApuesta(tipo) {
     if (estaGirando) return;
 
+    // Una nueva ronda empieza sin resaltados de la ronda anterior.
+    document.querySelectorAll('.winning-bet').forEach(el => el.classList.remove('winning-bet'));
+
     if (fichas < fichaSeleccionada) {
         mostrarEstado("¡Saldo insuficiente para colocar esta ficha!", "text-rose-400");
         return;
@@ -158,75 +161,118 @@ function limpiarApuestas() {
 
 function girarRuleta() {
     if (estaGirando) return;
-
     if (totalApostado === 0) {
         mostrarEstado("¡Debes realizar al menos una apuesta en el tapete!", "text-amber-400");
         return;
     }
 
     estaGirando = true;
-    document.getElementById('btn-spin').disabled = true;
-    document.getElementById('btn-spin').classList.add('opacity-50', 'cursor-not-allowed');
+    const btn = document.getElementById('btn-spin');
+    btn.disabled = true;
+    btn.classList.add('opacity-50', 'cursor-not-allowed');
     mostrarEstado("¡La ruleta y la bola están girando! ¡Buena suerte!", "text-emerald-400");
 
-    // Elegir número ganador al azar (0 al 36)
+    // El resultado se decide una sola vez. La animación se construye alrededor
+    // de ese resultado para que la casilla bajo la bola y el resultado lógico
+    // sean SIEMPRE el mismo número.
     const numeroGanador = Math.floor(Math.random() * 37);
     winningIndex = RUEDA_NUMEROS.indexOf(numeroGanador);
+    const sector = (Math.PI * 2) / RUEDA_NUMEROS.length;
+    const anguloBolaFinal = -Math.PI / 2; // posición fija de la bola: arriba
+    const centroGanador = winningIndex * sector + sector / 2;
+    const inicioRueda = wheelAngle;
+    const inicioBola = ballAngle;
+    // Queremos que el centro de la casilla ganadora termine exactamente debajo de la bola.
+    const destinoBase = anguloBolaFinal - centroGanador;
+    // Elegimos una posición final que alinea EXACTAMENTE el centro del sector ganador
+    // con la posición fija de la bola (arriba), sin depender de acumulaciones de ángulo.
+    const dosPi = Math.PI * 2;
+    const vueltasEnteras = 8;
+    const vueltasExtra = Math.floor(Math.random() * 2);
+    const finalRueda = destinoBase + (Math.floor((inicioRueda - destinoBase) / dosPi) + vueltasEnteras + vueltasExtra) * dosPi;
 
-    // Iniciar física de la rueda y de la bola
-    wheelSpeed = 0.12 + Math.random() * 0.05; // Velocidad angular rueda
-    ballSpeed = -0.28 - Math.random() * 0.06; // Velocidad angular bola (sentido opuesto)
-    ballRadius = 158; // Pista exterior
-
-    let duracionAnimacion = 4500; // ms
-    let tiempoInicio = performance.now();
+    const duracion = 5000;
+    const inicio = performance.now();
     let tickCounter = 0;
+    const easeOut = t => 1 - Math.pow(1 - t, 3);
 
-    function animar(ahora) {
-        let tiempoPasado = ahora - tiempoInicio;
-        let progreso = Math.min(tiempoPasado / duracionAnimacion, 1);
+    function frame(now) {
+        const raw = Math.min((now - inicio) / duracion, 1);
+        const t = easeOut(raw);
+        wheelAngle = inicioRueda + (finalRueda - inicioRueda) * t;
 
-        // Frenado físico suave
-        wheelSpeed *= 0.992;
-        wheelAngle += wheelSpeed;
-
-        if (progreso < 0.7) {
-            // Bola en pista exterior girando rápido
-            ballSpeed *= 0.985;
-            ballAngle += ballSpeed;
+        if (raw < 0.70) {
+            const ballT = raw / 0.70;
+            ballRadius = 158;
+            ballAngle = inicioBola - Math.PI * 2 * 6 * easeOut(ballT);
         } else {
-            // Bola cae en casillas y converge al número ganador
-            let factorFinal = (progreso - 0.7) / 0.3;
-            ballRadius = 158 - (factorFinal * 38); // Baja al radio de casillas
-
-            // Calcular el ángulo de la casilla ganadora en la rueda
-            const sectorAngle = (Math.PI * 2) / RUEDA_NUMEROS.length;
-            const targetBallAngle = wheelAngle + (winningIndex * sectorAngle) + (sectorAngle / 2);
-
-            // Suavizar interpolación hacia la casilla ganadora
-            ballAngle += (targetBallAngle - ballAngle) * 0.12;
+            const fallT = (raw - 0.70) / 0.30;
+            ballRadius = 158 - 38 * easeOut(Math.min(fallT, 1));
+            // Evita la vuelta rápida extra: la bola toma el camino angular más corto
+            // hasta la posición final, sin completar otra revolución accidental.
+            const angleAtFall = inicioBola - Math.PI * 2 * 6;
+            const deltaCorto = Math.atan2(
+                Math.sin(anguloBolaFinal - angleAtFall),
+                Math.cos(anguloBolaFinal - angleAtFall)
+            );
+            ballAngle = angleAtFall + deltaCorto * easeOut(Math.min(fallT, 1));
         }
 
-        // Sonido de rodaje / clicks de casillas
         tickCounter++;
-        if (tickCounter % 5 === 0 && progreso < 0.95) {
-            reproducirSonidoClick();
-        }
-
+        if (tickCounter % 5 === 0 && raw < 0.96) reproducirSonidoClick();
         dibujarRueda();
 
-        if (progreso < 1) {
-            requestAnimationFrame(animar);
+        if (raw < 1) {
+            requestAnimationFrame(frame);
         } else {
-            // Detener giro y evaluar
+            // Estado final exacto: centro de la casilla ganadora bajo la bola.
+            wheelAngle = finalRueda;
+            ballAngle = anguloBolaFinal;
+            ballRadius = 120;
+            dibujarRueda();
             estaGirando = false;
-            document.getElementById('btn-spin').disabled = false;
-            document.getElementById('btn-spin').classList.remove('opacity-50', 'cursor-not-allowed');
+            btn.disabled = false;
+            btn.classList.remove('opacity-50', 'cursor-not-allowed');
             procesarResultado(numeroGanador);
         }
     }
+    requestAnimationFrame(frame);
+}
 
-    requestAnimationFrame(animar);
+function nombreApuesta(tipo) {
+    const nombres = {
+        red: 'Rojo',
+        black: 'Negro',
+        even: 'Par',
+        odd: 'Impar',
+        low: '1–18',
+        high: '19–36',
+        'doz-1': '1ª Docena',
+        'doz-2': '2ª Docena',
+        'doz-3': '3ª Docena',
+        'col-1': 'Columna 1',
+        'col-2': 'Columna 2',
+        'col-3': 'Columna 3'
+    };
+    return tipo.startsWith('num-') ? `Número ${tipo.slice(4)}` : (nombres[tipo] || tipo);
+}
+
+function apuestaGanadora(betType, num, isRed) {
+    if (betType === `num-${num}`) return 36;
+    if (num === 0) return 0;
+    if (betType === 'red' && isRed) return 2;
+    if (betType === 'black' && !isRed) return 2;
+    if (betType === 'even' && num % 2 === 0) return 2;
+    if (betType === 'odd' && num % 2 !== 0) return 2;
+    if (betType === 'low' && num >= 1 && num <= 18) return 2;
+    if (betType === 'high' && num >= 19 && num <= 36) return 2;
+    if (betType === 'doz-1' && num >= 1 && num <= 12) return 3;
+    if (betType === 'doz-2' && num >= 13 && num <= 24) return 3;
+    if (betType === 'doz-3' && num >= 25 && num <= 36) return 3;
+    if (betType === 'col-1' && num % 3 === 1) return 3;
+    if (betType === 'col-2' && num % 3 === 2) return 3;
+    if (betType === 'col-3' && num % 3 === 0) return 3;
+    return 0;
 }
 
 function procesarResultado(num) {
@@ -235,60 +281,44 @@ function procesarResultado(num) {
     const colorClass = num === 0 ? 'text-emerald-400' : (isRed ? 'text-rose-500' : 'text-slate-300');
 
     document.getElementById('last-num-val').innerText = num;
-    document.getElementById('center-result').style.borderColor = num === 0 ? '#10b981' : (isRed ? '#ef4444' : '#64748b');
+    document.getElementById('center-result').style.borderColor =
+        num === 0 ? '#10b981' : (isRed ? '#ef4444' : '#64748b');
 
-    // Registrar en historial
     agregarHistorial(num, color);
 
-    // Evaluar ganancias
     let premioTotal = 0;
+    const acertadas = [];
 
     for (const [betType, monto] of Object.entries(apuestas)) {
         if (monto <= 0) continue;
+        const mult = apuestaGanadora(betType, num, isRed);
 
-        // Pleno (número exacto)
-        if (betType === `num-${num}`) {
-            premioTotal += monto * 36; // 35 a 1 + recuperar apuesta
+        if (mult > 0) {
+            const premio = monto * mult;
+            premioTotal += premio;
+            acertadas.push(`${nombreApuesta(betType)} (${monto} → ${premio})`);
+
+            const cell = document.querySelector(`[data-bet="${betType}"]`);
+            if (cell) cell.classList.add('winning-bet');
         }
+    }
 
-        // Color
-        if (num !== 0) {
-            if (betType === 'red' && isRed) premioTotal += monto * 2;
-            if (betType === 'black' && !isRed) premioTotal += monto * 2;
-
-            // Par / Impar
-            if (betType === 'even' && num % 2 === 0) premioTotal += monto * 2;
-            if (betType === 'odd' && num % 2 !== 0) premioTotal += monto * 2;
-
-            // 1-18 / 19-36
-            if (betType === 'low' && num >= 1 && num <= 18) premioTotal += monto * 2;
-            if (betType === 'high' && num >= 19 && num <= 36) premioTotal += monto * 2;
-
-            // Docenas
-            if (betType === 'doz-1' && num >= 1 && num <= 12) premioTotal += monto * 3;
-            if (betType === 'doz-2' && num >= 13 && num <= 24) premioTotal += monto * 3;
-            if (betType === 'doz-3' && num >= 25 && num <= 36) premioTotal += monto * 3;
-
-            // Columnas
-            // Col 1: 1, 4, 7, 10, 13, 16, 19, 22, 25, 28, 31, 34 -> (num % 3 === 1)
-            // Col 2: 2, 5, 8, 11, 14, 17, 20, 23, 26, 29, 32, 35 -> (num % 3 === 2)
-            // Col 3: 3, 6, 9, 12, 15, 18, 21, 24, 27, 30, 33, 36 -> (num % 3 === 0)
-            if (betType === 'col-1' && num % 3 === 1) premioTotal += monto * 3;
-            if (betType === 'col-2' && num % 3 === 2) premioTotal += monto * 3;
-            if (betType === 'col-3' && num % 3 === 0) premioTotal += monto * 3;
-        }
+    const resultBox = document.getElementById('result-bets');
+    if (resultBox) {
+        resultBox.innerHTML = acertadas.length
+            ? `<strong>✅ Apuestas acertadas:</strong><br>${acertadas.map(x => `• ${x}`).join('<br>')}`
+            : '<strong>❌ Apuestas acertadas:</strong> ninguna';
     }
 
     if (premioTotal > 0) {
         fichas += premioTotal;
         guardarSaldo(fichas);
         reproducirSonidoVictoria();
-        mostrarEstado(`🎉 ¡Salió el ${num} (${color.toUpperCase()})! ¡Ganaste $${premioTotal}!`, "text-amber-300");
+        mostrarEstado(`🎉 ¡Salió el ${num} (${color.toUpperCase()})! Cobraste $${premioTotal}.`, "text-amber-300");
     } else {
-        mostrarEstado(`Cayó en el ${num} (${color.toUpperCase()}). No hubo suerte esta vez.`, colorClass);
+        mostrarEstado(`Cayó en el ${num} (${color.toUpperCase()}). No hubo apuestas ganadoras.`, colorClass);
     }
 
-    // Reiniciar tapete para la siguiente ronda
     apuestas = {};
     totalApostado = 0;
     document.getElementById('total-bet').innerText = '$0';
@@ -424,6 +454,11 @@ function dibujarRueda() {
     ctx.fill();
     ctx.shadowColor = 'transparent';
 }
+
+window.addEventListener('casino-balance-changed', (e) => {
+    fichas = Number(e.detail.balance);
+    guardarSaldo(fichas);
+});
 
 // Arranque
 document.addEventListener('DOMContentLoaded', () => {

@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tragamonedas Casino - Casino Arcade</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="../prestamos.css">
+    <link rel="stylesheet" href="../casino-ui.css">
+    <link rel="stylesheet" href="tragamonedas.css">
+    <script src="../prestamos.js"></script>
+    <script src="../casino-ui.js" defer></script>
+    <script src="tragamonedas.js" defer></script>
+</head>
+<body class="min-h-screen bg-slate-950 text-slate-100 font-sans flex flex-col items-center justify-between p-3 sm:p-6 select-none">
+
+<!-- Header Unificado Estilo Blackjack -->
+<header class="w-full max-w-6xl flex items-center justify-between bg-slate-900/80 backdrop-blur border border-slate-800 rounded-2xl px-5 py-3 shadow-lg">
+    <a href="../../../index.html" class="inline-flex items-center gap-2 text-emerald-400 hover:text-emerald-300 font-semibold text-sm sm:text-base transition-colors">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
+        </svg>
+        Volver al Menú
+    </a>
+    <h1 class="text-xl sm:text-2xl font-black bg-gradient-to-r from-amber-400 to-emerald-400 bg-clip-text text-transparent">
+        TRAGAMONEDAS VEGAS 🎰
+    </h1>
+    <div class="flex items-center gap-2 bg-slate-800/80 px-3 py-1.5 rounded-xl border border-slate-700">
+        <span class="text-amber-400 font-bold">💰 $</span>
+        <span id="fichas-count" class="font-bold text-amber-300 text-lg">1000</span>
+    </div>
+</header>
+
+<!-- Contenedor Principal: Gabinete Tragamonedas + Reglas a la Derecha -->
+<div class="casino-layout w-full max-w-6xl flex flex-col lg:flex-row" gap-6 my-4 flex-1 items-start justify-center">
+
+<!-- Gabinete Casino Tragamonedas -->
+<main class="flex-1 w-full bg-slate-900/60 border border-slate-800 rounded-3xl p-4 sm:p-8 shadow-2xl flex flex-col items-center gap-6">
+
+    <!-- Máquina Tragamonedas Estilo Casino de Lujo -->
+    <div class="slot-cabinet w-full max-w-xl rounded-3xl p-6 sm:p-8 flex flex-col items-center gap-6 relative shadow-2xl">
+
+        <!-- Luces LED Superiores de Jackpot -->
+        <div class="marquee-lights flex gap-3 items-center justify-center">
+            <span class="light-bulb"></span>
+            <span class="light-bulb"></span>
+            <span class="light-bulb"></span>
+            <span class="text-xs sm:text-sm font-black tracking-widest text-amber-300 uppercase px-4 py-1 rounded-full bg-black/60 border border-amber-500/50">
+                    ★ JACKPOT 50x ★
+                </span>
+            <span class="light-bulb"></span>
+            <span class="light-bulb"></span>
+            <span class="light-bulb"></span>
+        </div>
+
+        <!-- Ventana de los 3 Rodillos con Bisel Dorado -->
+        <div class="reels-window-frame relative w-full p-4 rounded-2xl">
+            <!-- Línea de pago central -->
+            <div class="payline-indicator"></div>
+
+            <!-- Contenedor de los 3 Rodillos -->
+            <div class="reels-container flex justify-between items-center gap-3 sm:gap-5 w-full">
+
+                <!-- Rodillo 1 -->
+                <div class="reel-box flex-1 h-36 sm:h-44 rounded-xl overflow-hidden relative">
+                    <div class="reel-strip" id="reel-1">
+                        <div class="symbol">7️⃣</div>
+                    </div>
+                </div>
+
+                <!-- Rodillo 2 -->
+                <div class="reel-box flex-1 h-36 sm:h-44 rounded-xl overflow-hidden relative">
+                    <div class="reel-strip" id="reel-2">
+                        <div class="symbol">💎</div>
+                    </div>
+                </div>
+
+                <!-- Rodillo 3 -->
+                <div class="reel-box flex-1 h-36 sm:h-44 rounded-xl overflow-hidden relative">
+                    <div class="reel-strip" id="reel-3">
+                        <div class="symbol">👑</div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+        <!-- Pantalla LED de Estado y Ganancia -->
+        <div id="slot-display" class="w-full bg-black/90 border border-amber-500/40 rounded-xl p-3 text-center min-h-[48px] flex items-center justify-center font-bold text-base sm:text-lg text-amber-300 shadow-inner">
+            ¡Haz tu apuesta y presiona GIRAR para jugar!
+        </div>
+
+        <!-- Botón Grande de Giro -->
+        <button id="btn-spin" onclick="girarTragamonedas()" class="btn-spin-luxury w-full max-w-md py-4 px-8 rounded-2xl font-black text-xl text-slate-950 uppercase tracking-wider shadow-2xl transition flex items-center justify-center gap-3">
+            <span>¡GIRAR RODILLOS! 🎰</span>
+        </button>
+
+    </div>
+
+    <!-- Barra Inferior de Apuesta y Fichas Rápidas -->
+    <div class="w-full max-w-xl bg-slate-950/70 border border-slate-800 rounded-2xl p-4 flex flex-col sm:flex-row items-center justify-between gap-4">
+        <div class="flex items-center gap-3">
+            <span class="text-xs uppercase tracking-wider text-slate-400 font-semibold">Apuesta:</span>
+            <div class="relative flex items-center">
+                <span class="absolute left-3 text-amber-400 font-bold">$</span>
+                <input type="number" id="bet-input" min="10" step="10" value="50"
+                       class="bg-slate-900 text-amber-300 font-bold pl-7 pr-3 py-2 rounded-xl border border-slate-700 w-24 focus:outline-none focus:border-emerald-500 text-center">
+            </div>
+        </div>
+
+        <!-- Botones Rápidos de Fichas -->
+        <div class="flex items-center gap-2">
+            <button type="button" onclick="fijarApuesta(10)" class="chip btn-chip-10">$10</button>
+            <button type="button" onclick="fijarApuesta(25)" class="chip btn-chip-25">$25</button>
+            <button type="button" onclick="fijarApuesta(50)" class="chip btn-chip-50">$50</button>
+            <button type="button" onclick="fijarApuesta(100)" class="chip btn-chip-100">$100</button>
+        </div>
+    </div>
+
+</main>
+</div>
+
+</body>
+</html>

@@ -264,15 +264,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
         actualizarFichasUI();
         actualizarBotonesUI();
-
-        // Si se quedó sin fichas
-        if (fichas <= 0) {
-            setTimeout(() => {
-                mostrarMensaje('¡Te quedaste sin fichas! Te regalamos $500 para continuar.', 'bg-purple-600 text-white');
-                fichas = 500;
-                actualizarFichasUI();
-            }, 2000);
-        }
     }
 
     /* ------------------------------------------
@@ -357,6 +348,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
     btnClearBet.addEventListener('click', () => {
         if (!juegoEnProgreso) betInputEl.value = 10;
+    });
+
+    window.addEventListener('casino-balance-changed', (e) => {
+        fichas = Number(e.detail.balance);
+        actualizarFichasUI();
+        actualizarBotonesUI();
     });
 
     // Inicializar interfaz vacía
