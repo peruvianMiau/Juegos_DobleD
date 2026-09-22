@@ -1,118 +1,41 @@
-/* Estilos para Texas Hold'em con estética Blackjack */
+/* Mesa y cartas */
+.poker-table{background:radial-gradient(ellipse at center,#0f5132 0%,#062b1b 75%,#021a10 100%);border:10px solid #2d1808;box-shadow:inset 0 0 80px rgba(0,0,0,.8),0 20px 40px rgba(0,0,0,.6);min-height:620px;overflow:hidden}
+.card{width:58px;height:84px;background:#fff;border-radius:8px;box-shadow:0 6px 14px rgba(0,0,0,.4);display:flex;flex-direction:column;justify-content:space-between;padding:5px;font-weight:bold;position:relative;animation:dealCard .25s ease forwards}
+@media(min-width:640px){.card{width:70px;height:102px;padding:6px}.card-value{font-size:1.05rem!important}.card-suit-small{font-size:.85rem!important}.card-center-suit{font-size:1.9rem!important}}
+@keyframes dealCard{from{opacity:0;transform:translateY(-20px) scale(.8)}to{opacity:1;transform:none}}
+.card.back{background:repeating-linear-gradient(45deg,#b91c1c,#b91c1c 8px,#991b1b 8px,#991b1b 16px);border:2px solid #fff}
+.card.red{color:#dc2626}.card.black{color:#1e293b}
+.card-corner{display:flex;flex-direction:column;align-items:center;line-height:1}.card-value{font-size:.85rem}.card-suit-small{font-size:.7rem}.card-center-suit{font-size:1.45rem;align-self:center}
+.card-placeholder{width:58px;height:84px;border:1px dashed rgba(255,255,255,.12);border-radius:8px}@media(min-width:640px){.card-placeholder{width:70px;height:102px}}
+.players-area{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;width:100%;z-index:2}
+@media(min-width:768px){.players-area{grid-template-columns:repeat(4,minmax(0,1fr))}}
+.player-box{background:rgba(2,6,23,.58);border:1px solid rgba(148,163,184,.18);border-radius:14px;padding:9px;display:flex;flex-direction:column;align-items:center;gap:5px;min-width:0}
+.player-box.human-player{border-color:rgba(52,211,153,.55);box-shadow:0 0 15px rgba(16,185,129,.08)}
+.player-box.folded-player{opacity:.72;border-color:rgba(244,63,94,.4)}
+.player-head{display:flex;flex-direction:column;align-items:center;gap:2px;line-height:1.1;text-align:center}.player-name{font-weight:800;font-size:.78rem;color:#e2e8f0}.player-meta{font-size:.65rem;color:#94a3b8}
+.player-chips{font-size:.72rem;color:#fbbf24;font-weight:800}.cards-holder{display:flex;gap:5px;justify-content:center}.status-pill{font-size:.65rem;padding:3px 8px;border-radius:999px;background:rgba(15,23,42,.9);border:1px solid #334155;color:#cbd5e1;font-weight:700}.contribution{color:#64748b;font-size:.6rem}
+.dealer-msg{padding:8px 14px;border-radius:12px}.dealer-msg.normal{color:#fcd34d}.dealer-msg.error{color:#fda4af;background:rgba(127,29,29,.2)}.dealer-msg.win{color:#6ee7b7;background:rgba(6,78,59,.25)}
+.btn-action{transition:all .2s}.btn-action:not(:disabled):hover{transform:translateY(-2px);box-shadow:0 6px 15px rgba(0,0,0,.4)}
+.setup-modal{position:fixed;inset:0;background:rgba(2,6,23,.82);backdrop-filter:blur(7px);z-index:100;display:flex;align-items:center;justify-content:center;padding:16px}.setup-modal.hidden{display:none}
+.setup-card{width:min(680px,100%);max-height:90vh;overflow:auto;background:#0f172a;border:1px solid #334155;border-radius:22px;padding:22px;box-shadow:0 25px 70px rgba(0,0,0,.5);display:flex;flex-direction:column;gap:18px}
+.setup-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}.setup-grid label{font-size:.8rem;color:#94a3b8;display:flex;flex-direction:column;gap:6px}
+.setup-grid input,.setup-grid select{background:#020617;border:1px solid #334155;border-radius:9px;color:#f8fafc;padding:9px}
+.bot-options{display:grid;grid-template-columns:repeat(2,1fr);gap:7px;max-height:260px;overflow:auto}.bot-option{display:flex;align-items:center;gap:8px;background:#020617;border:1px solid #1e293b;border-radius:10px;padding:8px;cursor:pointer}.bot-option span{display:flex;flex-direction:column}.bot-option strong{font-size:.78rem}.bot-option small{font-size:.65rem;color:#64748b}
+@media(max-width:520px){.setup-grid,.bot-options{grid-template-columns:1fr}.poker-table{padding:10px}.players-area{grid-template-columns:1fr 1fr}.card{width:48px;height:70px}.card-center-suit{font-size:1.2rem}}
 
-.poker-table {
-    background: radial-gradient(ellipse at center, #0f5132 0%, #062b1b 75%, #021a10 100%);
-    border: 10px solid #2d1808;
-    box-shadow: inset 0 0 80px rgba(0, 0, 0, 0.8), 0 20px 40px rgba(0, 0, 0, 0.6);
-    position: relative;
-    overflow: hidden;
+@media(min-width:768px){
+    .poker-table{min-height:700px}
+    .players-area{position:relative;display:block;min-height:330px;flex:0 0 330px}
+    .players-area .player-box{position:absolute;width:18%;max-width:165px;min-width:125px;z-index:2}
+    .players-area .player-seat-0{left:2%;top:8px}.players-area .player-seat-1{right:2%;top:8px}
+    .players-area .player-seat-2{left:2%;bottom:8px}.players-area .player-seat-3{right:2%;bottom:8px}
+    .players-area .player-seat-4{left:30%;top:8px}.players-area .player-seat-5{right:30%;top:8px}
+    .players-area .player-seat-6{left:30%;bottom:8px}.players-area .player-seat-7{right:30%;bottom:8px}
+    .player-box .cards-holder{gap:0;padding-left:10px;padding-right:10px}
+    .player-box .cards-holder .card + .card{margin-left:-18px}
+    .player-box .cards-holder .card{flex:0 0 auto;width:48px;height:70px;padding:4px}.player-box .card-center-suit{font-size:1.15rem}.player-box .card-value{font-size:.72rem}.player-box .card-suit-small{font-size:.58rem}
 }
+@media(max-width:767px){.players-area{grid-template-columns:repeat(2,minmax(0,1fr));}.player-box .cards-holder{gap:0}.player-box .cards-holder .card + .card{margin-left:-8px}}
 
-/* Marca de Agua en la mesa */
-.poker-table::before {
-    content: "♣️♠️ POKER ♥️♦️";
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    font-size: 3rem;
-    font-weight: 900;
-    color: rgba(255, 255, 255, 0.03);
-    letter-spacing: 0.2em;
-    pointer-events: none;
-    white-space: nowrap;
-}
-
-/* Diseño de Cartas Idéntico al Blackjack */
-.card {
-    width: 65px;
-    height: 95px;
-    background-color: #ffffff;
-    border-radius: 8px;
-    box-shadow: 0 6px 14px rgba(0, 0, 0, 0.4), inset 0 0 0 1px rgba(0, 0, 0, 0.1);
-    display: flex;
-    flex-direction: column;
-    justify-content: space-between;
-    padding: 5px;
-    font-weight: bold;
-    position: relative;
-    user-select: none;
-    animation: dealCard 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
-}
-
-@media (min-width: 640px) {
-    .card {
-        width: 78px;
-        height: 115px;
-        padding: 6px;
-        border-radius: 10px;
-    }
-}
-
-@keyframes dealCard {
-    0% {
-        opacity: 0;
-        transform: translateY(-40px) scale(0.7);
-    }
-    100% {
-        opacity: 1;
-        transform: translateY(0) scale(1);
-    }
-}
-
-.card.back {
-    background: repeating-linear-gradient(
-        45deg,
-        #b91c1c,
-        #b91c1c 8px,
-        #991b1b 8px,
-        #991b1b 16px
-    );
-    border: 2px solid #ffffff;
-}
-
-.card.red { color: #dc2626; }
-.card.black { color: #1e293b; }
-
-.card-corner {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    line-height: 1;
-}
-
-.card-value { font-size: 0.9rem; }
-.card-suit-small { font-size: 0.75rem; }
-
-@media (min-width: 640px) {
-    .card-value { font-size: 1.1rem; }
-    .card-suit-small { font-size: 0.9rem; }
-}
-
-.card-center-suit {
-    font-size: 1.6rem;
-    align-self: center;
-}
-
-@media (min-width: 640px) {
-    .card-center-suit { font-size: 2.1rem; }
-}
-
-.card.highlight {
-    outline: 3px solid #f59e0b;
-    box-shadow: 0 0 15px #f59e0b;
-}
-
-/* Transiciones para botones de acción */
-.btn-action {
-    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.btn-action:not(:disabled):hover {
-    transform: translateY(-2px);
-    box-shadow: 0 6px 15px rgba(0, 0, 0, 0.4);
-}
-
-.btn-action:not(:disabled):active {
-    transform: translateY(0);
-}
+.raise-control{display:flex;align-items:center;gap:6px;background:rgba(15,23,42,.8);border:1px solid rgba(245,158,11,.35);padding:5px 8px;border-radius:10px}.raise-control label{font-size:.7rem;color:#cbd5e1;font-weight:700}.raise-control input{width:72px;background:#020617;color:#fbbf24;border:1px solid #475569;border-radius:7px;padding:5px;text-align:center;font-weight:800}.raise-control input:disabled{opacity:.4}
+@media(max-width:767px){.players-area{min-height:360px}.players-area .player-box{width:30%;min-width:105px}.players-area .player-seat-0{left:2%}.players-area .player-seat-1{right:2%}.players-area .player-seat-2{left:2%}.players-area .player-seat-3{right:2%}.players-area .player-seat-4{left:35%}.players-area .player-seat-5{right:35%}.players-area .player-seat-6{left:35%}.players-area .player-seat-7{right:35%}.player-box .cards-holder .card + .card{margin-left:-12px}}

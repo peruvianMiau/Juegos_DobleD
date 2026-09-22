@@ -1,562 +1,458 @@
-// Texas Hold'em Poker Completo: 2 cartas por jugador, 5 comunitarias, bots con IA y evaluador de 7 a 5 cartas
-
+/* Texas Hold'em - hasta 8 jugadores, 12 bots, dificultad + experiencia y apuestas acumulativas */
 const PALOS = [
-    { simbolo: '♠', color: 'black' },
-    { simbolo: '♣', color: 'black' },
-    { simbolo: '♥', color: 'red' },
-    { simbolo: '♦', color: 'red' }
+    { simbolo: '♠', color: 'black' }, { simbolo: '♣', color: 'black' },
+    { simbolo: '♥', color: 'red' }, { simbolo: '♦', color: 'red' }
 ];
+const NOMBRES = {11:'J',12:'Q',13:'K',14:'A'};
+const BOT_DEFS = [
+    ['Carlos','Fácil',0.28], ['Elena','Fácil',0.34], ['Mateo','Normal',0.43],
+    ['Lucía','Normal',0.49], ['Diego','Normal',0.55], ['Sofía','Difícil',0.61],
+    ['Andrés','Difícil',0.67], ['Valentina','Difícil',0.72], ['Bruno','Experto',0.77],
+    ['Camila','Experto',0.82], ['Nicolás','Experto',0.87], ['Renata','Maestra',0.92]
+];
+const STATS_KEY = 'texas_bot_stats';
 
-const NOMBRES = { 11: 'J', 12: 'Q', 13: 'K', 14: 'A' };
-
-// Gestión de saldo del casino
-function obtenerSaldo() {
-    let balance = localStorage.getItem('casino_balance');
-    if (balance === null || isNaN(parseInt(balance))) {
-        balance = 1000;
-        localStorage.setItem('casino_balance', balance);
-    }
-    return parseInt(balance);
-}
-
-function guardarSaldo(nuevoSaldo) {
-    localStorage.setItem('casino_balance', nuevoSaldo);
-    const balanceEl = document.getElementById('fichas-count');
-    if (balanceEl) balanceEl.innerText = nuevoSaldo;
-}
-
-let fichasJugador = obtenerSaldo();
-let fichasBot1 = 1000;
-let fichasBot2 = 1000;
-
+let jugadores = [];
 let baraja = [];
-let cartasJugador = [];
-let cartasBot1 = [];
-let cartasBot2 = [];
-let cartasComunitarias = [];
-
+let comunitarias = [];
 let bote = 0;
-let apuestaActualRonda = 0;
-let apuestaJugadorRonda = 0;
-let apuestaBot1Ronda = 0;
-let apuestaBot2Ronda = 0;
+let fase = 'espera';
+let apuestaBase = 20;
+let apuestaActual = 20;
+let manoActiva = false;
+let procesandoBots = false;
 
-let jugadorActivo = true;
-let bot1Activo = true;
-let bot2Activo = true;
+function cargarStats() {
+    try { return JSON.parse(localStorage.getItem(STATS_KEY) || '{}'); } catch (_) { return {}; }
+}
+function guardarStats(stats) { localStorage.setItem(STATS_KEY, JSON.stringify(stats)); }
+function experienciaBot(nombre) { return Number(cargarStats()[nombre] || 0); }
 
-// Fases: 'preflop', 'flop', 'turn', 'river', 'showdown'
-let faseJuego = 'espera';
-
-// Baraja y Cartas
 function crearBaraja() {
-    let mazo = [];
-    for (let p of PALOS) {
-        for (let v = 2; v <= 14; v++) {
-            mazo.push({
-                valor: v,
-                nombre: NOMBRES[v] || v.toString(),
-                palo: p.simbolo,
-                color: p.color
-            });
+    const deck = [];
+    for (const p of PALOS) for (let v=2; v<=14; v++)
+        deck.push({valor:v, nombre:NOMBRES[v] || String(v), palo:p.simbolo, color:p.color});
+    for (let i=deck.length-1;i>0;i--) {
+        const j=Math.floor(Math.random()*(i+1));
+        [deck[i],deck[j]]=[deck[j],deck[i]];
+    }
+    return deck;
+}
+function renderizarCarta(carta, oculta=false) {
+    const el=document.createElement('div');
+    el.className=`card ${oculta?'back':carta.color}`;
+    if (!oculta) el.innerHTML=`<div class="card-corner"><span class="card-value">${carta.nombre}</span><span class="card-suit-small">${carta.palo}</span></div><div class="card-center-suit">${carta.palo}</div><div class="card-corner rotate-180"><span class="card-value">${carta.nombre}</span><span class="card-suit-small">${carta.palo}</span></div>`;
+    return el;
+}
+function nuevoJugador(nombre, bot, dificultad='Jugador', skill=1) {
+    return {
+        nombre, bot, dificultad, skill, games: bot ? experienciaBot(nombre) : 0,
+        chips: bot ? 1000 : Number(localStorage.getItem('casino_balance') || 1000),
+        totalContribution: 0,
+        cards: [], contribution: 0, folded:false, allIn:false, status:'Esperando',
+        lastAction:''
+    };
+}
+function seleccionarBots() {
+    const total = Number(document.getElementById('player-count').value);
+    const modo = document.querySelector('input[name="opponents"]:checked')?.value || 'random';
+    const checks=[...document.querySelectorAll('.bot-check:checked')].map(x=>x.value);
+    let defs;
+    if (modo==='selected') {
+        defs=BOT_DEFS.filter(d=>checks.includes(d[0])).slice(0,total-1);
+        if (defs.length < total-1) {
+            mostrarSetupError(`Selecciona exactamente ${total-1} oponentes.`);
+            return null;
         }
+    } else {
+        defs=[...BOT_DEFS].sort(()=>Math.random()-0.5).slice(0,total-1);
     }
-    // Barajar Fisher-Yates
-    for (let i = mazo.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
-        [mazo[i], mazo[j]] = [mazo[j], mazo[i]];
+    const bet=Math.floor(Number(document.getElementById('base-bet').value));
+    if (!Number.isFinite(bet) || bet<1 || bet>500) {
+        mostrarSetupError('La apuesta base debe estar entre $1 y $500.');
+        return null;
     }
-    return mazo;
+    apuestaBase=bet;
+    return defs;
 }
-
-function renderizarCarta(carta, oculta = false) {
-    const cardDiv = document.createElement('div');
-    if (oculta) {
-        cardDiv.className = 'card back';
-        return cardDiv;
-    }
-    cardDiv.className = `card ${carta.color}`;
-    cardDiv.innerHTML = `
-        <div class="card-corner top-left">
-            <span class="card-value">${carta.nombre}</span>
-            <span class="card-suit-small">${carta.palo}</span>
-        </div>
-        <div class="card-center-suit">${carta.palo}</div>
-        <div class="card-corner bottom-right rotate-180">
-            <span class="card-value">${carta.nombre}</span>
-            <span class="card-suit-small">${carta.palo}</span>
-        </div>
-    `;
-    return cardDiv;
-}
-
-// Iniciar Nueva Mano
 function iniciarNuevaMano() {
-    if (fichasJugador < 20) {
-        fichasJugador = 500;
-        guardarSaldo(fichasJugador);
-        actualizarMensaje("¡Te quedaste sin fichas! Te regalamos $500 para continuar jugando.", "text-purple-400 font-bold");
+    if (manoActiva) return;
+    abrirConfiguracion();
+}
+function confirmarConfiguracion() {
+    const defs=seleccionarBots();
+    if (!defs) return;
+    cerrarConfiguracion();
+    iniciarManoConBots(defs);
+}
+function iniciarManoConBots(defs) {
+    const balance=Number(localStorage.getItem('casino_balance') || 1000);
+    jugadores=[nuevoJugador('Tú',false,'Jugador',1)];
+    defs.forEach(d=>jugadores.push(nuevoJugador(d[0],true,d[1],d[2])));
+    jugadores[0].chips=balance;
+
+    if (jugadores[0].chips < apuestaBase) {
+        actualizarMensaje(`Saldo insuficiente. Necesitas al menos $${apuestaBase} para iniciar.`, 'error');
+        return;
     }
-
-    baraja = crearBaraja();
-    cartasComunitarias = [];
-    bote = 0;
-    apuestaActualRonda = 20;
-
-    // Ciegas obligatorias de $20
-    fichasJugador -= 20;
-    guardarSaldo(fichasJugador);
-    apuestaJugadorRonda = 20;
-
-    fichasBot1 = Math.max(0, fichasBot1 - 20);
-    apuestaBot1Ronda = 20;
-
-    fichasBot2 = Math.max(0, fichasBot2 - 20);
-    apuestaBot2Ronda = 20;
-
-    bote = 60;
-    actualizarMarcadores();
-
-    jugadorActivo = true;
-    bot1Activo = true;
-    bot2Activo = true;
-
-    document.getElementById('bot1-status').innerText = 'Activo';
-    document.getElementById('bot2-status').innerText = 'Activo';
-
-    // Repartir 2 cartas a cada uno
-    cartasJugador = [baraja.pop(), baraja.pop()];
-    cartasBot1 = [baraja.pop(), baraja.pop()];
-    cartasBot2 = [baraja.pop(), baraja.pop()];
-
+    baraja=crearBaraja();
+    comunitarias=[]; bote=0; fase='preflop'; manoActiva=true; apuestaActual=apuestaBase;
+    document.getElementById('round-winner')?.classList.add('hidden');
+    jugadores.forEach(p=>{p.cards=[baraja.pop(),baraja.pop()];p.contribution=0;p.totalContribution=0;p.folded=false;p.allIn=false;p.status='Activo';p.lastAction='';});
     renderizarMesa();
-
-    faseJuego = 'preflop';
-    document.getElementById('game-stage').innerText = 'Pre-Flop';
-    document.getElementById('btn-start').disabled = true;
-
-    actualizarMensaje("Ronda Pre-Flop. Tus 2 cartas han sido repartidas. ¿Qué decides?", "text-emerald-300");
-    evaluarManoJugadorActual();
-    habilitarControlesJugador(true);
-}
-
-function renderizarMesa(revelarBots = false) {
-    // Jugador
-    const playerBox = document.getElementById('player-cards');
-    playerBox.innerHTML = '';
-    cartasJugador.forEach(c => playerBox.appendChild(renderizarCarta(c)));
-
-    // Bot 1
-    const b1Box = document.getElementById('bot1-cards');
-    b1Box.innerHTML = '';
-    cartasBot1.forEach(c => b1Box.appendChild(renderizarCarta(c, !revelarBots)));
-
-    // Bot 2
-    const b2Box = document.getElementById('bot2-cards');
-    b2Box.innerHTML = '';
-    cartasBot2.forEach(c => b2Box.appendChild(renderizarCarta(c, !revelarBots)));
-
-    // Comunitarias
-    const commBox = document.getElementById('community-cards');
-    commBox.innerHTML = '';
-    cartasComunitarias.forEach(c => commBox.appendChild(renderizarCarta(c)));
-
-    // Rellenar espacios vacíos de comunitarias con dorsos
-    for (let i = cartasComunitarias.length; i < 5; i++) {
-        const slot = document.createElement('div');
-        slot.className = 'card back opacity-30';
-        commBox.appendChild(slot);
-    }
-}
-
-function actualizarMarcadores() {
-    document.getElementById('pot-amount').innerText = `$${bote}`;
-    document.getElementById('bot1-chips').innerText = fichasBot1;
-    document.getElementById('bot2-chips').innerText = fichasBot2;
-    guardarSaldo(fichasJugador);
-}
-
-function habilitarControlesJugador(habilitar) {
-    document.getElementById('btn-fold').disabled = !habilitar;
-    document.getElementById('btn-check-call').disabled = !habilitar;
-    document.getElementById('btn-raise').disabled = !habilitar;
-    document.getElementById('btn-allin').disabled = !habilitar;
-
-    if (habilitar) {
-        const diff = apuestaActualRonda - apuestaJugadorRonda;
-        document.getElementById('btn-check-call').innerText = diff > 0 ? `Igualar $${diff} (Call)` : "Pasar (Check)";
-    }
-}
-
-// Acciones del Jugador
-function accionJugador(tipo) {
-    if (faseJuego === 'espera' || faseJuego === 'showdown') return;
-
-    if (tipo === 'fold') {
-        jugadorActivo = false;
-        actualizarMensaje("Te has retirado de la mano.", "text-slate-400");
-        document.getElementById('player-hand-desc').innerText = "Retirado";
-        habilitarControlesJugador(false);
-        ejecutarRondaBots();
-        return;
-    }
-
-    if (tipo === 'call') {
-        const diff = Math.max(0, apuestaActualRonda - apuestaJugadorRonda);
-        if (diff > 0) {
-            let pago = Math.min(fichasJugador, diff);
-            fichasJugador -= pago;
-            bote += pago;
-            apuestaJugadorRonda += pago;
-            actualizarMensaje(`Has igualado $${pago}.`, "text-cyan-300");
-        } else {
-            actualizarMensaje("Has pasado (Check).", "text-cyan-300");
-        }
-    } else if (tipo === 'raise') {
-        const aumento = 40;
-        const totalReq = (apuestaActualRonda - apuestaJugadorRonda) + aumento;
-        let pago = Math.min(fichasJugador, totalReq);
-        fichasJugador -= pago;
-        bote += pago;
-        apuestaJugadorRonda += pago;
-        apuestaActualRonda = apuestaJugadorRonda;
-        actualizarMensaje(`¡Has subido la apuesta a $${apuestaActualRonda}!`, "text-amber-300");
-    } else if (tipo === 'allin') {
-        let pago = fichasJugador;
-        fichasJugador = 0;
-        bote += pago;
-        apuestaJugadorRonda += pago;
-        if (apuestaJugadorRonda > apuestaActualRonda) {
-            apuestaActualRonda = apuestaJugadorRonda;
-        }
-        actualizarMensaje(`🔥 ¡Has ido ALL-IN con $${pago}!`, "text-purple-400");
-    }
-
+    document.getElementById('btn-start').disabled=true;
+    document.getElementById('btn-start').textContent='Mano en curso';
     actualizarMarcadores();
-    habilitarControlesJugador(false);
+    actualizarMensaje(`Pre-Flop. Apuesta mínima: $${apuestaActual}. Los bots juegan según dificultad y experiencia.`, 'normal');
 
-    // Turno de la IA
-    setTimeout(ejecutarRondaBots, 700);
+    // Los bots actúan primero; el jugador responde a la apuesta máxima.
+    setTimeout(() => rondaBotsYJugador(), 500);
 }
+function apostar(p, amount) {
+    const disponible=Math.max(0,p.chips);
+    const pago=Math.min(amount,disponible);
+    if (pago<=0) { p.allIn=true; return 0; }
+    p.chips-=pago; p.contribution+=pago; p.totalContribution+=pago; bote+=pago;
+    if (p.chips===0) p.allIn=true;
+    return pago;
+}
+function maxContrib() { return jugadores.filter(p=>!p.folded).reduce((m,p)=>Math.max(m,p.contribution),0); }
+function activos() { return jugadores.filter(p=>!p.folded); }
 
-// Inteligencia Artificial de los Bots
-function turnoBot(botNombre, cartasBot, fichasBot, apuestaBot) {
-    const diff = apuestaActualRonda - apuestaBot;
-    const sieteCartas = [...cartasBot, ...cartasComunitarias];
-    const evaluacion = cartasComunitarias.length >= 3 
-        ? evaluarMejorMano(sieteCartas) 
-        : null;
+function fuerzaMano(p) {
+    const vals=p.cards.map(c=>c.valor).sort((a,b)=>b-a);
+    if (!vals.length) return 0;
+    if (fase==='preflop') {
+        let pair=vals[0]===vals[1];
+        let high=vals[0];
+        return Math.min(0.95,(pair?0.55:0.18)+(high/14)*0.28+(Math.abs(vals[0]-vals[1])<=2?0.08:0));
+    }
+    const ev=evaluarMejorMano([...p.cards,...comunitarias]);
+    return Math.min(0.98,(ev.score[0]/9)*0.72 + (ev.score[1]||0)/14*0.2 + 0.08);
+}
+function turnoBot(p) {
+    if (p.folded || p.allIn) return false;
+    const stats=p.games;
+    const skill=Math.min(0.98,p.skill + Math.log1p(stats)/80);
+    const fuerza=fuerzaMano(p);
+    const actual=maxContrib();
+    const porPagar=Math.max(0,actual-p.contribution);
+    const ruido=(Math.random()-0.5)*0.18;
+    const decision=fuerza + ruido + (skill-0.5)*0.22;
 
-    // Fuerza preflop simple basada en parejas o cartas altas
-    let fuerzaPreflop = (cartasBot[0].valor === cartasBot[1].valor) ? 8 : (cartasBot[0].valor >= 11 || cartasBot[1].valor >= 11 ? 5 : 2);
-
-    let decision = 'call'; // pasar / igualar
-
-    if (cartasComunitarias.length < 3) {
-        // Pre-flop
-        if (diff > 40 && fuerzaPreflop < 5) decision = 'fold';
-        else if (fuerzaPreflop >= 8 && Math.random() > 0.4) decision = 'raise';
-        else decision = 'call';
-    } else {
-        // Post-flop (evaluación completa de mano)
-        const tier = evaluacion.score[0];
-        if (tier >= 3) { // Trío o mejor
-            decision = Math.random() > 0.3 ? 'raise' : 'call';
-        } else if (tier >= 1) { // Pareja o doble pareja
-            decision = diff > 50 ? (Math.random() > 0.4 ? 'call' : 'fold') : 'call';
-        } else {
-            // Carta alta
-            decision = diff > 0 ? (Math.random() > 0.7 ? 'call' : 'fold') : 'call';
+    if (porPagar>0) {
+        if (decision < 0.25) {
+            p.folded=true; p.status='Retirado'; p.lastAction='Fold';
+            return false;
         }
-    }
-
-    return decision;
-}
-
-function ejecutarRondaBots() {
-    // Bot 1
-    if (bot1Activo) {
-        const dec1 = turnoBot('Carlos', cartasBot1, fichasBot1, apuestaBot1Ronda);
-        if (dec1 === 'fold') {
-            bot1Activo = false;
-            document.getElementById('bot1-status').innerText = 'Retirado (Fold)';
-        } else if (dec1 === 'raise' && fichasBot1 >= 40) {
-            const pago = Math.min(fichasBot1, (apuestaActualRonda - apuestaBot1Ronda) + 40);
-            fichasBot1 -= pago;
-            bote += pago;
-            apuestaBot1Ronda += pago;
-            apuestaActualRonda = apuestaBot1Ronda;
-            document.getElementById('bot1-status').innerText = 'Subió +$40';
-        } else {
-            const diff = Math.min(fichasBot1, Math.max(0, apuestaActualRonda - apuestaBot1Ronda));
-            fichasBot1 -= diff;
-            bote += diff;
-            apuestaBot1Ronda += diff;
-            document.getElementById('bot1-status').innerText = diff > 0 ? `Igualó $${diff}` : 'Pasó (Check)';
+        if (decision > 0.67 && p.chips > porPagar + 1) {
+            // Cada bot puede elegir un monto distinto, pero nunca menor que la apuesta máxima actual.
+            const incremento = Math.max(1, Math.round(apuestaBase * (0.5 + skill)));
+            const objetivo = Math.max(actual + 1, actual + incremento);
+            const objetivoFinal = Math.min(p.contribution + p.chips, objetivo);
+            apostar(p,Math.max(0,objetivoFinal-p.contribution));
+            p.lastAction=`Sube a $${p.contribution}`;
+            p.status='Sube';
+            apuestaActual=Math.max(apuestaActual,p.contribution);
+            return true;
         }
+        apostar(p,porPagar);
+        p.lastAction='Call';
+        p.status='Iguala';
+        return false;
     }
 
-    // Bot 2
-    if (bot2Activo) {
-        const dec2 = turnoBot('Elena', cartasBot2, fichasBot2, apuestaBot2Ronda);
-        if (dec2 === 'fold') {
-            bot2Activo = false;
-            document.getElementById('bot2-status').innerText = 'Retirado (Fold)';
-        } else if (dec2 === 'raise' && fichasBot2 >= 40) {
-            const pago = Math.min(fichasBot2, (apuestaActualRonda - apuestaBot2Ronda) + 40);
-            fichasBot2 -= pago;
-            bote += pago;
-            apuestaBot2Ronda += pago;
-            apuestaActualRonda = apuestaBot2Ronda;
-            document.getElementById('bot2-status').innerText = 'Subió +$40';
-        } else {
-            const diff = Math.min(fichasBot2, Math.max(0, apuestaActualRonda - apuestaBot2Ronda));
-            fichasBot2 -= diff;
-            bote += diff;
-            apuestaBot2Ronda += diff;
-            document.getElementById('bot2-status').innerText = diff > 0 ? `Igualó $${diff}` : 'Pasó (Check)';
-        }
+    if (decision > 0.72 && p.chips >= apuestaActual) {
+        apostar(p,apuestaActual);
+        p.lastAction=`Apuesta $${p.contribution}`;
+        p.status='Apuesta';
+        apuestaActual=Math.max(apuestaActual,p.contribution);
+        return true;
     }
-
-    actualizarMarcadores();
-
-    // Comprobar si todos los bots se retiraron
-    const activos = [jugadorActivo, bot1Activo, bot2Activo].filter(Boolean).length;
-    if (activos <= 1) {
-        finalizarPorRetirada();
-        return;
-    }
-
-    // Avanzar a la siguiente fase
-    setTimeout(avanzarFase, 900);
+    p.lastAction='Check';
+    p.status='Check';
+    return false;
 }
-
-function avanzarFase() {
-    apuestaActualRonda = 0;
-    apuestaJugadorRonda = 0;
-    apuestaBot1Ronda = 0;
-    apuestaBot2Ronda = 0;
-
-    if (faseJuego === 'preflop') {
-        faseJuego = 'flop';
-        document.getElementById('game-stage').innerText = 'El Flop (3 cartas)';
-        // Quemar 1 y repartir 3
-        baraja.pop();
-        cartasComunitarias.push(baraja.pop(), baraja.pop(), baraja.pop());
-        renderizarMesa();
-        actualizarMensaje("Se descubre el Flop (3 cartas comunitarias).", "text-cyan-300");
-    } else if (faseJuego === 'flop') {
-        faseJuego = 'turn';
-        document.getElementById('game-stage').innerText = 'El Turn (4ª carta)';
-        baraja.pop();
-        cartasComunitarias.push(baraja.pop());
-        renderizarMesa();
-        actualizarMensaje("Se descubre el Turn (4ª carta comunitaria).", "text-cyan-300");
-    } else if (faseJuego === 'turn') {
-        faseJuego = 'river';
-        document.getElementById('game-stage').innerText = 'El River (5ª carta)';
-        baraja.pop();
-        cartasComunitarias.push(baraja.pop());
-        renderizarMesa();
-        actualizarMensaje("Se descubre el River (5ª y última comunitaria). ¡Ronda final!", "text-cyan-300");
-    } else if (faseJuego === 'river') {
-        faseJuego = 'showdown';
-        ejecutarShowdown();
-        return;
-    }
-
-    evaluarManoJugadorActual();
-
-    if (jugadorActivo) {
-        habilitarControlesJugador(true);
-    } else {
-        setTimeout(ejecutarRondaBots, 800);
-    }
-}
-
-function evaluarManoJugadorActual() {
-    if (cartasComunitarias.length >= 3) {
-        const mejor = evaluarMejorMano([...cartasJugador, ...cartasComunitarias]);
-        document.getElementById('player-hand-desc').innerText = mejor.tierName;
-    } else {
-        document.getElementById('player-hand-desc').innerText = `En mano: ${cartasJugador[0].nombre}${cartasJugador[0].palo} ${cartasJugador[1].nombre}${cartasJugador[1].palo}`;
-    }
-}
-
-// Showdown: Evaluación Final de la Mejor Combinación de 5 Cartas de entre 7
-function ejecutarShowdown() {
-    document.getElementById('game-stage').innerText = 'Showdown (Mano Final)';
-    renderizarMesa(true); // Revelar las cartas ocultas de los bots
-
-    let participantes = [];
-
-    if (jugadorActivo) {
-        const evJugador = evaluarMejorMano([...cartasJugador, ...cartasComunitarias]);
-        participantes.push({ nombre: 'Tú', evaluacion: evJugador, esJugador: true });
-    }
-    if (bot1Activo) {
-        const evBot1 = evaluarMejorMano([...cartasBot1, ...cartasComunitarias]);
-        participantes.push({ nombre: 'Carlos (IA)', evaluacion: evBot1, botId: 'bot1' });
-    }
-    if (bot2Activo) {
-        const evBot2 = evaluarMejorMano([...cartasBot2, ...cartasComunitarias]);
-        participantes.push({ nombre: 'Elena (IA)', evaluacion: evBot2, botId: 'bot2' });
-    }
-
-    // Ordenar por puntuación descendente
-    participantes.sort((a, b) => compararManos(b.evaluacion.score, a.evaluacion.score));
-
-    const ganador = participantes[0];
-
-    if (ganador.esJugador) {
-        fichasJugador += bote;
-        actualizarMensaje(`🎉 ¡GANASTE EL BOTE DE $${bote}! Tu mano: ${ganador.evaluacion.tierName}`, "text-amber-300");
-    } else {
-        if (ganador.botId === 'bot1') fichasBot1 += bote;
-        else fichasBot2 += bote;
-        actualizarMensaje(`Gana ${ganador.nombre} con ${ganador.evaluacion.tierName}. Bote: $${bote}.`, "text-rose-400");
-    }
-
-    bote = 0;
-    actualizarMarcadores();
-    document.getElementById('btn-start').disabled = false;
-    habilitarControlesJugador(false);
-}
-
-function finalizarPorRetirada() {
-    if (jugadorActivo) {
-        fichasJugador += bote;
-        actualizarMensaje(`🎉 ¡Todos los rivales se retiraron! Ganas el bote de $${bote}.`, "text-amber-300");
-    } else if (bot1Activo) {
-        fichasBot1 += bote;
-        actualizarMensaje(`Carlos (IA) gana el bote de $${bote} por retirada.`, "text-slate-400");
-    } else {
-        fichasBot2 += bote;
-        actualizarMensaje(`Elena (IA) gana el bote de $${bote} por retirada.`, "text-slate-400");
-    }
-    bote = 0;
-    actualizarMarcadores();
-    document.getElementById('btn-start').disabled = false;
-    habilitarControlesJugador(false);
-}
-
-// Evaluador Matemático de Cartas (5 a 7 cartas) -> Extrae la mejor combinación de 5 cartas
-function obtenerCombinacionesDe5(cartas) {
-    if (!cartas || cartas.length < 5) return [];
-    if (cartas.length === 5) return [cartas];
-    let n = cartas.length;
-    let combis = [];
-    for (let a = 0; a < n; a++) {
-        for (let b = a + 1; b < n; b++) {
-            for (let c = b + 1; c < n; c++) {
-                for (let d = c + 1; d < n; d++) {
-                    for (let e = d + 1; e < n; e++) {
-                        combis.push([cartas[a], cartas[b], cartas[c], cartas[d], cartas[e]]);
-                    }
-                }
+function rondaBotsYJugador() {
+    if (!manoActiva || procesandoBots) return;
+    procesandoBots=true;
+    const bots=jugadores.filter(p=>p.bot&&!p.folded&&!p.allIn);
+    let i=0;
+    const siguiente=()=>{
+        if (!manoActiva) { procesandoBots=false; return; }
+        if (i>=bots.length) {
+            procesandoBots=false;
+            if (activos().length<=1) return terminarMano('retirada');
+            if (jugadores[0].folded || jugadores[0].allIn) {
+                avanzarFase();
+            } else {
+                actualizarControles();
+                actualizarMensaje(`Tu turno. Debes igualar $${Math.max(0,maxContrib()-jugadores[0].contribution)} o subir.`, 'normal');
             }
+            actualizarMarcadores();
+            renderizarMesa();
+            return;
         }
-    }
-    return combis;
+        const b=bots[i++];
+        setTimeout(()=>{ turnoBot(b); renderizarMesa(); actualizarMarcadores(); siguiente(); }, 350);
+    };
+    siguiente();
 }
 
-function evaluar5Cartas(cinco) {
-    const valores = cinco.map(c => c.valor).sort((a, b) => b - a);
-    const palos = cinco.map(c => c.palo);
+function accionJugador(accion) {
+    if (!manoActiva || procesandoBots) return;
+    const p=jugadores[0];
+    if (p.folded || p.allIn) return;
+    const actual=maxContrib();
+    const porPagar=Math.max(0,actual-p.contribution);
 
-    const esColor = palos.every(p => p === palos[0]);
-
-    // Comprobar escalera
-    let esEscalera = false;
-    let escaleraAlta = valores[0];
-
-    if (valores[0] - valores[4] === 4 && new Set(valores).size === 5) {
-        esEscalera = true;
-    } else if (valores[0] === 14 && valores[1] === 5 && valores[2] === 4 && valores[3] === 3 && valores[4] === 2) {
-        // Escalera con As bajo (A-2-3-4-5)
-        esEscalera = true;
-        escaleraAlta = 5;
+    if (accion==='fold') {
+        p.folded=true; p.status='Retirado'; p.lastAction='Fold';
+        renderizarMesa();
+        if (activos().length<=1) return terminarMano('retirada');
+        avanzarFase();
+        return;
     }
-
-    // Contar frecuencias
-    let frec = {};
-    valores.forEach(v => frec[v] = (frec[v] || 0) + 1);
-    let pares = Object.entries(frec).map(([val, count]) => ({ val: parseInt(val), count }));
-    pares.sort((a, b) => b.count - a.count || b.val - a.val);
-
-    // 9: Escalera Real (A-K-Q-J-10 del mismo palo)
-    if (esColor && esEscalera && escaleraAlta === 14 && valores[4] === 10) {
-        return { score: [9, 14], name: "Escalera Real" };
+    if (accion==='call') {
+        if (porPagar===0) { p.status='Check'; p.lastAction='Check'; }
+        else { apostar(p,porPagar); p.status='Iguala'; p.lastAction='Call'; }
+        renderizarMesa(); actualizarMarcadores();
+        if (p.allIn) return rondaBotsYJugador();
+        avanzarFase();
+        return;
     }
-    // 8: Escalera de Color
-    if (esColor && esEscalera) {
-        return { score: [8, escaleraAlta], name: `Escalera de Color al ${NOMBRES[escaleraAlta] || escaleraAlta}` };
-    }
-    // 7: Póker (Four of a Kind)
-    if (pares[0].count === 4) {
-        return { score: [7, pares[0].val, pares[1].val], name: `Póker de ${NOMBRES[pares[0].val] || pares[0].val}` };
-    }
-    // 6: Full House
-    if (pares[0].count === 3 && pares[1].count === 2) {
-        return { score: [6, pares[0].val, pares[1].val], name: `Full House (${NOMBRES[pares[0].val] || pares[0].val} y ${NOMBRES[pares[1].val] || pares[1].val})` };
-    }
-    // 5: Color (Flush)
-    if (esColor) {
-        return { score: [5, ...valores], name: `Color (${palos[0]})` };
-    }
-    // 4: Escalera
-    if (esEscalera) {
-        return { score: [4, escaleraAlta], name: `Escalera al ${NOMBRES[escaleraAlta] || escaleraAlta}` };
-    }
-    // 3: Trío
-    if (pares[0].count === 3) {
-        return { score: [3, pares[0].val, pares[1].val, pares[2].val], name: `Trío de ${NOMBRES[pares[0].val] || pares[0].val}` };
-    }
-    // 2: Doble Pareja
-    if (pares[0].count === 2 && pares[1].count === 2) {
-        return { score: [2, pares[0].val, pares[1].val, pares[2].val], name: `Doble Pareja (${NOMBRES[pares[0].val] || pares[0].val} y ${NOMBRES[pares[1].val] || pares[1].val})` };
-    }
-    // 1: Pareja
-    if (pares[0].count === 2) {
-        return { score: [1, pares[0].val, pares[1].val, pares[2].val, pares[3].val], name: `Pareja de ${NOMBRES[pares[0].val] || pares[0].val}` };
-    }
-    // 0: Carta Alta
-    return { score: [0, ...valores], name: `Carta Alta (${NOMBRES[valores[0]] || valores[0]})` };
-}
-
-function compararManos(scoreA, scoreB) {
-    for (let i = 0; i < Math.max(scoreA.length, scoreB.length); i++) {
-        const valA = scoreA[i] || 0;
-        const valB = scoreB[i] || 0;
-        if (valA !== valB) return valA - valB;
-    }
-    return 0;
-}
-
-function evaluarMejorMano(cartas) {
-    if (!cartas || cartas.length < 5) {
-        return { score: [0, 0], tierName: "Incompleta", cartas: cartas || [] };
-    }
-    const combinaciones = obtenerCombinacionesDe5(cartas);
-    let mejor = null;
-
-    for (let combi of combinaciones) {
-        const ev = evaluar5Cartas(combi);
-        if (!mejor || compararManos(ev.score, mejor.score) > 0) {
-            mejor = { score: ev.score, tierName: ev.name, cartas: combi };
+    if (accion==='raise') {
+        const input=document.getElementById('raise-amount');
+        const objetivo=Math.floor(Number(input?.value));
+        const minimo=Math.max(actual + 1, apuestaBase);
+        if (!Number.isFinite(objetivo) || objetivo < minimo) {
+            actualizarMensaje(`La subida debe ser de al menos $${minimo}.`, 'error'); return;
         }
+        if (p.chips + p.contribution < objetivo) {
+            actualizarMensaje(`No puedes subir a $${objetivo}. Tu máximo es $${p.chips+p.contribution}.`, 'error'); return;
+        }
+        apostar(p,objetivo-p.contribution);
+        apuestaActual=Math.max(apuestaActual,p.contribution);
+        p.status='Sube'; p.lastAction=`Raise a $${p.contribution}`;
+        renderizarMesa(); actualizarMarcadores();
+        rondaBotsYJugador();
+        return;
     }
-    return mejor;
+    if (accion==='allin') {
+        if (p.chips<=0) return;
+        apostar(p,p.chips);
+        apuestaActual=Math.max(apuestaActual,p.contribution);
+        p.status='All-In'; p.lastAction='All-In 🔥';
+        renderizarMesa(); actualizarMarcadores();
+        rondaBotsYJugador();
+    }
+}
+function avanzarFase() {
+    if (!manoActiva) return;
+    const niveles= ['preflop','flop','turn','river','showdown'];
+    const idx=niveles.indexOf(fase);
+    const anteriorMax=Math.max(apuestaActual,maxContrib(),apuestaBase);
+    if (fase==='preflop') comunitarias=[baraja.pop(),baraja.pop(),baraja.pop()];
+    else if (fase==='flop') comunitarias.push(baraja.pop());
+    else if (fase==='turn') comunitarias.push(baraja.pop());
+    else if (fase==='river') { fase='showdown'; return terminarMano('showdown'); }
+    else return terminarMano('showdown');
+
+    fase=niveles[idx+1];
+    // La apuesta mayor de la ronda anterior se convierte en el mínimo de la siguiente.
+    apuestaActual=anteriorMax;
+    jugadores.forEach(p=>{ if(!p.folded){p.contribution=0;p.status=p.allIn?'All-In':'Activo';p.lastAction='';} });
+    renderizarMesa(); actualizarMarcadores();
+    actualizarMensaje(`${nombreFase()}. Apuesta mínima heredada: $${apuestaActual}.`, 'normal');
+
+    if (activos().filter(p=>!p.allIn).length<=1) {
+        while(comunitarias.length<5) comunitarias.push(baraja.pop());
+        return terminarMano('showdown');
+    }
+    setTimeout(rondaBotsYJugador,500);
+}
+function nombreFase() {
+    return {preflop:'Pre-Flop',flop:'Flop',turn:'Turn',river:'River',showdown:'Showdown'}[fase] || fase;
 }
 
-function actualizarMensaje(msg, colorClass) {
-    const el = document.getElementById('dealer-msg');
-    el.className = `text-center font-bold text-sm sm:text-base min-h-[28px] ${colorClass}`;
-    el.innerText = msg;
-}
+function terminarMano(motivo) {
+    if (!manoActiva) return;
+    manoActiva=false;
+    while(comunitarias.length<5) comunitarias.push(baraja.pop());
+    fase='showdown';
 
-// Inicialización
-document.addEventListener('DOMContentLoaded', () => {
-    guardarSaldo(fichasJugador);
+    if (motivo==='retirada') {
+        const ganador=activos()[0];
+        if (ganador) ganador.chips+=bote;
+        const winnerBox=document.getElementById('round-winner');
+        if(winnerBox){winnerBox.textContent=`🏆 Ganador de la ronda: ${ganador?.nombre || 'Nadie'} · Bote $${bote}`;winnerBox.classList.remove('hidden');}
+        actualizarMensaje(`${ganador?.nombre || 'Nadie'} gana el bote de $${bote} por retirada. Todas las cartas quedan visibles.`, 'win');
+    } else {
+        const pots=crearSidePots();
+        const premios={};
+        pots.forEach(pot=>{
+            const elegibles=jugadores.filter(p=>!p.folded && p.contribution>=pot.level);
+            if (!elegibles.length) return;
+            let mejor=elegibles[0], ganadores=[mejor];
+            const evs=new Map([[mejor,evaluarMejorMano([...mejor.cards,...comunitarias])]]);
+            for(const p of elegibles.slice(1)){
+                const ev=evaluarMejorMano([...p.cards,...comunitarias]); evs.set(p,ev);
+                const cmp=compararManos(ev.score,evs.get(mejor).score);
+                if(cmp>0){mejor=p;ganadores=[p];}
+                else if(cmp===0)ganadores.push(p);
+            }
+            const parte=Math.floor(pot.amount/ganadores.length);
+            ganadores.forEach(g=>{g.chips+=parte;premios[g.nombre]=(premios[g.nombre]||0)+parte;});
+            let resto=pot.amount-parte*ganadores.length;
+            if(resto>0) ganadores[0].chips+=resto;
+        });
+        const texto=Object.entries(premios).map(([n,v])=>`${n}: $${v}`).join(' · ');
+        const winnerBox=document.getElementById('round-winner');
+        if(winnerBox){winnerBox.textContent=`🏆 Ganador(es) de la ronda: ${texto || 'sin premio'}`;winnerBox.classList.remove('hidden');}
+        actualizarMensaje(`🏆 Showdown: ${texto || 'sin premio'}. Se muestran todas las cartas.`, 'win');
+    }
+
+    // Una partida jugada por cada bot participante aumenta su experiencia.
+    const stats=cargarStats();
+    jugadores.filter(p=>p.bot).forEach(p=>{ stats[p.nombre]=(Number(stats[p.nombre]||0)+1); p.games=stats[p.nombre]; });
+    guardarStats(stats);
+
+    localStorage.setItem('casino_balance', String(Math.max(0,jugadores[0].chips)));
+    jugadores[0].chips=Math.max(0,jugadores[0].chips);
+    document.getElementById('btn-start').disabled=false;
+    document.getElementById('btn-start').textContent='Nueva mano / Configurar';
+    actualizarControles();
+    renderizarMesa();
     actualizarMarcadores();
+}
+function crearSidePots() {
+    const niveles=[...new Set(jugadores.filter(p=>p.totalContribution>0).map(p=>p.totalContribution))].sort((a,b)=>a-b);
+    const pots=[]; let prev=0;
+    for(const level of niveles){
+        const participantes=jugadores.filter(p=>p.totalContribution>=level);
+        const amount=(level-prev)*participantes.length;
+        if(amount>0) pots.push({level,amount});
+        prev=level;
+    }
+    return pots;
+}
+function obtenerCombinacionesDe5(cartas) {
+    if(cartas.length<5) return [];
+    const out=[]; const n=cartas.length;
+    for(let a=0;a<n;a++)for(let b=a+1;b<n;b++)for(let c=b+1;c<n;c++)for(let d=c+1;d<n;d++)for(let e=d+1;e<n;e++)out.push([cartas[a],cartas[b],cartas[c],cartas[d],cartas[e]]);
+    return out;
+}
+function evaluar5Cartas(cinco) {
+    const valores=cinco.map(c=>c.valor).sort((a,b)=>b-a), palos=cinco.map(c=>c.palo);
+    const color=palos.every(p=>p===palos[0]);
+    let escalera=false, alta=valores[0];
+    if(valores[0]-valores[4]===4 && new Set(valores).size===5) escalera=true;
+    else if(JSON.stringify(valores)==='[14,5,4,3,2]'){escalera=true;alta=5;}
+    const frec={}; valores.forEach(v=>frec[v]=(frec[v]||0)+1);
+    const grupos=Object.entries(frec).map(([v,c])=>({val:+v,count:c})).sort((a,b)=>b.count-a.count||b.val-a.val);
+    if(color&&escalera&&alta===14&&valores[4]===10)return{score:[9,14],name:'Escalera Real'};
+    if(color&&escalera)return{score:[8,alta],name:`Escalera de Color al ${NOMBRES[alta]||alta}`};
+    if(grupos[0].count===4)return{score:[7,grupos[0].val,grupos[1].val],name:`Póker de ${NOMBRES[grupos[0].val]||grupos[0].val}`};
+    if(grupos[0].count===3&&grupos[1].count===2)return{score:[6,grupos[0].val,grupos[1].val],name:'Full House'};
+    if(color)return{score:[5,...valores],name:'Color'};
+    if(escalera)return{score:[4,alta],name:`Escalera al ${NOMBRES[alta]||alta}`};
+    if(grupos[0].count===3)return{score:[3,grupos[0].val,...grupos.slice(1).map(x=>x.val)],name:'Trío'};
+    if(grupos[0].count===2&&grupos[1].count===2)return{score:[2,grupos[0].val,grupos[1].val,grupos[2].val],name:'Doble Pareja'};
+    if(grupos[0].count===2)return{score:[1,grupos[0].val,...grupos.slice(1).map(x=>x.val)],name:`Pareja de ${NOMBRES[grupos[0].val]||grupos[0].val}`};
+    return{score:[0,...valores],name:`Carta Alta (${NOMBRES[valores[0]]||valores[0]})`};
+}
+function compararManos(a,b){for(let i=0;i<Math.max(a.length,b.length);i++){const x=a[i]||0,y=b[i]||0;if(x!==y)return x-y;}return 0;}
+function evaluarMejorMano(cartas) {
+    if(cartas.length<5)return{score:[0,0],name:'Incompleta'};
+    return obtenerCombinacionesDe5(cartas).map(c=>({...evaluar5Cartas(c),cards:c})).sort((a,b)=>compararManos(b.score,a.score))[0];
+}
+function renderizarMesa() {
+    const cc=document.getElementById('community-cards'); cc.innerHTML='';
+    comunitarias.forEach(c=>cc.appendChild(renderizarCarta(c,false)));
+    while(cc.children.length<5){const ph=document.createElement('div');ph.className='card-placeholder';cc.appendChild(ph);}
+    const area=document.getElementById('players-area'); area.innerHTML='';
+    jugadores.forEach((p,i)=>{
+        const box=document.createElement('div'); box.className=`player-box player-seat-${i} ${i===0?'human-player':''} ${p.folded?'folded-player':''}`;
+        const head=document.createElement('div'); head.className='player-head';
+        const exp=p.bot?` · ${p.games} partidas`:'';
+        head.innerHTML=`<span class="player-name">${p.bot?'🤖 ': '🧑 '}${p.nombre}</span><span class="player-meta">${p.dificultad}${exp}</span>`;
+        const chips=document.createElement('div');chips.className='player-chips';chips.textContent=`$${p.chips}`;
+        const cards=document.createElement('div');cards.className='cards-holder';
+        p.cards.forEach(c=>{
+            // Tus cartas siempre son visibles. Las de los bots se ocultan durante la mano y se revelan al retirarse o al terminar.
+            const oculta = p.bot && manoActiva && !p.folded;
+            cards.appendChild(renderizarCarta(c, oculta));
+        });
+        const status=document.createElement('div');status.className='status-pill';status.textContent=p.folded?'Retirado':(p.allIn?'All-In':p.lastAction||p.status);
+        const contrib=document.createElement('small');contrib.className='contribution';contrib.textContent=`Apostado: $${p.contribution}`;
+        box.append(head,chips,cards,status,contrib); area.appendChild(box);
+    });
+    const hand=jugadores[0];
+    const desc=document.getElementById('player-hand-desc');
+    if(desc) desc.textContent=hand && comunitarias.length>=3 ? evaluarMejorMano([...hand.cards,...comunitarias]).name : 'Esperando reparto';
+}
+function actualizarMarcadores() {
+    document.getElementById('pot-amount').textContent=`$${bote}`;
+    document.getElementById('game-stage').textContent=nombreFase();
+    document.getElementById('min-bet').textContent=`$${apuestaActual}`;
+    const human=jugadores[0];
+    if(human){document.getElementById('fichas-count').textContent=Math.max(0,Math.floor(human.chips));localStorage.setItem('casino_balance',String(Math.max(0,Math.floor(human.chips))));}
+}
+function actualizarControles() {
+    const active=manoActiva && !procesandoBots && jugadores[0] && !jugadores[0].folded && !jugadores[0].allIn;
+    ['btn-fold','btn-check-call','btn-raise','btn-allin'].forEach(id=>document.getElementById(id).disabled=!active);
+    const call=Math.max(0,maxContrib()-(jugadores[0]?.contribution||0));
+    document.getElementById('btn-check-call').textContent=call>0?`Igualar $${call}`:'Pasar (Check)';
+    document.getElementById('btn-raise').textContent=`Subir`;
+    const raiseInput=document.getElementById('raise-amount');
+    if(raiseInput){ raiseInput.disabled=!active; raiseInput.min=String(Math.max(1,maxContrib()+1)); raiseInput.value=String(Math.max(1,maxContrib()+apuestaBase)); raiseInput.max=String(Math.max(1,jugadores[0]?.chips+(jugadores[0]?.contribution||0))); }
+}
+function actualizarMensaje(msg,tipo='normal'){
+    const el=document.getElementById('dealer-msg');
+    el.className=`dealer-msg ${tipo}`;el.textContent=msg;
+}
+function abrirConfiguracion(){
+    document.getElementById('setup-modal').classList.remove('hidden');
+    actualizarListaBots();
+}
+function cerrarConfiguracion(){document.getElementById('setup-modal').classList.add('hidden');}
+function mostrarSetupError(msg){const e=document.getElementById('setup-error');e.textContent=msg;e.classList.remove('hidden');}
+function actualizarListaBots(){
+    const total=Number(document.getElementById('player-count').value);
+    document.getElementById('opponent-count').textContent=`Debes elegir ${total-1} oponentes.`;
+    document.querySelectorAll('.bot-check').forEach(c=>c.closest('label').classList.toggle('opacity-40',false));
+}
+function terminarConfiguracion(){
+    const modo=document.querySelector('input[name="opponents"]:checked')?.value;
+    document.getElementById('selected-bots').classList.toggle('hidden',modo!=='selected');
+}
+function configurarChecks(){
+    const total=Number(document.getElementById('player-count').value);
+    const checked=[...document.querySelectorAll('.bot-check:checked')];
+    if(checked.length>total-1) checked[checked.length-1].checked=false;
+    actualizarListaBots();
+}
+document.addEventListener('DOMContentLoaded',()=>{
+    document.getElementById('fichas-count').textContent=localStorage.getItem('casino_balance')||'1000';
+    const container=document.getElementById('bot-options');
+    container.innerHTML=BOT_DEFS.map(d=>`<label class="bot-option"><input class="bot-check" type="checkbox" value="${d[0]}"><span><strong>${d[0]}</strong><small>${d[1]} · ${experienciaBot(d[0])} partidas</small></span></label>`).join('');
+    document.getElementById('player-count').addEventListener('change',()=>{mostrarSetupError('');actualizarListaBots();});
+    document.querySelectorAll('input[name="opponents"]').forEach(r=>r.addEventListener('change',terminarConfiguracion));
+    document.getElementById('bot-options').addEventListener('change',configurarChecks);
+    document.getElementById('btn-confirm-setup').addEventListener('click',confirmarConfiguracion);
+    document.getElementById('btn-cancel-setup').addEventListener('click',cerrarConfiguracion);
+    terminarConfiguracion();
+    abrirConfiguracion();
+    actualizarControles();
+    window.addEventListener('casino-balance-changed',e=>{
+        if(!manoActiva){
+            document.getElementById('fichas-count').textContent=e.detail.balance;
+            return;
+        }
+        if(jugadores[0] && !procesandoBots){
+            jugadores[0].chips=Number(e.detail.balance);
+            actualizarMarcadores();
+            renderizarMesa();
+        }
+    });
 });
