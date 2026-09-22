@@ -34,7 +34,7 @@ let enJuego = false;
 let cartaActual = generarCarta();
 
 function generarCarta() {
-    const valor = Math.floor(Math.random() * 13) + 2; // 2 al 14 (As)
+    const valor = Math.floor(Math.random() * 14) + 1; // 1 al 14 (As=14)
     const paloInfo = PALOS[Math.floor(Math.random() * PALOS.length)];
     return {
         valor: valor,
@@ -110,8 +110,8 @@ function adivinar(esMayor) {
     nextSlot.innerHTML = '';
     nextSlot.appendChild(renderizarCarta(siguienteCarta));
 
-    const acierto = esMayor 
-        ? siguienteCarta.valor > cartaActual.valor 
+    const acierto = esMayor
+        ? siguienteCarta.valor > cartaActual.valor
         : siguienteCarta.valor < cartaActual.valor;
 
     if (acierto) {
@@ -150,7 +150,7 @@ function cobrar() {
     fichas += premioAcumulado;
     guardarSaldo(fichas);
     mostrarMensaje(`🎉 ¡Has cobrado un premio de $${premioAcumulado}!`, "text-amber-300");
-    
+
     reiniciarRonda();
 }
 
@@ -175,6 +175,11 @@ function mostrarMensaje(texto, colorClass) {
     banner.className = `text-center py-2 px-6 rounded-xl font-bold text-base sm:text-lg transition-all duration-300 ${colorClass}`;
     banner.innerText = texto;
 }
+
+window.addEventListener('casino-balance-changed', (e) => {
+    fichas = Number(e.detail.balance);
+    guardarSaldo(fichas);
+});
 
 // Inicialización
 document.addEventListener('DOMContentLoaded', () => {
