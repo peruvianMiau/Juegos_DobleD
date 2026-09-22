@@ -9,7 +9,7 @@ const overlayEl = document.getElementById('game-over-overlay');
 
 let puntuacion = 0;
 let capturas = 0;
-let tiempoRestante = 60;
+let tiempoRestante = 120;
 let juegoTerminado = false;
 let temporizadorID;
 
@@ -26,7 +26,7 @@ function iniciarAudio() {
 function reproducirMusicaFondo() {
     if (juegoTerminado || !audioCtx) return;
 
-    const notas = [261.63, 293.66, 329.63, 349.23, 392.00, 440.00, 493.88, 523.25]; // Escala C mayor
+    const notas = [261.63, 293.66, 329.63, 349.23, 392.00, 440.00, 493.88, 523.25];
     let paso = 0;
 
     setInterval(() => {
@@ -37,7 +37,7 @@ function reproducirMusicaFondo() {
         osc.type = 'triangle';
         osc.frequency.setValueAtTime(notas[paso % notas.length], audioCtx.currentTime);
 
-        gain.gain.setValueAtTime(0.1, audioCtx.currentTime); // Volumen suave
+        gain.gain.setValueAtTime(0.25, audioCtx.currentTime);
         gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.25);
 
         osc.connect(gain);
@@ -59,18 +59,16 @@ function sonarCaptura(puntos) {
     gain.connect(audioCtx.destination);
 
     if (puntos > 0) {
-        // Sonido de victoria/puntos
         osc.type = 'sine';
         osc.frequency.setValueAtTime(440, audioCtx.currentTime);
         osc.frequency.exponentialRampToValueAtTime(880, audioCtx.currentTime + 0.2);
-        gain.gain.setValueAtTime(0.25, audioCtx.currentTime);
+        gain.gain.setValueAtTime(0.35, audioCtx.currentTime);
         gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.2);
     } else {
-        // Sonido de Pez Globo (pérdida de puntos)
         osc.type = 'sawtooth';
         osc.frequency.setValueAtTime(200, audioCtx.currentTime);
         osc.frequency.exponentialRampToValueAtTime(80, audioCtx.currentTime + 0.3);
-        gain.gain.setValueAtTime(0.3, audioCtx.currentTime);
+        gain.gain.setValueAtTime(0.4, audioCtx.currentTime);
         gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.3);
     }
 
@@ -79,56 +77,77 @@ function sonarCaptura(puntos) {
 }
 
 // Estado del barco y anzuelo
-const bote = { x: 350, y: 60, ancho: 100, alto: 30, velocidad: 5 };
+const bote = { x: 350, y: 60, ancho: 100, alto: 30, velocidad: 5.5 };
 const anzuelo = {
     x: 400,
     y: 100,
     radio: 8,
-    velocidadVertical: 4,
+    velocidadVertical: 4.5,
     pezEnganchado: null
 };
 
 // Control de teclado
 const teclas = { Izquierda: false, Derecha: false, Arriba: false, Abajo: false };
 
-// Peces, Burbujas y Partículas
+// Peces, Burbujas, Estrellas y Partículas
 let peces = [];
 let burbujas = [];
 let particulas = [];
+let estrellas = [];
+let tiempoOlas = 0;
 
-const TIPOS_PECES = [
-    { nombre: 'Normal', color: '#ff7b00', puntos: 10, velocidad: 2, tamaño: 16 },
-    { nombre: 'Dorado', color: '#ffd700', puntos: 30, velocidad: 3.5, tamaño: 12 },
-    { nombre: 'PezGlobo', color: '#e63946', puntos: -15, velocidad: 1.5, tamaño: 20 }
-];
+const TIPOS_PECES = {
+    normal: { nombre: 'Normal', color: '#ff7b00', puntos: 10, velocidad: 2.2, tamanio: 16 },
+    dorado: { nombre: 'Dorado', color: '#ffd700', puntos: 30, velocidad: 4.5, tamanio: 11 },
+    globo:  { nombre: 'PezGlobo', color: '#e63946', puntos: -15, velocidad: 2.5, tamanio: 24 }
+};
 
-// Generar burbujas de fondo
-for (let i = 0; i < 20; i++) {
+// Generar elementos del escenario
+for (let i = 0; i < 25; i++) {
     burbujas.push({
         x: Math.random() * 800,
-        y: Math.random() * 500,
+        y: 90 + Math.random() * 410,
         radio: Math.random() * 3 + 1,
-        velY: Math.random() * 1 + 0.5
+        velY: Math.random() + 0.5
+    });
+}
+
+for (let i = 0; i < 30; i++) {
+    estrellas.push({
+        x: Math.random() * 800,
+        y: Math.random() * 75,
+        radio: Math.random() * 1.5 + 0.5,
+        alfa: Math.random()
     });
 }
 
 function crearPez() {
-    const tipo = TIPOS_PECES[Math.floor(Math.random() * (Math.random() > 0.8 ? 3 : 2))];
+    const rand = Math.random();
+    let tipo;
+
+    if (rand < 0.10) {
+        tipo = TIPOS_PECES.dorado;
+    } else if (rand < 0.35) {
+        tipo = TIPOS_PECES.globo;
+    } else {
+        tipo = TIPOS_PECES.normal;
+    }
+
     const izquierda = Math.random() < 0.5;
     peces.push({
         ...tipo,
-        x: izquierda ? -30 : canvas.width + 30,
-        y: 140 + Math.random() * (canvas.height - 180),
+        x: izquierda ? -35 : canvas.width + 35,
+        y: 140 + Math.random() * (canvas.height - 190),
         dir: izquierda ? 1 : -1
     });
 }
 
 function crearParticulas(x, y, color) {
-    for (let i = 0; i < 10; i++) {
+    for (let i = 0; i < 12; i++) {
         particulas.push({
             x, y,
-            vx: (Math.random() - 0.5) * 4,
-            vy: (Math.random() - 0.5) * 4,
+            vx: (Math.random() - 0.5) * 5,
+            vy: (Math.random() - 0.5) * 5,
             vida: 1,
             color
         });
@@ -137,7 +156,7 @@ function crearParticulas(x, y, color) {
 
 // Escuchadores de eventos
 window.addEventListener('keydown', (e) => {
-    iniciarAudio(); // Inicia el audio con la primera tecla presionada
+    iniciarAudio();
     if (juegoTerminado) return;
     if (['ArrowLeft', 'a', 'A'].includes(e.key)) teclas.Izquierda = true;
     if (['ArrowRight', 'd', 'D'].includes(e.key)) teclas.Derecha = true;
@@ -174,7 +193,7 @@ function finalizarJuego() {
 function reiniciarJuego() {
     puntuacion = 0;
     capturas = 0;
-    tiempoRestante = 60;
+    tiempoRestante = 120;
     juegoTerminado = false;
     peces = [];
     particulas = [];
@@ -185,7 +204,7 @@ function reiniciarJuego() {
 
     scoreEl.innerText = '0';
     fishCountEl.innerText = '0';
-    timerEl.innerText = '60';
+    timerEl.innerText = '120';
     overlayEl.style.display = 'none';
 
     iniciarAudio();
@@ -201,7 +220,7 @@ function actualizarMovimiento() {
         bote.x += bote.velocidad;
         anzuelo.x += bote.velocidad;
     }
-    if (teclas.Abajo && anzuelo.y < canvas.height - 20) {
+    if (teclas.Abajo && anzuelo.y < canvas.height - 25) {
         anzuelo.y += anzuelo.velocidadVertical;
     }
     if (teclas.Arriba && anzuelo.y > 100) {
@@ -227,21 +246,26 @@ function actualizarMovimiento() {
 
     if (anzuelo.pezEnganchado) {
         anzuelo.pezEnganchado.x = anzuelo.x;
-        anzuelo.pezEnganchado.y = anzuelo.y + 10;
+        anzuelo.pezEnganchado.y = anzuelo.y + 12;
     }
 }
 
 function actualizarEfectos() {
-    // Actualizar burbujas
+    tiempoOlas += 0.05;
+
     burbujas.forEach((b) => {
         b.y -= b.velY;
-        if (b.y < 90) {
-            b.y = canvas.height;
+        if (b.y < 95) {
+            b.y = canvas.height - 15;
             b.x = Math.random() * canvas.width;
         }
     });
 
-    // Actualizar partículas
+    estrellas.forEach((s) => {
+        s.alfa += (Math.random() - 0.5) * 0.05;
+        s.alfa = Math.max(0.2, Math.min(1, s.alfa));
+    });
+
     particulas.forEach((p, i) => {
         p.x += p.vx;
         p.y += p.vy;
@@ -251,7 +275,7 @@ function actualizarEfectos() {
 }
 
 function actualizarPeces() {
-    if (Math.random() < 0.03 && peces.length < 8) {
+    if (Math.random() < 0.035 && peces.length < 9) {
         crearPez();
     }
 
@@ -260,14 +284,23 @@ function actualizarPeces() {
             pez.x += pez.velocidad * pez.dir;
         }
 
-        if (!anzuelo.pezEnganchado && anzuelo.y > 110) {
+        if (anzuelo.y > 110) {
             const dist = Math.hypot(anzuelo.x - pez.x, anzuelo.y - pez.y);
-            if (dist < pez.tamaño + anzuelo.radio) {
-                anzuelo.pezEnganchado = pez;
+
+            // Si tocamos a un pez:
+            if (dist < pez.tamanio + anzuelo.radio) {
+                // Caso 1: Si no tenemos pez atrapado, atrapamos cualquiera
+                if (!anzuelo.pezEnganchado) {
+                    anzuelo.pezEnganchado = pez;
+                }
+                // Caso 2: Si ya llevamos un pez, pero chocamos contra un Pez Globo (puntos < 0), este tiene PRIORIDAD
+                else if (pez.puntos < 0 && anzuelo.pezEnganchado.puntos > 0) {
+                    anzuelo.pezEnganchado = pez; // El pez globo toma el lugar en el anzuelo
+                }
             }
         }
 
-        if ((pez.dir === 1 && pez.x > canvas.width + 40) || (pez.dir === -1 && pez.x < -40)) {
+        if ((pez.dir === 1 && pez.x > canvas.width + 50) || (pez.dir === -1 && pez.x < -50)) {
             if (pez !== anzuelo.pezEnganchado) {
                 peces.splice(index, 1);
             }
@@ -278,26 +311,85 @@ function actualizarPeces() {
 function dibujar() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-    // Fondo Marino (Degradado)
+    // --- FONDO DE CIELO NOCTURNO ---
+    const cieloGrad = ctx.createLinearGradient(0, 0, 0, 90);
+    cieloGrad.addColorStop(0, '#050a14');
+    cieloGrad.addColorStop(1, '#102a45');
+    ctx.fillStyle = cieloGrad;
+    ctx.fillRect(0, 0, canvas.width, 90);
+
+    // Estrellas
+    estrellas.forEach((s) => {
+        ctx.fillStyle = `rgba(255, 255, 255, ${s.alfa})`;
+        ctx.beginPath();
+        ctx.arc(s.x, s.y, s.radio, 0, Math.PI * 2);
+        ctx.fill();
+    });
+
+    // Luna
+    ctx.fillStyle = '#fffae6';
+    ctx.beginPath();
+    ctx.arc(710, 35, 18, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = 'rgba(255, 250, 230, 0.15)';
+    ctx.beginPath();
+    ctx.arc(710, 35, 26, 0, Math.PI * 2);
+    ctx.fill();
+
+    // --- FONDO MARINO ---
     const fondoGrad = ctx.createLinearGradient(0, 90, 0, canvas.height);
-    fondoGrad.addColorStop(0, '#1e90ff');
-    fondoGrad.addColorStop(1, '#000033');
+    fondoGrad.addColorStop(0, '#0077b6');
+    fondoGrad.addColorStop(0.3, '#023e8a');
+    fondoGrad.addColorStop(0.7, '#03045e');
+    fondoGrad.addColorStop(1, '#020224');
     ctx.fillStyle = fondoGrad;
     ctx.fillRect(0, 90, canvas.width, canvas.height - 90);
 
-    // Cielo/Superficie
-    ctx.fillStyle = '#0d1b2a';
-    ctx.fillRect(0, 0, canvas.width, 90);
+    // --- ALGAS DE FONDO (Más pequeñas y translúcidas) ---
+    ctx.globalAlpha = 0.35; // Transparencia para efecto de fondo/profundidad
+    for (let x = 30; x < canvas.width; x += 90) {
+        ctx.strokeStyle = '#10b981';
+        ctx.lineWidth = 2.5;
+        ctx.beginPath();
+        ctx.moveTo(x, canvas.height);
+        const swing = Math.sin(tiempoOlas + x) * 8;
+        // Altura reducida a 25-35px max
+        ctx.quadraticCurveTo(x + swing, canvas.height - 18, x + swing / 2, canvas.height - 32);
+        ctx.stroke();
+    }
+    ctx.globalAlpha = 1.0; // Restablecer opacidad
 
-    // Dibujar Burbujas
-    ctx.fillStyle = 'rgba(255, 255, 255, 0.3)';
+    // Suelo Marino (Arena)
+    ctx.fillStyle = '#111827';
+    ctx.beginPath();
+    ctx.moveTo(0, canvas.height);
+    ctx.quadraticCurveTo(200, canvas.height - 12, 400, canvas.height - 8);
+    ctx.quadraticCurveTo(600, canvas.height - 4, canvas.width, canvas.height - 10);
+    ctx.lineTo(canvas.width, canvas.height);
+    ctx.closePath();
+    ctx.fill();
+
+    // Olas animadas en la superficie
+    ctx.fillStyle = '#0077b6';
+    ctx.beginPath();
+    ctx.moveTo(0, 90);
+    for (let x = 0; x <= canvas.width; x += 30) {
+        ctx.lineTo(x, 90 + Math.sin(tiempoOlas + x * 0.05) * 3);
+    }
+    ctx.lineTo(canvas.width, 100);
+    ctx.lineTo(0, 100);
+    ctx.closePath();
+    ctx.fill();
+
+    // Burbujas
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.25)';
     burbujas.forEach((b) => {
         ctx.beginPath();
         ctx.arc(b.x, b.y, b.radio, 0, Math.PI * 2);
         ctx.fill();
     });
 
-    // Bote detallado
+    // Bote
     ctx.fillStyle = '#8d5b4c';
     ctx.beginPath();
     ctx.moveTo(bote.x, bote.y);
@@ -310,10 +402,10 @@ function dibujar() {
     // Pescador
     ctx.fillStyle = '#ffd1dc';
     ctx.beginPath();
-    ctx.arc(bote.x + 30, bote.y - 10, 8, 0, Math.PI * 2); // Cabeza
+    ctx.arc(bote.x + 30, bote.y - 10, 8, 0, Math.PI * 2);
     ctx.fill();
 
-    // Caña de pesca
+    // Caña
     ctx.strokeStyle = '#d4a373';
     ctx.lineWidth = 3;
     ctx.beginPath();
@@ -321,7 +413,7 @@ function dibujar() {
     ctx.lineTo(anzuelo.x, bote.y - 15);
     ctx.stroke();
 
-    // Hilo de Pescar
+    // Hilo
     ctx.strokeStyle = 'rgba(255, 255, 255, 0.7)';
     ctx.lineWidth = 1;
     ctx.beginPath();
@@ -329,41 +421,57 @@ function dibujar() {
     ctx.lineTo(anzuelo.x, anzuelo.y);
     ctx.stroke();
 
-    // Anzuelo brillante
+    // Anzuelo
     ctx.strokeStyle = '#e0e0e0';
     ctx.lineWidth = 3;
     ctx.beginPath();
     ctx.arc(anzuelo.x, anzuelo.y, anzuelo.radio, 0, Math.PI);
     ctx.stroke();
 
-    // Peces con detalles
+    // Dibujar Peces
     peces.forEach((pez) => {
         ctx.fillStyle = pez.color;
+
+        // Cuerpo
         ctx.beginPath();
-        ctx.ellipse(pez.x, pez.y, pez.tamaño, pez.tamaño / 1.6, 0, 0, Math.PI * 2);
+        ctx.ellipse(pez.x, pez.y, pez.tamanio, pez.tamanio / 1.6, 0, 0, Math.PI * 2);
         ctx.fill();
 
-        // Cola del pez
+        // Cola
         ctx.beginPath();
-        const colaX = pez.x - (pez.tamaño * pez.dir);
+        const colaX = pez.x - (pez.tamanio * pez.dir);
         ctx.moveTo(pez.x, pez.y);
-        ctx.lineTo(colaX, pez.y - 8);
-        ctx.lineTo(colaX, pez.y + 8);
+        ctx.lineTo(colaX, pez.y - (pez.tamanio * 0.5));
+        ctx.lineTo(colaX, pez.y + (pez.tamanio * 0.5));
         ctx.closePath();
         ctx.fill();
 
-        // Ojo del pez
+        // Ojo
         ctx.fillStyle = '#ffffff';
         ctx.beginPath();
-        ctx.arc(pez.x + (pez.tamaño / 2 * pez.dir), pez.y - 2, 3, 0, Math.PI * 2);
+        ctx.arc(pez.x + (pez.tamanio / 2 * pez.dir), pez.y - 2, Math.max(2, pez.tamanio * 0.18), 0, Math.PI * 2);
         ctx.fill();
         ctx.fillStyle = '#000000';
         ctx.beginPath();
-        ctx.arc(pez.x + (pez.tamaño / 2 * pez.dir), pez.y - 2, 1.5, 0, Math.PI * 2);
+        ctx.arc(pez.x + (pez.tamanio / 2 * pez.dir), pez.y - 2, Math.max(1, pez.tamanio * 0.09), 0, Math.PI * 2);
         ctx.fill();
+
+        // Púas si es Pez Globo
+        if (pez.puntos < 0) {
+            ctx.strokeStyle = '#e63946';
+            ctx.lineWidth = 2;
+            for (let a = 0; a < Math.PI * 2; a += Math.PI / 4) {
+                const px = pez.x + Math.cos(a) * (pez.tamanio + 3);
+                const py = pez.y + Math.sin(a) * (pez.tamanio / 1.6 + 3);
+                ctx.beginPath();
+                ctx.moveTo(pez.x + Math.cos(a) * pez.tamanio, pez.y + Math.sin(a) * (pez.tamanio / 1.6));
+                ctx.lineTo(px, py);
+                ctx.stroke();
+            }
+        }
     });
 
-    // Dibujar Partículas de captura
+    // Partículas
     particulas.forEach((p) => {
         ctx.fillStyle = p.color;
         ctx.globalAlpha = p.vida;
