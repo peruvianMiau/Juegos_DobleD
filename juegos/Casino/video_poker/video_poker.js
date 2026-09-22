@@ -1,4 +1,4 @@
-// Lógica completa de Video Poker Jacks or Better: Reparto, Retención (HOLD), Cambio y Evaluación
+// Lógica completa de Video Poker Jacks or Better: Reparto, selección de cartas a cambiar y evaluación
 
 const PALOS = [
     { simbolo: '♠', color: 'black' },
@@ -27,8 +27,8 @@ function guardarSaldo(nuevoSaldo) {
 let fichas = obtenerSaldo();
 let mazo = [];
 let mano = [];
-let cartasRetenidas = [false, false, false, false, false];
-let estadoJuego = 'DEAL'; // 'DEAL' o 'DRAW'
+let cartasACambiar = [false, false, false, false, false];
+let estadoJuego = 'DEAL'; // 'DEAL', 'DRAW' o 'ROUND_END'
 let apuestaActual = 50;
 
 // Audio con Web Audio API
@@ -90,7 +90,7 @@ function crearMazo() {
 }
 
 function fijarApuesta(monto) {
-    if (estadoJuego === 'DRAW') return;
+    if (estadoJuego !== 'DEAL') return;
     const input = document.getElementById('bet-input');
     if (monto > fichas) monto = fichas;
     input.value = monto;
@@ -103,8 +103,10 @@ function actualizarTextoBoton() {
     const btnText = document.getElementById('btn-action-text');
     if (estadoJuego === 'DEAL') {
         btnText.innerText = `REPARTIR ($${monto})`;
-    } else {
+    } else if (estadoJuego === 'DRAW') {
         btnText.innerText = `CAMBIAR (DRAW)`;
+    } else {
+        btnText.innerText = `REPARTIR ($${monto})`;
     }
 }
 
@@ -116,13 +118,13 @@ function renderizarCartas() {
 
     for (let i = 0; i < 5; i++) {
         const wrapper = document.createElement('div');
-        wrapper.className = `card-wrapper ${cartasRetenidas[i] ? 'held' : ''}`;
-        wrapper.onclick = () => alternarRetencion(i);
+        wrapper.className = `card-wrapper ${cartasACambiar[i] ? 'change-selected' : ''}`;
+        wrapper.onclick = () => alternarCambio(i);
 
-        // Badge de HOLD
+        // Indicador de carta seleccionada para CAMBIAR
         const badge = document.createElement('div');
-        badge.className = `hold-badge ${cartasRetenidas[i] ? 'visible' : ''}`;
-        badge.innerText = 'MANTENER';
+        badge.className = `hold-badge ${cartasACambiar[i] ? 'visible' : ''}`;
+        badge.innerText = 'CAMBIAR';
 
         // Carta
         const cardDiv = document.createElement('div');
@@ -148,10 +150,10 @@ function renderizarCartas() {
         // Botón inferior con stopPropagation para evitar doble activación
         const btnToggle = document.createElement('button');
         btnToggle.className = 'btn-hold-toggle';
-        btnToggle.innerText = cartasRetenidas[i] ? 'RETENIDO' : 'HOLD';
+        btnToggle.innerText = cartasACambiar[i] ? 'CAMBIAR' : 'NO CAMBIAR';
         btnToggle.onclick = (e) => {
             e.stopPropagation();
-            alternarRetencion(i);
+            alternarCambio(i);
         };
 
         wrapper.appendChild(badge);
@@ -161,9 +163,9 @@ function renderizarCartas() {
     }
 }
 
-function alternarRetencion(index) {
+function alternarCambio(index) {
     if (estadoJuego !== 'DRAW' || procesando) return;
-    cartasRetenidas[index] = !cartasRetenidas[index];
+    cartasACambiar[index] = !cartasACambiar[index];
     reproducirClick();
     renderizarCartas();
 }
@@ -178,12 +180,6 @@ function manejarBotonAccion() {
 }
 
 function iniciarReparto() {
-    if (fichas < 10) {
-        fichas = 500;
-        guardarSaldo(fichas);
-        mostrarMensaje("¡Te quedaste sin fichas! Te regalamos $500 para jugar.", "text-purple-400 font-bold");
-    }
-
     const betInput = document.getElementById('bet-input');
     const monto = parseInt(betInput.value) || 50;
 
@@ -206,14 +202,14 @@ function iniciarReparto() {
     // Crear mazo y repartir 5 cartas
     mazo = crearMazo();
     mano = [mazo.pop(), mazo.pop(), mazo.pop(), mazo.pop(), mazo.pop()];
-    cartasRetenidas = [false, false, false, false, false];
+    cartasACambiar = [false, false, false, false, false];
 
     renderizarCartas();
     reproducirClick();
 
     estadoJuego = 'DRAW';
     actualizarTextoBoton();
-    mostrarMensaje("Haz clic en las cartas que deseas CONSERVAR (HOLD) y pulsa CAMBIAR.", "text-cyan-300");
+    mostrarMensaje("Haz clic en las cartas que deseas CAMBIAR y pulsa CAMBIAR (DRAW). Las que no selecciones se conservarán.", "text-cyan-300");
 
     setTimeout(() => {
         procesando = false;
@@ -225,7 +221,7 @@ function ejecutarCambio() {
 
     // Reemplazar cartas no retenidas
     for (let i = 0; i < 5; i++) {
-        if (!cartasRetenidas[i]) {
+        if (cartasACambiar[i]) {
             mano[i] = mazo.pop();
         }
     }
@@ -236,13 +232,28 @@ function ejecutarCambio() {
     // Evaluar la mano final
     evaluarManoFinal();
 
-    estadoJuego = 'DEAL';
+    estadoJuego = 'ROUND_END';
     actualizarTextoBoton();
     document.getElementById('bet-input').disabled = false;
+    document.getElementById('btn-action').classList.add('hidden');
+    document.getElementById('btn-new-round').classList.remove('hidden');
 
     setTimeout(() => {
         procesando = false;
     }, 250);
+}
+
+function iniciarNuevaRondaPoker() {
+    if (procesando) return;
+    estadoJuego = 'DEAL';
+    mano = [];
+    cartasACambiar = [false, false, false, false, false];
+    document.getElementById('btn-new-round').classList.add('hidden');
+    document.getElementById('btn-action').classList.remove('hidden');
+    document.getElementById('bet-input').disabled = false;
+    renderizarCartas();
+    actualizarTextoBoton();
+    mostrarMensaje('Nueva ronda lista. Elige tu apuesta y presiona REPARTIR.', 'text-cyan-300');
 }
 
 function evaluarManoFinal() {
@@ -328,11 +339,11 @@ function mostrarMensaje(texto, colorClass) {
     banner.innerText = texto;
 }
 
-// Atajos de teclado: teclas 1 a 5 para retención, Espacio para Repartir/Cambiar
+// Atajos de teclado: teclas 1 a 5 para seleccionar cartas a cambiar, Espacio para Repartir/Cambiar
 document.addEventListener('keydown', (e) => {
     if (['1', '2', '3', '4', '5'].includes(e.key)) {
         const idx = parseInt(e.key) - 1;
-        alternarRetencion(idx);
+        alternarCambio(idx);
     } else if (e.code === 'Space' && document.activeElement.tagName !== 'INPUT') {
         e.preventDefault();
         if (!procesando) manejarBotonAccion();
@@ -530,6 +541,12 @@ function inicializarMuestrasVisuales() {
 }
 
 // Inicialización
+window.addEventListener('casino-balance-changed', (e) => {
+    fichas = Number(e.detail.balance);
+    guardarSaldo(fichas);
+    actualizarTextoBoton();
+});
+
 document.addEventListener('DOMContentLoaded', () => {
     guardarSaldo(fichas);
     actualizarTextoBoton();

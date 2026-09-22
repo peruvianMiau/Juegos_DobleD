@@ -151,7 +151,7 @@
     }
 }
 
-.card-wrapper.held .card {
+.card-wrapper.change-selected .card {
     transform: translateY(-8px);
     outline: 3px solid #38bdf8;
     box-shadow: 0 0 18px rgba(56, 189, 248, 0.8), 0 10px 20px rgba(0,0,0,0.5);
@@ -159,11 +159,11 @@
 
 .card.back {
     background: repeating-linear-gradient(
-        45deg,
-        #b91c1c,
-        #b91c1c 8px,
-        #991b1b 8px,
-        #991b1b 16px
+            45deg,
+            #b91c1c,
+            #b91c1c 8px,
+            #991b1b 8px,
+            #991b1b 16px
     );
     border: 2px solid #ffffff;
 }
@@ -206,7 +206,7 @@
     transition: all 0.15s;
 }
 
-.card-wrapper.held .btn-hold-toggle {
+.card-wrapper.change-selected .btn-hold-toggle {
     background: #0284c7;
     border-color: #38bdf8;
     color: white;
@@ -248,4 +248,11 @@
 
 .btn-action:not(:disabled):active {
     transform: translateY(0);
-}
+}/* Las cartas son directamente seleccionables: haz clic sobre cualquier carta para CAMBIAR. */
+.card-wrapper{cursor:pointer}
+.card-wrapper:not(.change-selected):hover .card{transform:translateY(-5px)}
+.card-wrapper.change-selected .card{transform:translateY(-10px)}
+
+/* Selección de cartas a CAMBIAR: el clic marca las que serán reemplazadas. */
+.card-wrapper.change-selected .card{outline:3px solid #f59e0b;box-shadow:0 0 18px rgba(245,158,11,.75),0 10px 20px rgba(0,0,0,.5)}
+.card-wrapper.change-selected .btn-hold-toggle{background:#b45309;border-color:#f59e0b;color:#fff}
