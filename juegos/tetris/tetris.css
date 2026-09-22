@@ -66,19 +66,39 @@ canvas#next {
 
 #game-over {
     display: none;
-    text-align: center;
-    background: rgba(239, 68, 68, 0.15);
-    border: 1px solid #ef4444;
-    padding: 14px;
-    border-radius: 12px;
-    box-shadow: 0 0 15px rgba(239, 68, 68, 0.3);
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(10, 17, 30, 0.85);
+    backdrop-filter: blur(8px);
+    z-index: 9999;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    border: none;
+    border-radius: 0;
+    box-shadow: none;
+}
+
+#game-over.active {
+    display: flex;
 }
 
 #game-over h2 {
     color: #ef4444;
-    margin: 0 0 8px 0;
-    font-size: 1.3rem;
+    margin: 0 0 16px 0;
+    font-size: 3rem;
     font-weight: 900;
+    letter-spacing: 3px;
+    text-shadow: 0 0 20px rgba(239, 68, 68, 0.6);
+}
+
+#game-over .btn-restart {
+    width: auto;
+    padding: 14px 28px;
+    font-size: 1.1rem;
 }
 
 .btn-restart {

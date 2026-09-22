@@ -20,6 +20,13 @@ let juegoTerminado = false;
 let particulas = [];
 let animacionesLineas = []; // Guarda las filas en proceso de eliminación
 
+// VARIABLES DE VELOCIDAD DINÁMICA
+let intervaloCaidaOriginal = 1000;
+let intervaloCaida = 1000;
+let velocidadMinima = 120; // Tope máximo de velocidad (en ms) para no ser abusivo
+let contadorCaida = 0;
+let ultimoTiempo = 0;
+
 // SISTEMA DE AUDIO
 let audioCtx;
 let musicaTimeout;
@@ -213,8 +220,16 @@ function barridoTablero() {
 
     if (lineasLimpiadas) {
         sonarEfecto('linea');
+        actualizarVelocidad();
     }
     scoreElement.innerText = jugador.puntuacion;
+}
+
+// LÓGICA DE VELOCIDAD PROGRESIVA CON TOPE
+function actualizarVelocidad() {
+    // Reduce 30ms por cada 200 puntos conseguidos
+    const reduccion = Math.floor(jugador.puntuacion / 200) * 30;
+    intervaloCaida = Math.max(velocidadMinima, intervaloCaidaOriginal - reduccion);
 }
 
 function caidaJugador() {
@@ -262,7 +277,7 @@ function reiniciarJugador() {
     if (colision(tablero, jugador)) {
         juegoTerminado = true;
         sonarEfecto('gameover');
-        gameOverElement.style.display = 'block';
+        gameOverElement.classList.add('active');
     }
 }
 
@@ -271,7 +286,12 @@ function reiniciarJuego() {
     jugador.puntuacion = 0;
     scoreElement.innerText = '0';
     juegoTerminado = false;
-    gameOverElement.style.display = 'none';
+
+    // Resetear velocidad al valor original
+    intervaloCaida = intervaloCaidaOriginal;
+    contadorCaida = 0;
+
+    gameOverElement.classList.remove('active');
     jugador.siguiente = null;
     particulas = [];
     animacionesLineas = [];
@@ -300,28 +320,49 @@ function rotarJugador(dir) {
     sonarEfecto('rotar');
 }
 
-function dibujarMatriz(matriz, offset, ctx = context) {
+// OBTENER POSICIÓN DE LA PROYECCIÓN DE LA PIEZA (GHOST PIECE)
+function obtenerPosicionProyeccion() {
+    const fantasma = {
+        pos: { x: jugador.pos.x, y: jugador.pos.y },
+        matriz: jugador.matriz
+    };
+    while (!colision(tablero, fantasma)) {
+        fantasma.pos.y++;
+    }
+    fantasma.pos.y--;
+    return fantasma.pos;
+}
+
+function dibujarMatriz(matriz, offset, ctx = context, esFantasma = false) {
     matriz.forEach((fila, y) => {
         fila.forEach((valor, x) => {
             if (valor !== 0) {
-                ctx.fillStyle = COLORES[valor];
-                ctx.fillRect(x + offset.x, y + offset.y, 1, 1);
+                if (esFantasma) {
+                    // Renderizado translúcido para el indicador visual
+                    ctx.fillStyle = 'rgba(255, 255, 255, 0.12)';
+                    ctx.fillRect(x + offset.x, y + offset.y, 1, 1);
+                    ctx.strokeStyle = 'rgba(255, 255, 255, 0.4)';
+                    ctx.lineWidth = 0.05;
+                    ctx.strokeRect(x + offset.x + 0.02, y + offset.y + 0.02, 0.96, 0.96);
+                } else {
+                    ctx.fillStyle = COLORES[valor];
+                    ctx.fillRect(x + offset.x, y + offset.y, 1, 1);
 
-                // Brillo superior e izquierdo
-                ctx.fillStyle = 'rgba(255, 255, 255, 0.4)';
-                ctx.fillRect(x + offset.x, y + offset.y, 1, 0.08);
-                ctx.fillRect(x + offset.x, y + offset.y, 0.08, 1);
+                    // Brillo superior e izquierdo
+                    ctx.fillStyle = 'rgba(255, 255, 255, 0.4)';
+                    ctx.fillRect(x + offset.x, y + offset.y, 1, 0.08);
+                    ctx.fillRect(x + offset.x, y + offset.y, 0.08, 1);
 
-                // Sombra inferior y derecha
-                ctx.fillStyle = 'rgba(0, 0, 0, 0.45)';
-                ctx.fillRect(x + offset.x, y + offset.y + 0.92, 1, 0.08);
-                ctx.fillRect(x + offset.x + 0.92, y + offset.y, 0.08, 1);
+                    // Sombra inferior y derecha
+                    ctx.fillStyle = 'rgba(0, 0, 0, 0.45)';
+                    ctx.fillRect(x + offset.x, y + offset.y + 0.92, 1, 0.08);
+                    ctx.fillRect(x + offset.x + 0.92, y + offset.y, 0.08, 1);
+                }
             }
         });
     });
 }
 
-// CENTRADO CORRECTO DE LA PIEZA SIGUIENTE
 function dibujarSiguiente() {
     nextContext.clearRect(0, 0, nextCanvas.width, nextCanvas.height);
     nextContext.fillStyle = '#0a111e';
@@ -329,7 +370,6 @@ function dibujarSiguiente() {
 
     if (jugador.siguiente) {
         const m = jugador.siguiente;
-        // Calcular offset dinámico para centrar perfectamente matrices de 2x2, 3x3 o 4x4
         const offsetX = (4 - m[0].length) / 2;
         const offsetY = (4 - m.length) / 2;
         dibujarMatriz(m, {x: offsetX, y: offsetY}, nextContext);
@@ -337,7 +377,6 @@ function dibujarSiguiente() {
 }
 
 function actualizarParticulasYEfectos() {
-    // Renderizar animaciones de filas eliminadas
     for (let i = animacionesLineas.length - 1; i >= 0; i--) {
         const anim = animacionesLineas[i];
         context.fillStyle = `rgba(255, 255, 255, ${anim.opacidad})`;
@@ -348,7 +387,6 @@ function actualizarParticulasYEfectos() {
         }
     }
 
-    // Renderizar y actualizar partículas
     for (let i = particulas.length - 1; i >= 0; i--) {
         const p = particulas[i];
         p.x += p.vx;
@@ -387,16 +425,16 @@ function dibujar() {
     }
 
     dibujarMatriz(tablero, {x: 0, y: 0});
-    if (jugador.matriz) {
+
+    // Indicador visual de caída (Ghost Piece)
+    if (jugador.matriz && !juegoTerminado) {
+        const posFantasma = obtenerPosicionProyeccion();
+        dibujarMatriz(jugador.matriz, posFantasma, context, true);
         dibujarMatriz(jugador.matriz, jugador.pos);
     }
 
     actualizarParticulasYEfectos();
 }
-
-let contadorCaida = 0;
-let intervaloCaida = 1000;
-let ultimoTiempo = 0;
 
 function actualizar(tiempo = 0) {
     const deltaTime = tiempo - ultimoTiempo;
