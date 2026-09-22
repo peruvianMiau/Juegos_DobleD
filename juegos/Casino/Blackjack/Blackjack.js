@@ -125,8 +125,6 @@ document.addEventListener('DOMContentLoaded', () => {
        FLUJO PRINCIPAL DEL JUEGO
        ------------------------------------------ */
     function iniciarRonda() {
-        fichas = Number(localStorage.getItem('casino_balance') ?? fichas);
-        actualizarFichasUI();
         const montoApuesta = parseInt(betInputEl.value);
 
         if (isNaN(montoApuesta) || montoApuesta <= 0) {
