@@ -185,9 +185,27 @@ function animarRebote(elemento) {
 
 function evaluarResultado(s1, s2, s3, apuesta) {
     const display = document.getElementById('slot-display');
+    // La evaluación toma los símbolos que quedaron visibles en los tres rodillos.
+    // Esto evita que el premio pueda quedar desincronizado de lo que ve el usuario.
+    const visibles = [
+        document.querySelector('#reel-1 .symbol')?.textContent?.trim(),
+        document.querySelector('#reel-2 .symbol')?.textContent?.trim(),
+        document.querySelector('#reel-3 .symbol')?.textContent?.trim()
+    ];
+    const simbolos = visibles.every(Boolean) ? visibles : [s1, s2, s3];
+    [s1, s2, s3] = simbolos;
+    const conteo = simbolos.reduce((mapa, simbolo) => {
+        mapa[simbolo] = (mapa[simbolo] || 0) + 1;
+        return mapa;
+    }, {});
+    const grupos = Object.values(conteo).sort((a, b) => b - a);
+    const esTriple = grupos[0] === 3;
+    const esParejaExacta = grupos[0] === 2;
 
-    // Comprobar 3 iguales
-    if (s1 === s2 && s2 === s3) {
+    // La evaluación usa exclusivamente los tres resultados definitivos.
+    // 3 iguales = premio del símbolo; exactamente 2 iguales = 1.5x;
+    // 3 diferentes = 0. No hay casos ambiguos.
+    if (esTriple) {
         const itemInfo = SIMBOLOS.find(s => s.icono === s1);
         const mult = itemInfo ? itemInfo.mult : 10;
         const ganancia = apuesta * mult;
@@ -196,25 +214,21 @@ function evaluarResultado(s1, s2, s3, apuesta) {
 
         const esJackpot = s1 === '7️⃣';
         reproducirPremio(esJackpot);
-
-        display.innerText = esJackpot 
-            ? `🔥 ¡¡¡MEGA JACKPOT 777!!! GANASTE $${ganancia} (${mult}x) 🔥` 
-            : `🎉 ¡TRIPLE ${s1}! ¡Ganaste $${ganancia} (${mult}x)!`;
+        display.innerText = esJackpot
+            ? `🔥 777 | ${s1} ${s2} ${s3} | +$${ganancia} (${mult}x)`
+            : `🎉 TRIPLE | ${s1} ${s2} ${s3} | +$${ganancia} (${mult}x)`;
         display.className = "w-full bg-black/90 border border-amber-400 rounded-xl p-3 text-center min-h-[48px] flex items-center justify-center font-black text-base sm:text-xl text-amber-300 shadow-[0_0_20px_#f59e0b]";
-    }
-    // Comprobar 2 iguales (Pareja)
-    else if (s1 === s2 || s2 === s3 || s1 === s3) {
+    } else if (esParejaExacta) {
         const ganancia = Math.round(apuesta * 1.5);
         fichas += ganancia;
         guardarSaldo(fichas);
         reproducirPremio(false);
 
-        display.innerText = `✨ ¡Par conseguido! Cobraste $${ganancia} (1.5x)`;
+        const simboloPareja = Object.entries(conteo).find(([, cantidad]) => cantidad === 2)?.[0] || '';
+        display.innerText = `✨ PAREJA | ${s1} ${s2} ${s3} | Pareja de ${simboloPareja} | +$${ganancia} (1.5x)`;
         display.className = "w-full bg-black/90 border border-emerald-500/60 rounded-xl p-3 text-center min-h-[48px] flex items-center justify-center font-bold text-base sm:text-lg text-emerald-300 shadow-inner";
-    }
-    // Sin premio
-    else {
-        display.innerText = "Sin combinaciones premiadas. ¡Vuelve a intentarlo!";
+    } else {
+        display.innerText = `Sin premio | ${s1} ${s2} ${s3}`;
         display.className = "w-full bg-black/90 border border-slate-700 rounded-xl p-3 text-center min-h-[48px] flex items-center justify-center font-semibold text-base sm:text-lg text-slate-400 shadow-inner";
     }
 }
