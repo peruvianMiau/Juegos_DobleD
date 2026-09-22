@@ -97,9 +97,9 @@ let burbujas = [];
 let particulas = [];
 
 const TIPOS_PECES = [
-    { nombre: 'Normal', color: '#ff7b00', puntos: 10, velocidad: 2, tamaño: 16 },
-    { nombre: 'Dorado', color: '#ffd700', puntos: 30, velocidad: 3.5, tamaño: 12 },
-    { nombre: 'PezGlobo', color: '#e63946', puntos: -15, velocidad: 1.5, tamaño: 20 }
+    { nombre: 'Normal', color: '#ff7b00', puntos: 10, velocidad: 2, tamanio: 16 },
+    { nombre: 'Dorado', color: '#ffd700', puntos: 30, velocidad: 3.5, tamanio: 12 },
+    { nombre: 'PezGlobo', color: '#e63946', puntos: -15, velocidad: 1.5, tamanio: 20 }
 ];
 
 // Generar burbujas de fondo
@@ -108,7 +108,7 @@ for (let i = 0; i < 20; i++) {
         x: Math.random() * 800,
         y: Math.random() * 500,
         radio: Math.random() * 3 + 1,
-        velY: Math.random() * 1 + 0.5
+        velY: Math.random() + 0.5
     });
 }
 
@@ -262,7 +262,7 @@ function actualizarPeces() {
 
         if (!anzuelo.pezEnganchado && anzuelo.y > 110) {
             const dist = Math.hypot(anzuelo.x - pez.x, anzuelo.y - pez.y);
-            if (dist < pez.tamaño + anzuelo.radio) {
+            if (dist < pez.tamanio + anzuelo.radio) {
                 anzuelo.pezEnganchado = pez;
             }
         }
@@ -340,12 +340,12 @@ function dibujar() {
     peces.forEach((pez) => {
         ctx.fillStyle = pez.color;
         ctx.beginPath();
-        ctx.ellipse(pez.x, pez.y, pez.tamaño, pez.tamaño / 1.6, 0, 0, Math.PI * 2);
+        ctx.ellipse(pez.x, pez.y, pez.tamanio, pez.tamanio / 1.6, 0, 0, Math.PI * 2);
         ctx.fill();
 
         // Cola del pez
         ctx.beginPath();
-        const colaX = pez.x - (pez.tamaño * pez.dir);
+        const colaX = pez.x - (pez.tamanio * pez.dir);
         ctx.moveTo(pez.x, pez.y);
         ctx.lineTo(colaX, pez.y - 8);
         ctx.lineTo(colaX, pez.y + 8);
@@ -355,11 +355,11 @@ function dibujar() {
         // Ojo del pez
         ctx.fillStyle = '#ffffff';
         ctx.beginPath();
-        ctx.arc(pez.x + (pez.tamaño / 2 * pez.dir), pez.y - 2, 3, 0, Math.PI * 2);
+        ctx.arc(pez.x + (pez.tamanio / 2 * pez.dir), pez.y - 2, 3, 0, Math.PI * 2);
         ctx.fill();
         ctx.fillStyle = '#000000';
         ctx.beginPath();
-        ctx.arc(pez.x + (pez.tamaño / 2 * pez.dir), pez.y - 2, 1.5, 0, Math.PI * 2);
+        ctx.arc(pez.x + (pez.tamanio / 2 * pez.dir), pez.y - 2, 1.5, 0, Math.PI * 2);
         ctx.fill();
     });
 
