@@ -25,6 +25,10 @@ body {
 
 .arcade-container {
     position: relative;
+    width: 100%;
+    max-width: 1024px;
+    box-sizing: border-box;
+    overflow: hidden;
     background-color: #1f2833;
     padding: 15px;
     border-radius: 12px;
@@ -37,14 +41,17 @@ body {
 /* HUD */
 .hud {
     display: flex;
-    width: 1024px;
+    width: 100%;
+    max-width: 1024px;
+    box-sizing: border-box;
     justify-content: space-between;
     align-items: center;
     margin-bottom: 10px;
 }
 
 .player-hud {
-    width: 42%;
+    width: 40%;
+    min-width: 0;
     display: flex;
     flex-direction: column;
     gap: 4px;
@@ -157,4 +164,15 @@ canvas {
     margin-top: 15px;
     font-size: 0.9rem;
     color: #c5c6c7;
+}
+
+@media (max-width: 700px) {
+    body { padding: 8px; }
+    .top-bar { width: 100%; flex-wrap: wrap; justify-content: center; gap: 8px; }
+    .hud { gap: 8px; }
+    .player-hud { width: calc((100% - 76px) / 2); }
+    .player-name { font-size: .85rem; }
+    .timer-box { width: 50px; height: 50px; min-width: 50px; font-size: 1.35rem; border-width: 2px; }
+    .bar-container { height: 18px; }
+    .bar-container.special { height: 8px; }
 }

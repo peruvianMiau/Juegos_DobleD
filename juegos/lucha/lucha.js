@@ -8,6 +8,7 @@ const ALTO_SUELO = 96;
 let particulas = [];
 let efectosTexto = [];
 let contadorSacudida = 0;
+let juegoTerminado = false;
 
 function agregarChispas(x, y, color) {
     for (let i = 0; i < 15; i++) {
@@ -260,6 +261,7 @@ const jugador2 = new Peleador({
 const teclas = { a: false, d: false, ArrowLeft: false, ArrowRight: false };
 
 window.addEventListener('keydown', (e) => {
+    if (juegoTerminado) return;
     switch (e.key) {
         case 'a': case 'A': teclas.a = true; break;
         case 'd': case 'D': teclas.d = true; break;
@@ -276,6 +278,7 @@ window.addEventListener('keydown', (e) => {
 });
 
 window.addEventListener('keyup', (e) => {
+    if (juegoTerminado) return;
     switch (e.key) {
         case 'a': case 'A': teclas.a = false; break;
         case 'd': case 'D': teclas.d = false; break;
@@ -364,6 +367,11 @@ function iniciarCronometro() {
 }
 
 function determinarGanador() {
+    if (juegoTerminado) return;
+    juegoTerminado = true;
+    teclas.a = teclas.d = teclas.ArrowLeft = teclas.ArrowRight = false;
+    jugador1.vel.x = 0;
+    jugador2.vel.x = 0;
     clearInterval(temporizadorID);
     const overlay = document.getElementById('game-over-overlay');
     const winnerText = document.getElementById('winner-text');
@@ -379,6 +387,10 @@ function determinarGanador() {
 }
 
 function reiniciarPelea() {
+    juegoTerminado = false;
+    teclas.a = teclas.d = teclas.ArrowLeft = teclas.ArrowRight = false;
+    jugador1.vel.x = 0;
+    jugador2.vel.x = 0;
     jugador1.vida = 100;
     jugador2.vida = 100;
     jugador1.especial = 0;
@@ -410,14 +422,18 @@ function animar() {
 
     dibujarEscenario();
 
-    // Movimiento
+    // Movimiento (bloqueado durante la pantalla de resultado)
     jugador1.vel.x = 0;
-    if (teclas.a) jugador1.vel.x = -6;
-    if (teclas.d) jugador1.vel.x = 6;
+    if (!juegoTerminado) {
+        if (teclas.a) jugador1.vel.x = -6;
+        if (teclas.d) jugador1.vel.x = 6;
+    }
 
     jugador2.vel.x = 0;
-    if (teclas.ArrowLeft) jugador2.vel.x = -6;
-    if (teclas.ArrowRight) jugador2.vel.x = 6;
+    if (!juegoTerminado) {
+        if (teclas.ArrowLeft) jugador2.vel.x = -6;
+        if (teclas.ArrowRight) jugador2.vel.x = 6;
+    }
 
     jugador1.mirandoDerecha = jugador1.pos.x < jugador2.pos.x;
     jugador2.mirandoDerecha = jugador2.pos.x < jugador1.pos.x;
