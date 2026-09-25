@@ -12,19 +12,26 @@ import {
   showPlayResult,
   hidePlayResult
 } from './modules/ui.js';
+import { toggleMusic } from './modules/audio.js';
 
-let gameState = {
-  round: 1,
-  targetScore: 300,
-  currentScore: 0,
-  money: 4,
-  handsLeft: 4,
-  discardsLeft: 3,
-  deck: [],
-  hand: [],
-  selectedIndices: [],
-  jokers: []
-};
+function freshState() {
+  return {
+    round: 1,
+    targetScore: 300,
+    currentScore: 0,
+    money: 4,
+    handsLeft: 4,
+    discardsLeft: 3,
+    deck: [],
+    hand: [],
+    selectedIndices: [],
+    jokers: [],
+    shopOffers: [],
+    shopPacks: []
+  };
+}
+
+let gameState = freshState();
 
 function initGame() {
   createDeck();
@@ -78,6 +85,25 @@ function refreshHandUI() {
   updateEvaluatorUI(evalRes);
 }
 
+// --- Ordenar mano ---
+function sortHandBySuit() {
+  gameState.hand.sort((a, b) => {
+    const suitDiff = SUITS.indexOf(a.suit) - SUITS.indexOf(b.suit);
+    return suitDiff !== 0 ? suitDiff : a.value - b.value;
+  });
+  gameState.selectedIndices = [];
+  refreshHandUI();
+}
+
+function sortHandByValue() {
+  gameState.hand.sort((a, b) => {
+    const valDiff = a.value - b.value;
+    return valDiff !== 0 ? valDiff : SUITS.indexOf(a.suit) - SUITS.indexOf(b.suit);
+  });
+  gameState.selectedIndices = [];
+  refreshHandUI();
+}
+
 function playHand() {
   if (gameState.selectedIndices.length === 0 || gameState.handsLeft <= 0) return;
 
@@ -93,7 +119,7 @@ function playHand() {
   setTimeout(() => {
     hidePlayResult();
     resolvePlayedHand(evalRes);
-  }, 1700);
+  }, 1900);
 }
 
 function resolvePlayedHand(evalRes) {
@@ -134,22 +160,66 @@ function discardCards() {
   refreshHandUI();
 }
 
+// --- Tienda estilo Balatro: ofertas directas + sobres con elección ---
+function generateShopInventory() {
+  const ownedIds = gameState.jokers.map(j => j.id);
+  const available = LEGENDARY_SHOP.filter(j => !ownedIds.includes(j.id));
+  const shuffled = [...available].sort(() => Math.random() - 0.5);
+
+  gameState.shopOffers = shuffled.slice(0, 3).map(j => j.id);
+
+  const packPool = shuffled.length >= 2 ? shuffled : available;
+  gameState.shopPacks = [0, 1].map((_, idx) => {
+    const packShuffled = [...packPool].sort(() => Math.random() - 0.5);
+    const candidates = packShuffled.slice(0, 2).map(j => j.id);
+    return {
+      id: `pack-${idx}-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
+      cost: 4,
+      opened: false,
+      candidates
+    };
+  }).filter(pack => pack.candidates.length > 0);
+}
+
 function openShopModal() {
   gameState.money += 4;
+  generateShopInventory();
   updateUI(gameState);
-  renderShop(gameState, buyJoker);
+  renderShop(gameState, buyJoker, buyPack, choosePackCard);
   openModal('shopModal');
 }
 
 function buyJoker(jokerId) {
   const joker = LEGENDARY_SHOP.find(j => j.id === jokerId);
-  if (joker && gameState.money >= joker.cost) {
+  if (joker && gameState.money >= joker.cost && !gameState.jokers.some(j => j.id === joker.id)) {
     gameState.money -= joker.cost;
     gameState.jokers.push(joker);
     renderJokers(gameState.jokers);
     updateUI(gameState);
-    renderShop(gameState, buyJoker);
+    renderShop(gameState, buyJoker, buyPack, choosePackCard);
   }
+}
+
+function buyPack(packId) {
+  const pack = gameState.shopPacks.find(p => p.id === packId);
+  if (!pack || pack.opened || gameState.money < pack.cost) return;
+  gameState.money -= pack.cost;
+  pack.opened = true;
+  updateUI(gameState);
+  renderShop(gameState, buyJoker, buyPack, choosePackCard);
+}
+
+function choosePackCard(packId, jokerId) {
+  const pack = gameState.shopPacks.find(p => p.id === packId);
+  if (!pack) return;
+  const joker = LEGENDARY_SHOP.find(j => j.id === jokerId);
+  if (joker && !gameState.jokers.some(j => j.id === joker.id)) {
+    gameState.jokers.push(joker);
+    renderJokers(gameState.jokers);
+  }
+  gameState.shopPacks = gameState.shopPacks.filter(p => p.id !== packId);
+  updateUI(gameState);
+  renderShop(gameState, buyJoker, buyPack, choosePackCard);
 }
 
 function nextRoundFromShop() {
@@ -159,6 +229,8 @@ function nextRoundFromShop() {
   gameState.currentScore = 0;
   gameState.handsLeft = 4;
   gameState.discardsLeft = 3;
+  gameState.shopOffers = [];
+  gameState.shopPacks = [];
   createDeck();
   gameState.hand = [];
   drawHand(8);
@@ -167,18 +239,7 @@ function nextRoundFromShop() {
 }
 
 function resetGame() {
-  gameState = {
-    round: 1,
-    targetScore: 300,
-    currentScore: 0,
-    money: 4,
-    handsLeft: 4,
-    discardsLeft: 3,
-    deck: [],
-    hand: [],
-    selectedIndices: [],
-    jokers: []
-  };
+  gameState = freshState();
   initGame();
 }
 
@@ -186,11 +247,20 @@ function setupEventListeners() {
   document.getElementById('playBtn').onclick = playHand;
   document.getElementById('discardBtn').onclick = discardCards;
 
+  document.getElementById('sortSuitBtn').onclick = sortHandBySuit;
+  document.getElementById('sortValueBtn').onclick = sortHandByValue;
+
   document.getElementById('openHandsBtn').onclick = () => openModal('handsModal');
   document.getElementById('closeHandsBtn').onclick = () => closeModal('handsModal');
   document.getElementById('confirmHandsBtn').onclick = () => closeModal('handsModal');
 
   document.getElementById('nextRoundBtn').onclick = nextRoundFromShop;
+
+  const musicBtn = document.getElementById('musicToggleBtn');
+  musicBtn.onclick = () => {
+    const playing = toggleMusic();
+    musicBtn.innerText = playing ? '🔊' : '🔈';
+  };
 }
 
 window.addEventListener('DOMContentLoaded', initGame);

@@ -24,6 +24,9 @@
         ⚡ POKETRO
     </h1>
     <div class="flex items-center gap-2 sm:gap-3">
+        <button id="musicToggleBtn" title="Música (original, sin derechos)" class="bg-slate-800 hover:bg-slate-700 text-white text-sm px-2.5 py-1.5 rounded-lg border border-slate-700 transition">
+            🔈
+        </button>
         <button id="openHandsBtn" class="bg-emerald-600 hover:bg-emerald-500 text-white text-xs md:text-sm font-semibold px-3 py-1.5 rounded-lg border border-emerald-400 flex items-center gap-1.5 transition">
             🂠 <span class="hidden sm:inline">Manos</span>
         </button>
@@ -109,9 +112,13 @@
 
         <!-- MANO DE CARTAS DEL JUGADOR -->
         <div class="mt-1">
-            <div class="flex justify-between items-center mb-2 px-2">
+            <div class="flex justify-between items-center mb-2 px-2 flex-wrap gap-2">
                 <span class="text-xs text-slate-400 font-semibold">Tu Mano (<span id="selectedCount">0</span>/5 seleccionadas)</span>
-                <span class="text-xs text-slate-500">Haz clic para seleccionar o bajar cartas</span>
+                <div class="flex items-center gap-2">
+                    <span class="text-[10px] text-slate-500 uppercase tracking-wide hidden sm:inline">Ordenar:</span>
+                    <button id="sortSuitBtn" class="text-xs bg-slate-800 hover:bg-slate-700 border border-slate-700 px-2.5 py-1 rounded-lg text-slate-300 transition">🔀 Por Palo</button>
+                    <button id="sortValueBtn" class="text-xs bg-slate-800 hover:bg-slate-700 border border-slate-700 px-2.5 py-1 rounded-lg text-slate-300 transition">🔢 Por Categoría</button>
+                </div>
             </div>
             <div id="handContainer" class="flex justify-center items-end min-h-[190px] gap-2 md:gap-4 px-2 flex-wrap"></div>
         </div>
@@ -160,10 +167,30 @@
 </div>
 
 <!-- OVERLAY RESULTADO DE MANO JUGADA -->
-<div id="playResultOverlay" class="hidden fixed inset-0 z-50 flex flex-col items-center justify-center gap-5 bg-slate-950/85 backdrop-blur-sm px-4">
-    <div id="playResultHandName" class="pixel-font text-base sm:text-xl text-indigo-300 text-center"></div>
-    <div id="playResultCards" class="flex justify-center items-center gap-3 md:gap-4 flex-wrap max-w-5xl"></div>
-    <div id="playResultScore" class="pixel-font text-3xl sm:text-5xl text-yellow-400 drop-shadow-[0_0_15px_rgba(250,204,21,0.6)]"></div>
+<div id="playResultOverlay" class="hidden fixed inset-0 z-50 flex flex-col lg:flex-row items-center justify-center gap-6 lg:gap-10 bg-slate-950/85 backdrop-blur-sm px-4">
+    <div class="flex flex-col items-center gap-4">
+        <div id="playResultHandName" class="pixel-font text-base sm:text-xl text-indigo-300 text-center"></div>
+        <div id="playResultCards" class="flex justify-center items-center gap-3 md:gap-4 flex-wrap max-w-4xl"></div>
+    </div>
+
+    <!-- Panel de fichas × mult a un lado -->
+    <div class="flex flex-row lg:flex-col items-center gap-3 lg:gap-2 bg-slate-900/90 border border-slate-700 rounded-2xl px-6 py-5 shadow-2xl">
+        <div class="flex flex-col items-center">
+            <span class="text-[10px] uppercase text-slate-400 font-bold tracking-wider">Fichas</span>
+            <span id="playResultChips" class="pixel-font text-lg sm:text-2xl text-cyan-400">0</span>
+        </div>
+        <span class="text-rose-400 font-black text-2xl">×</span>
+        <div class="flex flex-col items-center">
+            <span class="text-[10px] uppercase text-slate-400 font-bold tracking-wider">Mult</span>
+            <span id="playResultMult" class="pixel-font text-lg sm:text-2xl text-rose-400">0</span>
+        </div>
+        <div class="hidden lg:block w-full border-t border-slate-700 my-1"></div>
+        <span class="text-rose-400 font-black text-2xl lg:hidden">=</span>
+        <div class="flex flex-col items-center">
+            <span class="text-[10px] uppercase text-slate-400 font-bold tracking-wider">Total</span>
+            <span id="playResultScore" class="pixel-font text-2xl sm:text-4xl text-yellow-400 drop-shadow-[0_0_15px_rgba(250,204,21,0.6)]">0</span>
+        </div>
+    </div>
 </div>
 
 <!-- MODAL MANOS PÓKER -->
@@ -182,11 +209,20 @@
 
 <!-- MODAL TIENDA -->
 <div id="shopModal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 modal-backdrop">
-    <div class="bg-slate-900 border border-yellow-500/40 rounded-2xl max-w-2xl w-full p-6 shadow-2xl text-center">
+    <div class="bg-slate-900 border border-yellow-500/40 rounded-2xl max-w-3xl w-full p-6 shadow-2xl text-center max-h-[90vh] overflow-y-auto">
         <h2 class="pixel-font text-2xl text-yellow-400 mb-2">🛒 Tienda Pokémon</h2>
-        <p class="text-sm text-slate-400 mb-6">¡Has superado la ciega! Compra Pokémon Legendarios para usarlos como Comodines pasivos.</p>
+        <p class="text-sm text-slate-400 mb-3">¡Has superado la ciega! Compra Pokémon Legendarios para usarlos como Comodines pasivos.</p>
 
-        <div id="shopItemsContainer" class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6"></div>
+        <div class="inline-flex items-center gap-2 bg-slate-950 border border-amber-500/40 px-4 py-2 rounded-xl mb-6">
+            <span class="text-amber-400 font-bold text-sm">💰 Dinero Disponible:</span>
+            <span id="shopMoneyDisplay" class="pixel-font text-lg text-amber-300">$0</span>
+        </div>
+
+        <h3 class="text-xs uppercase tracking-wider text-slate-400 font-bold mb-3 text-left">Comodines en Oferta</h3>
+        <div id="shopItemsContainer" class="grid grid-cols-2 sm:grid-cols-3 gap-4 mb-6 place-items-center"></div>
+
+        <h3 class="text-xs uppercase tracking-wider text-slate-400 font-bold mb-3 text-left">🎴 Sobres Legendarios</h3>
+        <div id="shopPacksContainer" class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6"></div>
 
         <button id="nextRoundBtn" class="bg-emerald-600 hover:bg-emerald-500 text-white font-bold px-8 py-3 rounded-xl border border-emerald-400 text-lg shadow-lg">
             Siguiente Ciega ➔

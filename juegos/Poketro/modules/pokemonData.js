@@ -19,7 +19,14 @@ export const SUITS = ['🔥', '💧', '🌿', '⚡'];
 export const LEGENDARY_SHOP = [
   { id: 'mewtwo', name: 'Mewtwo', cost: 6, mult: 4, chips: 0, desc: '+4 Mult a todas las manos', img: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/150.png' },
   { id: 'rayquaza', name: 'Rayquaza', cost: 8, mult: 0, chips: 60, desc: '+60 Fichas en cada mano', img: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/384.png' },
-  { id: 'zapdos', name: 'Zapdos', cost: 5, mult: 3, chips: 20, desc: '+20 Fichas y +3 Mult', img: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/145.png' }
+  { id: 'zapdos', name: 'Zapdos', cost: 5, mult: 3, chips: 20, desc: '+20 Fichas y +3 Mult', img: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/145.png' },
+  { id: 'articuno', name: 'Articuno', cost: 5, mult: 0, chips: 25, desc: '+25 Fichas en cada mano', img: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/144.png' },
+  { id: 'moltres', name: 'Moltres', cost: 5, mult: 2, chips: 10, desc: '+10 Fichas y +2 Mult', img: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/146.png' },
+  { id: 'suicune', name: 'Suicune', cost: 6, mult: 3, chips: 0, desc: '+3 Mult a todas las manos', img: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/245.png' },
+  { id: 'entei', name: 'Entei', cost: 7, mult: 0, chips: 45, desc: '+45 Fichas en cada mano', img: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/244.png' },
+  { id: 'raikou', name: 'Raikou', cost: 6, mult: 2, chips: 15, desc: '+15 Fichas y +2 Mult', img: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/243.png' },
+  { id: 'lugia', name: 'Lugia', cost: 9, mult: 5, chips: 0, desc: '+5 Mult a todas las manos', img: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/249.png' },
+  { id: 'hooh', name: 'Ho-Oh', cost: 9, mult: 0, chips: 70, desc: '+70 Fichas en cada mano', img: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/250.png' }
 ];
 
 export const POKER_HANDS_INFO = [
