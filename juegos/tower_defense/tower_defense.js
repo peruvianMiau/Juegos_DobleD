@@ -84,6 +84,15 @@ let tipoTorreSeleccionado = null;
 let torreInspeccionada = null;
 let mousePos = { x: -100, y: -100, dentro: false };
 
+// Referencias DOM cacheadas (evita buscar el DOM repetidamente cada frame)
+const uiGoldCount = document.getElementById('gold-count');
+const uiLivesCount = document.getElementById('lives-count');
+const uiWaveDisplay = document.getElementById('wave-display');
+const uiEnemiesLeft = document.getElementById('enemies-left');
+
+// Marca que la UI necesita actualizarse; se aplica una sola vez al final de update()
+let uiDirty = false;
+
 // Sendero
 const CAMINO = [
     { x: -20, y: 100 },
@@ -217,10 +226,10 @@ function estaEnCamino(x, y) {
 }
 
 function actualizarMarcadoresUI() {
-    document.getElementById('gold-count').innerText = oro;
-    document.getElementById('lives-count').innerText = vidas;
-    document.getElementById('wave-display').innerText = `Oleada ${oleadaActual} / ${OLEADAS_TOTALES}`;
-    document.getElementById('enemies-left').innerText = `${enemigos.length + colaSpawn.length} vivos`;
+    uiGoldCount.innerText = oro;
+    uiLivesCount.innerText = vidas;
+    uiWaveDisplay.innerText = `Oleada ${oleadaActual} / ${OLEADAS_TOTALES}`;
+    uiEnemiesLeft.innerText = `${enemigos.length + colaSpawn.length} vivos`;
 }
 
 function seleccionarTipoTorre(tipo) {
@@ -508,9 +517,10 @@ function update() {
                 vidas--;
                 playSound('hurt');
                 enemigos.splice(i, 1);
-                actualizarMarcadoresUI();
+                uiDirty = true;
 
                 if (vidas <= 0) {
+                    actualizarMarcadoresUI();
                     finalizarJuego(false);
                     return;
                 }
@@ -531,6 +541,13 @@ function update() {
             }
         }
 
+        // Progreso de cada enemigo en el camino, calculado UNA vez (antes se recalculaba
+        // por cada torre × cada enemigo, ahora es solo una vez × cada enemigo)
+        for (let e of enemigos) {
+            const sig = CAMINO[e.puntoIdx + 1];
+            e.progreso = e.puntoIdx * 1000000 - distSq(e.x, e.y, sig ? sig.x : e.x, sig ? sig.y : e.y);
+        }
+
         for (let t of torres) {
             let objetivo = null;
             let mayorProgreso = -Infinity;
@@ -538,9 +555,8 @@ function update() {
             for (let e of enemigos) {
                 const d2 = distSq(t.x, t.y, e.x, e.y);
                 if (d2 <= t.rango * t.rango) {
-                    const progreso = e.puntoIdx * 1000000 - distSq(e.x, e.y, CAMINO[e.puntoIdx + 1]?.x || e.x, CAMINO[e.puntoIdx + 1]?.y || e.y);
-                    if (progreso > mayorProgreso) {
-                        mayorProgreso = progreso;
+                    if (e.progreso > mayorProgreso) {
+                        mayorProgreso = e.progreso;
                         objetivo = e;
                     }
                 }
@@ -617,14 +633,14 @@ function update() {
                 }
 
                 enemigos.splice(i, 1);
-                actualizarMarcadoresUI();
+                uiDirty = true;
             }
         }
 
         if (oleadaEnProgreso && colaSpawn.length === 0 && enemigos.length === 0) {
             oleadaEnProgreso = false;
             playSound('coin');
-            actualizarMarcadoresUI();
+            uiDirty = true;
 
             const waveBtn = document.getElementById('btn-wave');
             if (oleadaActual >= OLEADAS_TOTALES) {
@@ -649,6 +665,12 @@ function update() {
             t.life--;
             if (t.life <= 0) textosFlotantes.splice(i, 1);
         }
+    }
+
+    // Una sola escritura al DOM por frame en vez de una por cada evento (oro, muerte, etc.)
+    if (uiDirty) {
+        actualizarMarcadoresUI();
+        uiDirty = false;
     }
 }
 
@@ -757,6 +779,34 @@ function drawGrid() {
     ctx.stroke();
 }
 
+// Cache de sprites de "brillo" (glow) pre-renderizados por color/radio.
+// ctx.shadowBlur es muy costoso si se recalcula cada frame para cada proyectil;
+// aquí se calcula UNA sola vez por combinación color+radio y se reutiliza con drawImage,
+// dando el mismo resultado visual a una fracción del costo.
+const glowSpriteCache = {};
+function getGlowSprite(color, radio) {
+    const key = color + '_' + radio;
+    let sprite = glowSpriteCache[key];
+    if (sprite) return sprite;
+
+    const pad = 10; // espacio extra para que el blur no se recorte
+    const size = (radio + pad) * 2;
+    sprite = document.createElement('canvas');
+    sprite.width = size;
+    sprite.height = size;
+
+    const sctx = sprite.getContext('2d');
+    sctx.shadowColor = color;
+    sctx.shadowBlur = 8;
+    sctx.fillStyle = color;
+    sctx.beginPath();
+    sctx.arc(size / 2, size / 2, radio, 0, Math.PI * 2);
+    sctx.fill();
+
+    glowSpriteCache[key] = sprite;
+    return sprite;
+}
+
 // Canvas en memoria para renderizado estático del fondo
 const bgCanvas = document.createElement('canvas');
 bgCanvas.width = 800;
@@ -776,69 +826,98 @@ function preRenderFondo() {
         }
     }
     bgCtx.fill();
+
+    // --- Decoraciones (árboles, rocas, flores) ---
+    // Son estáticas: nunca se mueven, así que se hornean aquí en vez de
+    // redibujarse 40 veces por frame en draw().
+    for (let dec of DECORACIONES) {
+        if (dec.tipo === 'tree') {
+            bgCtx.fillStyle = 'rgba(0,0,0,0.3)';
+            bgCtx.beginPath();
+            bgCtx.ellipse(dec.x, dec.y + dec.size * 0.6, dec.size * 0.8, dec.size * 0.4, 0, 0, Math.PI * 2);
+            bgCtx.fill();
+
+            bgCtx.fillStyle = '#064e3b';
+            bgCtx.beginPath();
+            bgCtx.arc(dec.x, dec.y, dec.size, 0, Math.PI * 2);
+            bgCtx.fill();
+            bgCtx.fillStyle = '#059669';
+            bgCtx.beginPath();
+            bgCtx.arc(dec.x - dec.size * 0.2, dec.y - dec.size * 0.2, dec.size * 0.6, 0, Math.PI * 2);
+            bgCtx.fill();
+        } else if (dec.tipo === 'rock') {
+            bgCtx.fillStyle = '#334155';
+            bgCtx.beginPath();
+            bgCtx.arc(dec.x, dec.y, dec.size * 0.5, 0, Math.PI * 2);
+            bgCtx.fill();
+        } else {
+            bgCtx.fillStyle = '#f43f5e';
+            bgCtx.beginPath();
+            bgCtx.arc(dec.x, dec.y, 3, 0, Math.PI * 2);
+            bgCtx.fill();
+        }
+    }
+
+    // --- Camino (sendero) ---
+    // También estático: antes se trazaba con 3 pasadas de stroke en cada frame.
+    bgCtx.lineCap = 'round';
+    bgCtx.lineJoin = 'round';
+
+    bgCtx.lineWidth = ANCHO_CAMINO;
+    bgCtx.strokeStyle = '#2b1a09';
+    bgCtx.beginPath();
+    bgCtx.moveTo(CAMINO[0].x, CAMINO[0].y);
+    for (let i = 1; i < CAMINO.length; i++) bgCtx.lineTo(CAMINO[i].x, CAMINO[i].y);
+    bgCtx.stroke();
+
+    bgCtx.lineWidth = ANCHO_CAMINO - 4;
+    bgCtx.strokeStyle = '#5c3d24';
+    bgCtx.beginPath();
+    bgCtx.moveTo(CAMINO[0].x, CAMINO[0].y);
+    for (let i = 1; i < CAMINO.length; i++) bgCtx.lineTo(CAMINO[i].x, CAMINO[i].y);
+    bgCtx.stroke();
+
+    bgCtx.lineWidth = 2;
+    bgCtx.strokeStyle = 'rgba(217, 119, 6, 0.35)';
+    bgCtx.setLineDash([8, 8]);
+    bgCtx.beginPath();
+    bgCtx.moveTo(CAMINO[0].x, CAMINO[0].y);
+    for (let i = 1; i < CAMINO.length; i++) bgCtx.lineTo(CAMINO[i].x, CAMINO[i].y);
+    bgCtx.stroke();
+    bgCtx.setLineDash([]);
+
+    // --- Castillo (destino) ---
+    // Estático (sin animación), así que también se hornea aquí. El portal de
+    // entrada SÍ pulsa (usa globalTime) y por eso se sigue dibujando en draw().
+    const dest = CAMINO[CAMINO.length - 1];
+    bgCtx.fillStyle = 'rgba(0,0,0,0.5)';
+    bgCtx.beginPath();
+    bgCtx.ellipse(dest.x - 10, dest.y + 16, 32, 12, 0, 0, Math.PI * 2);
+    bgCtx.fill();
+
+    bgCtx.fillStyle = '#1e293b';
+    bgCtx.strokeStyle = '#f59e0b';
+    bgCtx.lineWidth = 3.5;
+    bgCtx.beginPath();
+    bgCtx.arc(dest.x - 10, dest.y, 30, 0, Math.PI * 2);
+    bgCtx.fill();
+    bgCtx.stroke();
+    bgCtx.font = '24px sans-serif';
+    bgCtx.textAlign = 'center';
+    bgCtx.textBaseline = 'middle';
+    bgCtx.fillText('🏰', dest.x - 10, dest.y);
 }
 
+// Las decoraciones deben generarse ANTES de hornear el fondo, porque
+// preRenderFondo() ahora las dibuja de forma permanente en bgCanvas.
+generarDecoraciones();
 preRenderFondo();
 
 function draw() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
-
     ctx.drawImage(bgCanvas, 0, 0);
 
-    for (let dec of DECORACIONES) {
-        if (dec.tipo === 'tree') {
-            ctx.fillStyle = 'rgba(0,0,0,0.3)';
-            ctx.beginPath();
-            ctx.ellipse(dec.x, dec.y + dec.size * 0.6, dec.size * 0.8, dec.size * 0.4, 0, 0, Math.PI * 2);
-            ctx.fill();
-
-            ctx.fillStyle = '#064e3b';
-            ctx.beginPath();
-            ctx.arc(dec.x, dec.y, dec.size, 0, Math.PI * 2);
-            ctx.fill();
-            ctx.fillStyle = '#059669';
-            ctx.beginPath();
-            ctx.arc(dec.x - dec.size * 0.2, dec.y - dec.size * 0.2, dec.size * 0.6, 0, Math.PI * 2);
-            ctx.fill();
-        } else if (dec.tipo === 'rock') {
-            ctx.fillStyle = '#334155';
-            ctx.beginPath();
-            ctx.arc(dec.x, dec.y, dec.size * 0.5, 0, Math.PI * 2);
-            ctx.fill();
-        } else {
-            ctx.fillStyle = '#f43f5e';
-            ctx.beginPath();
-            ctx.arc(dec.x, dec.y, 3, 0, Math.PI * 2);
-            ctx.fill();
-        }
-    }
-
-    ctx.lineCap = 'round';
-    ctx.lineJoin = 'round';
-
-    ctx.lineWidth = ANCHO_CAMINO;
-    ctx.strokeStyle = '#2b1a09';
-    ctx.beginPath();
-    ctx.moveTo(CAMINO[0].x, CAMINO[0].y);
-    for (let i = 1; i < CAMINO.length; i++) ctx.lineTo(CAMINO[i].x, CAMINO[i].y);
-    ctx.stroke();
-
-    ctx.lineWidth = ANCHO_CAMINO - 4;
-    ctx.strokeStyle = '#5c3d24';
-    ctx.beginPath();
-    ctx.moveTo(CAMINO[0].x, CAMINO[0].y);
-    for (let i = 1; i < CAMINO.length; i++) ctx.lineTo(CAMINO[i].x, CAMINO[i].y);
-    ctx.stroke();
-
-    ctx.lineWidth = 2;
-    ctx.strokeStyle = 'rgba(217, 119, 6, 0.35)';
-    ctx.setLineDash([8, 8]);
-    ctx.beginPath();
-    ctx.moveTo(CAMINO[0].x, CAMINO[0].y);
-    for (let i = 1; i < CAMINO.length; i++) ctx.lineTo(CAMINO[i].x, CAMINO[i].y);
-    ctx.stroke();
-    ctx.setLineDash([]);
-
+    // El portal de entrada sí se sigue dibujando aquí porque pulsa (usa globalTime).
     ctx.fillStyle = 'rgba(168, 85, 247, 0.3)';
     ctx.strokeStyle = '#c084fc';
     ctx.lineWidth = 3;
@@ -846,24 +925,6 @@ function draw() {
     ctx.arc(15, CAMINO[0].y, 20 + Math.sin(globalTime * 3) * 2, 0, Math.PI * 2);
     ctx.fill();
     ctx.stroke();
-
-    const dest = CAMINO[CAMINO.length - 1];
-    ctx.fillStyle = 'rgba(0,0,0,0.5)';
-    ctx.beginPath();
-    ctx.ellipse(dest.x - 10, dest.y + 16, 32, 12, 0, 0, Math.PI * 2);
-    ctx.fill();
-
-    ctx.fillStyle = '#1e293b';
-    ctx.strokeStyle = '#f59e0b';
-    ctx.lineWidth = 3.5;
-    ctx.beginPath();
-    ctx.arc(dest.x - 10, dest.y, 30, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.stroke();
-    ctx.font = '24px sans-serif';
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.fillText('🏰', dest.x - 10, dest.y);
 
     drawGrid();
 
@@ -957,13 +1018,9 @@ function draw() {
     }
 
     for (let p of proyectiles) {
-        ctx.fillStyle = p.color;
-        ctx.shadowColor = p.color;
-        ctx.shadowBlur = 8;
-        ctx.beginPath();
-        ctx.arc(p.x, p.y, p.tipo === 'cannon' ? 6 : 4, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.shadowBlur = 0;
+        const radio = p.tipo === 'cannon' ? 6 : 4;
+        const sprite = getGlowSprite(p.color, radio);
+        ctx.drawImage(sprite, p.x - sprite.width / 2, p.y - sprite.height / 2);
     }
 
     // Renderizado correcto de Enemigos y sus Escudos
@@ -1095,7 +1152,9 @@ function reiniciarJuego() {
 }
 
 document.addEventListener('DOMContentLoaded', () => {
-    generarDecoraciones();
+    // Nota: generarDecoraciones() ya se ejecutó antes de preRenderFondo() más arriba,
+    // así que el fondo horneado (bgCanvas) coincide con DECORACIONES. No se vuelve
+    // a generar aquí para no desincronizar el fondo ya dibujado.
     actualizarMarcadoresUI();
     actualizarPanelInspector();
     requestAnimationFrame(loop);
