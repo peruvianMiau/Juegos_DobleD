@@ -93,16 +93,16 @@ const uiEnemiesLeft = document.getElementById('enemies-left');
 // Marca que la UI necesita actualizarse; se aplica una sola vez al final de update()
 let uiDirty = false;
 
-// Sendero
+// sendero
 const CAMINO = [
-    { x: -20, y: 100 },
+    { x: 20, y: 100 },
     { x: 220, y: 100 },
     { x: 220, y: 340 },
     { x: 460, y: 340 },
     { x: 460, y: 140 },
     { x: 660, y: 140 },
     { x: 660, y: 420 },
-    { x: 820, y: 420 }
+    { x: 740, y: 420 }
 ];
 
 const ANCHO_CAMINO = TILE_SIZE;
