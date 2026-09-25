@@ -1,5 +1,3 @@
-// Lógica completa de Video Poker Jacks or Better: Reparto, selección de cartas a cambiar y evaluación
-
 const PALOS = [
     { simbolo: '♠', color: 'black' },
     { simbolo: '♣', color: 'black' },

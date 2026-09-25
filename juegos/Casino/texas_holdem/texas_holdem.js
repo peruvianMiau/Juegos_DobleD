@@ -1,4 +1,3 @@
-/* Texas Hold'em - hasta 8 jugadores, 12 bots, dificultad + experiencia y apuestas acumulativas */
 const PALOS = [
     { simbolo: '♠', color: 'black' }, { simbolo: '♣', color: 'black' },
     { simbolo: '♥', color: 'red' }, { simbolo: '♦', color: 'red' }

@@ -1,5 +1,3 @@
-// Lógica de Higher or Lower con integración de saldo de casino y animación de cartas
-
 const PALOS = [
     { simbolo: '♠', color: 'black' },
     { simbolo: '♣', color: 'black' },

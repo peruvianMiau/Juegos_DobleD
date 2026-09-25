@@ -1,5 +1,3 @@
-// Lógica de Tragamonedas Vegas con físicas de parada escalonada, audio y saldo de casino
-
 const SIMBOLOS = [
     { icono: '7️⃣', nombre: 'Siete Dorado', mult: 50, peso: 1 },
     { icono: '💎', nombre: 'Diamante', mult: 25, peso: 2 },

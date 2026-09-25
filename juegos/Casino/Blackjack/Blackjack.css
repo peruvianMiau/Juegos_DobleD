@@ -1,6 +1,3 @@
-/* Estilos específicos de la mesa de casino y cartas para Blackjack */
-
-/* Tapete verde fieltro estilo casino */
 .casino-table {
     background: radial-gradient(ellipse at center, #0f5132 0%, #062b1b 75%, #021a10 100%);
     border: 10px solid #2d1808;
