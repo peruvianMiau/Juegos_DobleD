@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Texas Hold'em Poker - Casino Arcade</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="../Dinero/prestamos.css">
+    <link rel="stylesheet" href="../Dinero/casino-ui.css">
+    <link rel="stylesheet" href="texas_holdem.css">
+    <script src="../Dinero/prestamos.js"></script>
+    <script src="../Dinero/casino-ui.js" defer></script>
+    <script src="texas_holdem.js" defer></script>
+</head>
+<body class="min-h-screen bg-slate-950 text-slate-100 font-sans flex flex-col items-center p-3 sm:p-6 select-none">
+<header class="w-full max-w-7xl flex items-center justify-between bg-slate-900/80 backdrop-blur border border-slate-800 rounded-2xl px-5 py-3 shadow-lg">
+    <a href="../../../index.html" class="inline-flex items-center gap-2 text-emerald-400 hover:text-emerald-300 font-semibold text-sm sm:text-base transition">← Volver al Menú</a>
+    <h1 class="text-xl sm:text-2xl font-black bg-gradient-to-r from-emerald-400 to-amber-300 bg-clip-text text-transparent">TEXAS HOLD'EM ♣️</h1>
+    <div class="flex items-center gap-2 bg-slate-800/80 px-3.5 py-1.5 rounded-xl border border-slate-700">
+        <span class="text-amber-400 font-bold">💰 $</span><span id="fichas-count" class="font-bold text-amber-300 text-lg">1000</span>
+    </div>
+</header>
+
+<div class="casino-layout w-full max-w-7xl flex flex-col lg:flex-row gap-6 my-4 flex-1 items-start justify-center">
+    <main class="flex-1 w-full bg-slate-900/60 border border-slate-800 rounded-3xl p-4 sm:p-6 shadow-2xl flex flex-col items-center gap-5">
+        <div class="poker-table w-full rounded-3xl p-4 sm:p-6 relative flex items-center justify-center">
+            <div id="players-area" class="players-area-radial"></div>
+
+            <div id="center-board" class="flex flex-col items-center justify-center gap-2.5 z-10">
+                <div class="flex flex-wrap items-center justify-center gap-3 bg-slate-950/85 border border-amber-500/40 px-5 py-2.5 rounded-2xl shadow-2xl backdrop-blur-sm">
+                    <span class="text-xs uppercase tracking-widest text-slate-400 font-bold">Fase: <span id="game-stage" class="text-cyan-400">Espera</span></span>
+                    <span class="text-xs uppercase tracking-widest text-slate-400 font-bold">Bote: <span id="pot-amount" class="text-amber-400 text-lg sm:text-xl font-black">$0</span></span>
+                    <span class="text-xs uppercase tracking-widest text-slate-400 font-bold">Mín: <span id="min-bet" class="text-emerald-400 text-lg sm:text-xl font-black">$20</span></span>
+                </div>
+
+                <div class="cards-holder flex gap-2 sm:gap-3 p-3 bg-black/40 rounded-2xl border border-emerald-500/30 shadow-inner" id="community-cards"></div>
+
+                <div id="dealer-msg" class="dealer-msg normal text-center font-bold text-xs sm:text-sm min-h-[26px]">Configura la mesa para comenzar.</div>
+                <div id="round-winner" class="hidden text-center font-black text-xs sm:text-sm text-amber-300 bg-amber-950/70 border border-amber-500/50 rounded-xl px-4 py-2 shadow-lg"></div>
+                <div class="text-xs text-slate-300 bg-black/50 px-3.5 py-1 rounded-full border border-slate-700/50">Tu mano: <span id="player-hand-desc" class="text-amber-300 font-bold">Esperando reparto</span></div>
+            </div>
+        </div>
+
+        <div class="w-full bg-slate-950/70 border border-slate-800 rounded-2xl p-4 flex flex-wrap items-center justify-between gap-4">
+            <button id="btn-start" onclick="iniciarNuevaMano()" class="btn-action bg-emerald-600 hover:bg-emerald-500 text-white font-bold px-6 py-2.5 rounded-xl shadow-lg transition text-sm">Nueva mano / Configurar</button>
+            <div class="flex flex-wrap items-center gap-2" id="player-controls">
+                <button id="btn-fold" onclick="accionJugador('fold')" disabled class="btn-action bg-rose-600 hover:bg-rose-500 disabled:opacity-40 disabled:cursor-not-allowed text-white font-bold px-4 py-2 rounded-xl text-sm">Retirarse</button>
+                <button id="btn-check-call" onclick="accionJugador('call')" disabled class="btn-action bg-blue-600 hover:bg-blue-500 disabled:opacity-40 disabled:cursor-not-allowed text-white font-bold px-4 py-2 rounded-xl text-sm">Pasar</button>
+                <div class="raise-control"><label for="raise-amount">Subir a:</label><input id="raise-amount" type="number" min="1" step="1" value="40" disabled></div>
+                <button id="btn-raise" onclick="accionJugador('raise')" disabled class="btn-action bg-amber-600 hover:bg-amber-500 disabled:opacity-40 disabled:cursor-not-allowed text-white font-bold px-4 py-2 rounded-xl text-sm">Subir</button>
+                <button id="btn-allin" onclick="accionJugador('allin')" disabled class="btn-action bg-purple-600 hover:bg-purple-500 disabled:opacity-40 disabled:cursor-not-allowed text-white font-bold px-4 py-2 rounded-xl text-sm">All-In 🔥</button>
+            </div>
+        </div>
+    </main>
+</div>
+
+<!-- Modal de Configuración Renovado Estéticamente -->
+<div id="setup-modal" class="setup-modal hidden">
+    <div class="setup-card bg-slate-900 border border-slate-800 rounded-3xl p-6 sm:p-8 shadow-2xl max-w-xl w-full flex flex-col gap-6">
+
+        <!-- Encabezado del Modal -->
+        <div class="flex items-start justify-between border-b border-slate-800 pb-4">
+            <div>
+                <h2 class="text-2xl font-black text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-amber-300 flex items-center gap-2">
+                    ⚙️ Reglas & Ajustes de la Mesa
+                </h2>
+                <p class="text-slate-400 text-xs sm:text-sm mt-1">Personaliza la partida, la apuesta inicial y tus oponentes.</p>
+            </div>
+            <button id="btn-cancel-setup" class="text-slate-400 hover:text-rose-400 text-2xl font-bold transition-colors px-2 py-0.5 rounded-lg hover:bg-slate-800">×</button>
+        </div>
+
+        <!-- Opciones de Configuración -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div class="bg-slate-950/80 border border-slate-800/80 rounded-2xl p-3.5 flex flex-col gap-1.5 focus-within:border-emerald-500/50 transition">
+                <label for="player-count" class="text-xs font-bold text-slate-300 uppercase tracking-wider flex items-center gap-1.5">
+                    👥 Jugadores en Mesa
+                </label>
+                <select id="player-count" class="bg-slate-900 border border-slate-700/60 rounded-xl text-slate-100 font-semibold px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/40 cursor-pointer">
+                    <option value="2">2 (Mano a Mano)</option>
+                    <option value="3">3 Jugadores</option>
+                    <option value="4" selected>4 Jugadores</option>
+                    <option value="5">5 Jugadores</option>
+                    <option value="6">6 Jugadores</option>
+                    <option value="7">7 Jugadores</option>
+                    <option value="8">8 Jugadores (Mesa Llena)</option>
+                </select>
+            </div>
+
+            <div class="bg-slate-950/80 border border-slate-800/80 rounded-2xl p-3.5 flex flex-col gap-1.5 focus-within:border-emerald-500/50 transition">
+                <label for="base-bet" class="text-xs font-bold text-slate-300 uppercase tracking-wider flex items-center gap-1.5">
+                    💵 Apuesta Base Inicial
+                </label>
+                <div class="relative flex items-center">
+                    <span class="absolute left-3 text-amber-400 font-bold">$</span>
+                    <input id="base-bet" type="number" min="1" max="500" value="20" class="w-full bg-slate-900 border border-slate-700/60 rounded-xl text-amber-300 font-black pl-7 pr-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/40">
+                </div>
+            </div>
+        </div>
+
+        <!-- Selección de Modos de Oponente -->
+        <div class="bg-slate-950/60 border border-slate-800/80 rounded-2xl p-4 flex flex-col gap-3">
+            <div class="flex items-center justify-between">
+                <span class="text-xs font-bold text-slate-300 uppercase tracking-wider flex items-center gap-1.5">
+                    🤖 Oponentes Bot
+                </span>
+                <span id="opponent-count" class="text-xs text-emerald-400 font-bold bg-emerald-950/60 border border-emerald-500/30 px-2.5 py-0.5 rounded-full"></span>
+            </div>
+
+            <div class="grid grid-cols-2 gap-3">
+                <label class="flex items-center gap-2.5 bg-slate-900 border border-slate-800 p-3 rounded-xl cursor-pointer hover:border-slate-700 transition [&:has(:checked)]:border-emerald-500/60 [&:has(:checked)]:bg-emerald-950/20">
+                    <input type="radio" name="opponents" value="random" checked class="accent-emerald-500">
+                    <div class="flex flex-col">
+                        <span class="text-xs font-extrabold text-slate-200">🎲 Aleatorios</span>
+                        <span class="text-[10px] text-slate-400">Selección automática</span>
+                    </div>
+                </label>
+
+                <label class="flex items-center gap-2.5 bg-slate-900 border border-slate-800 p-3 rounded-xl cursor-pointer hover:border-slate-700 transition [&:has(:checked)]:border-emerald-500/60 [&:has(:checked)]:bg-emerald-950/20">
+                    <input type="radio" name="opponents" value="selected" class="accent-emerald-500">
+                    <div class="flex flex-col">
+                        <span class="text-xs font-extrabold text-slate-200">🎯 Elegir Bots</span>
+                        <span class="text-[10px] text-slate-400">Manual por lista</span>
+                    </div>
+                </label>
+            </div>
+
+            <div id="selected-bots" class="hidden mt-2 border-t border-slate-800/80 pt-3">
+                <div id="bot-options" class="bot-options"></div>
+            </div>
+        </div>
+
+        <!-- Mensaje de Error -->
+        <p id="setup-error" class="hidden text-rose-400 text-xs font-bold text-center bg-rose-950/40 border border-rose-500/30 rounded-xl py-2 px-3"></p>
+
+        <!-- Botón de Confirmación -->
+        <button id="btn-confirm-setup" class="w-full bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-500 hover:to-emerald-400 text-white font-black py-3.5 rounded-2xl shadow-lg shadow-emerald-950/50 hover:shadow-emerald-900/60 transition-all transform active:scale-[0.99] text-sm tracking-wide">
+            🃏 ¡Confirmar y Repartir Cartas!
+        </button>
+    </div>
+</div>
+</body>
+</html>

@@ -1,17 +1,11 @@
-/* ==========================================
-   LÓGICA COMPLETA DEL JUEGO BLACKJACK (21)
-   ========================================== */
-
 document.addEventListener('DOMContentLoaded', () => {
-    // ESTADO DEL JUEGO
     let baraja = [];
     let manoJugador = [];
     let manoDealer = [];
-    let fichas = parseInt(localStorage.getItem('casino_balance')) || 1000;
+    let fichas = parseInt(localStorage.getItem('casino_balance'));
     let apuestaActual = 50;
     let juegoEnProgreso = false;
 
-    // ELEMENTOS DEL DOM
     const fichasCountEl = document.getElementById('fichas-count');
     const betInputEl = document.getElementById('bet-input');
     const playerCardsEl = document.getElementById('player-cards');
@@ -21,14 +15,12 @@ document.addEventListener('DOMContentLoaded', () => {
     const statusBannerEl = document.getElementById('status-banner');
     const statusMessageEl = document.getElementById('status-message');
 
-    // BOTONES
     const btnDeal = document.getElementById('btn-deal');
     const btnHit = document.getElementById('btn-hit');
     const btnStand = document.getElementById('btn-stand');
     const btnDouble = document.getElementById('btn-double');
     const btnClearBet = document.getElementById('btn-clear-bet');
 
-    // PALOS Y VALORES
     const PALOS = [
         { nombre: 'corazones', simbolo: '♥️', color: 'red' },
         { nombre: 'diamantes', simbolo: '♦️', color: 'red' },
@@ -38,9 +30,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const VALORES = ['2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K', 'A'];
 
-    /* ------------------------------------------
-       CREACIÓN Y MEZCLA DE BARAJA
-       ------------------------------------------ */
     function crearBaraja() {
         let deck = [];
         for (let palo of PALOS) {
@@ -73,9 +62,6 @@ document.addEventListener('DOMContentLoaded', () => {
         return deck;
     }
 
-    /* ------------------------------------------
-       CÁLCULO DE PUNTUACIÓN (LÓGICA DEL AS)
-       ------------------------------------------ */
     function calcularPuntos(mano) {
         let puntos = 0;
         let ases = 0;
@@ -95,9 +81,6 @@ document.addEventListener('DOMContentLoaded', () => {
         return puntos;
     }
 
-    /* ------------------------------------------
-       RENDERIZADO DE CARTAS EN PANTALLA
-       ------------------------------------------ */
     function renderizarMano(contenedor, mano) {
         contenedor.innerHTML = '';
         mano.forEach(carta => {
@@ -121,9 +104,6 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    /* ------------------------------------------
-       FLUJO PRINCIPAL DEL JUEGO
-       ------------------------------------------ */
     function iniciarRonda() {
         const montoApuesta = parseInt(betInputEl.value);
 
@@ -266,9 +246,6 @@ document.addEventListener('DOMContentLoaded', () => {
         actualizarBotonesUI();
     }
 
-    /* ------------------------------------------
-       ACTUALIZACIÓN DE INTERFAZ (UI)
-       ------------------------------------------ */
     function actualizarMapeoEInterfases() {
         renderizarMano(playerCardsEl, manoJugador);
         renderizarMano(dealerCardsEl, manoDealer);
@@ -328,9 +305,6 @@ document.addEventListener('DOMContentLoaded', () => {
         statusBannerEl.className = 'z-20 text-center py-2 px-6 rounded-2xl font-bold text-lg transition-all duration-300 transform opacity-0 scale-95 pointer-events-none';
     }
 
-    /* ------------------------------------------
-       EVENT LISTENERS
-       ------------------------------------------ */
     btnDeal.addEventListener('click', iniciarRonda);
     btnHit.addEventListener('click', pedirCarta);
     btnStand.addEventListener('click', plantarse);

@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tower Defense - Defender del Reino</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="tower_defense.css">
+    <script src="tower_defense.js" defer></script>
+</head>
+<body class="min-h-screen bg-slate-950 text-slate-100 font-sans flex flex-col items-center justify-between p-3 sm:p-6 select-none">
+
+<!-- Header con Botón de Reglas al lado del Título -->
+<header class="w-full max-w-7xl flex items-center justify-between bg-slate-900/80 backdrop-blur border border-slate-800 rounded-2xl px-5 py-3 shadow-xl">
+    <a href="../../index.html" class="inline-flex items-center gap-2 text-amber-400 hover:text-amber-300 font-semibold text-sm sm:text-base transition-colors">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
+        </svg>
+        Volver al Menú
+    </a>
+
+    <!-- Título y Botón de Reglas -->
+    <div class="flex items-center gap-3 sm:gap-4">
+        <h1 class="text-lg sm:text-2xl font-black bg-gradient-to-r from-amber-400 via-orange-400 to-amber-200 bg-clip-text text-transparent">
+            TOWER DEFENSE 🏰
+        </h1>
+        <button onclick="toggleRulesModal(true)" class="px-3.5 py-1.5 bg-slate-800 hover:bg-slate-700/80 border border-amber-500/30 hover:border-amber-400 text-amber-300 font-bold text-xs sm:text-sm rounded-xl transition shadow-lg flex items-center gap-1.5">
+            <span>📜</span> <span class="hidden sm:inline">Reglas del Juego</span>
+        </button>
+    </div>
+
+    <!-- Indicadores de Oro y Vidas -->
+    <div class="flex items-center gap-3">
+        <div class="flex items-center gap-2 bg-slate-800/90 px-3.5 py-1.5 rounded-xl border border-slate-700 shadow-inner">
+            <span class="text-amber-400 font-bold">💰</span>
+            <span id="gold-count" class="font-black text-amber-300 text-lg">180</span>
+        </div>
+        <div class="flex items-center gap-2 bg-slate-800/90 px-3.5 py-1.5 rounded-xl border border-slate-700 shadow-inner">
+            <span class="text-rose-400 font-bold">❤️</span>
+            <span id="lives-count" class="font-black text-rose-300 text-lg">20</span>
+        </div>
+    </div>
+</header>
+
+<!-- Contenedor Principal (Aprovechando todo el ancho) -->
+<div class="w-full max-w-7xl flex flex-col gap-6 my-4 flex-1 items-center justify-center">
+
+    <!-- Área de Juego (Ancho Completo) -->
+    <main class="w-full bg-slate-900/60 backdrop-blur border border-slate-800 rounded-3xl p-4 sm:p-5 shadow-2xl flex flex-col items-center gap-4">
+
+        <!-- Barra Superior de Control -->
+        <div class="w-full bg-slate-950/80 border border-slate-800 rounded-2xl p-3.5 flex flex-wrap items-center justify-between gap-3 shadow-md">
+            <div class="flex items-center gap-5">
+                <div>
+                    <span class="text-[10px] uppercase tracking-widest text-slate-400 font-bold block">Oleada</span>
+                    <span id="wave-display" class="font-black text-amber-400 text-base sm:text-lg">Oleada 0 / 10</span>
+                </div>
+                <div class="h-7 w-px bg-slate-800"></div>
+                <div>
+                    <span class="text-[10px] uppercase tracking-widest text-slate-400 font-bold block">Enemigos</span>
+                    <span id="enemies-left" class="font-extrabold text-slate-300 text-base">0 vivos</span>
+                </div>
+            </div>
+
+            <div class="flex items-center gap-2.5">
+                <button id="btn-speed" onclick="alternarVelocidad()" class="px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold text-xs border border-slate-700 transition shadow">
+                    ⏩ <span id="speed-text">1x</span>
+                </button>
+                <button id="btn-wave" onclick="iniciarSiguienteOleada()" class="px-6 py-2 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-slate-950 font-black text-sm transition shadow-lg shadow-amber-950/50 flex items-center gap-2">
+                    <span>⚔️</span> Iniciar Oleada
+                </button>
+            </div>
+        </div>
+
+        <!-- Canvas del Mapa -->
+        <div class="relative w-full flex justify-center items-center bg-slate-950 rounded-2xl border-2 border-slate-800/80 overflow-hidden shadow-2xl">
+            <canvas id="gameCanvas" width="800" height="500" class="w-full max-w-[800px] h-auto cursor-crosshair block"></canvas>
+
+            <!-- Overlay de Finalización -->
+            <div id="game-overlay" class="hidden absolute inset-0 bg-slate-950/90 backdrop-blur-md flex flex-col items-center justify-center p-6 text-center gap-4 z-20">
+                <h2 id="overlay-title" class="text-3xl sm:text-4xl font-black text-amber-400"></h2>
+                <p id="overlay-msg" class="text-slate-300 text-sm max-w-md leading-relaxed"></p>
+                <button onclick="reiniciarJuego()" class="px-7 py-3 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-slate-950 font-black text-base rounded-2xl transition shadow-xl">
+                    🔄 Jugar de Nuevo
+                </button>
+            </div>
+        </div>
+
+        <!-- Barra Inferior de Tienda y Selección -->
+        <div class="w-full bg-slate-950/80 border border-slate-800 rounded-2xl p-4 flex flex-col md:flex-row items-center justify-between gap-4">
+
+            <div class="flex items-center gap-2.5 flex-wrap justify-center sm:justify-start">
+                <span class="text-xs uppercase tracking-wider text-slate-400 font-bold mr-1">Construir:</span>
+
+                <button class="tower-btn active" data-type="arrow" onclick="seleccionarTipoTorre('arrow')">
+                    <span class="tower-icon">🏹</span>
+                    <div class="flex flex-col text-left">
+                        <span class="text-xs font-bold text-slate-200">Arquera</span>
+                        <span class="text-[11px] font-black text-amber-400">$50</span>
+                    </div>
+                </button>
+
+                <button class="tower-btn" data-type="cannon" onclick="seleccionarTipoTorre('cannon')">
+                    <span class="tower-icon">💣</span>
+                    <div class="flex flex-col text-left">
+                        <span class="text-xs font-bold text-slate-200">Cañón</span>
+                        <span class="text-[11px] font-black text-amber-400">$90</span>
+                    </div>
+                </button>
+
+                <button class="tower-btn" data-type="ice" onclick="seleccionarTipoTorre('ice')">
+                    <span class="tower-icon">❄️</span>
+                    <div class="flex flex-col text-left">
+                        <span class="text-xs font-bold text-slate-200">Hielo</span>
+                        <span class="text-[11px] font-black text-amber-400">$75</span>
+                    </div>
+                </button>
+
+                <button class="tower-btn" data-type="laser" onclick="seleccionarTipoTorre('laser')">
+                    <span class="tower-icon">⚡</span>
+                    <div class="flex flex-col text-left">
+                        <span class="text-xs font-bold text-slate-200">Láser</span>
+                        <span class="text-[11px] font-black text-amber-400">$140</span>
+                    </div>
+                </button>
+            </div>
+
+            <div id="tower-inspector" class="flex items-center gap-3 bg-slate-900/90 border border-slate-700/80 px-4 py-2.5 rounded-2xl text-xs shadow-inner">
+                <span id="inspect-name" class="font-extrabold text-amber-300">Haz clic en una torre</span>
+                <div id="inspect-actions" class="hidden items-center gap-2">
+                    <button id="btn-upgrade" onclick="mejorarTorreSeleccionada()" class="px-3.5 py-1.5 bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-500 hover:to-emerald-400 text-white font-black rounded-xl transition shadow text-xs flex items-center gap-1">
+                        ⭐ Mejorar ($<span id="upgrade-cost">40</span>)
+                    </button>
+                    <button id="btn-sell" onclick="venderTorreSeleccionada()" class="px-3.5 py-1.5 bg-gradient-to-r from-rose-600 to-rose-500 hover:from-rose-500 hover:to-rose-400 text-white font-black rounded-xl transition shadow text-xs">
+                        💰 Vender ($<span id="sell-value">35</span>)
+                    </button>
+                </div>
+            </div>
+
+        </div>
+
+    </main>
+
+</div>
+
+<!-- Ventana Flotante (Modal) de Reglas del Juego -->
+<div id="rules-modal" class="hidden fixed inset-0 bg-slate-950/80 backdrop-blur-md z-50 flex items-center justify-center p-4">
+    <div class="bg-slate-900 border border-slate-800 rounded-3xl p-6 max-w-lg w-full shadow-2xl flex flex-col gap-4 text-slate-300 relative animate-in fade-in zoom-in duration-200">
+
+        <!-- Header del Modal -->
+        <div class="flex items-center justify-between pb-3 border-b border-slate-800">
+            <div class="flex items-center gap-2 text-amber-400 font-bold text-lg">
+                <span class="text-2xl">📜</span>
+                <h2>Reglas de Tower Defense</h2>
+            </div>
+            <button onclick="toggleRulesModal(false)" class="text-slate-400 hover:text-white transition p-1 text-xl font-bold">
+                ✕
+            </button>
+        </div>
+
+        <!-- Contenido de las Reglas -->
+        <div class="space-y-3 leading-relaxed max-h-[70vh] overflow-y-auto pr-1">
+            <div class="bg-slate-950/60 p-3.5 rounded-2xl border border-slate-800/60">
+                <h3 class="text-amber-400 font-bold mb-1 text-xs uppercase tracking-wider">🎯 1. Objetivo</h3>
+                <p class="text-xs text-slate-300">Evita que los monstruos recorran el sendero y alcancen tu castillo. Empiezas con <strong>20 vidas</strong>.</p>
+            </div>
+
+            <div class="bg-slate-950/60 p-3.5 rounded-2xl border border-slate-800/60">
+                <h3 class="text-emerald-400 font-bold mb-1 text-xs uppercase tracking-wider">🏹 2. Tipos de Torres</h3>
+                <ul class="text-xs space-y-1 list-disc list-inside text-slate-300">
+                    <li><strong>Arquera ($50)</strong>: Rápida y económica.</li>
+                    <li><strong>Cañón ($90)</strong>: Daño de área contra hordas.</li>
+                    <li><strong>Hielo ($75)</strong>: Ralentiza el paso enemigo.</li>
+                    <li><strong>Láser ($140)</strong>: Derrite armaduras y jefes.</li>
+                </ul>
+            </div>
+
+            <div class="bg-slate-950/60 p-3.5 rounded-2xl border border-slate-800/60">
+                <h3 class="text-cyan-400 font-bold mb-1 text-xs uppercase tracking-wider">⭐ 3. Mejoras y Venta</h3>
+                <p class="text-xs text-slate-300">Haz clic en cualquier torre para subirla de nivel (hasta Nv. 3) aumentando su <strong>rango, cadencia y daño</strong>.</p>
+            </div>
+
+            <div class="bg-slate-950/60 p-3.5 rounded-2xl border border-slate-800/60">
+                <h3 class="text-purple-400 font-bold mb-1 text-xs uppercase tracking-wider">👾 4. Oleadas y Recursos</h3>
+                <p class="text-xs text-slate-300">Completa las 10 oleadas para ganar. Obtén oro por cada baja y bono al finalizar cada ronda.</p>
+            </div>
+        </div>
+
+        <!-- Botón de Cierre -->
+        <button onclick="toggleRulesModal(false)" class="w-full py-2.5 bg-slate-800 hover:bg-slate-700 text-white font-bold text-sm rounded-xl transition border border-slate-700">
+            ¡Entendido, a jugar!
+        </button>
+    </div>
+</div>
+
+</body>
+</html>

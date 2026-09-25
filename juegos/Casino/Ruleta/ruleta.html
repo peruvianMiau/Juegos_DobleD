@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ruleta Europea - Casino Arcade</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="../Dinero/prestamos.css">
+    <link rel="stylesheet" href="../Dinero/casino-ui.css">
+    <link rel="stylesheet" href="ruleta.css">
+    <script src="../Dinero/prestamos.js"></script>
+    <script src="../Dinero/casino-ui.js" defer></script>
+    <script src="ruleta.js" defer></script>
+</head>
+<body class="min-h-screen bg-slate-950 text-slate-100 font-sans flex flex-col items-center justify-between p-3 sm:p-6 select-none">
+
+<!-- Header Unificado Estilo Blackjack -->
+<header class="w-full max-w-7xl flex items-center justify-between bg-slate-900/80 backdrop-blur border border-slate-800 rounded-2xl px-5 py-3 shadow-lg">
+    <a href="../../../index.html" class="inline-flex items-center gap-2 text-emerald-400 hover:text-emerald-300 font-semibold text-sm sm:text-base transition-colors">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
+        </svg>
+        Volver al Menú
+    </a>
+    <h1 class="text-xl sm:text-2xl font-black bg-gradient-to-r from-emerald-400 to-amber-300 bg-clip-text text-transparent">
+        RULETA EUROPEA 🎡
+    </h1>
+    <div class="flex items-center gap-2 bg-slate-800/80 px-3 py-1.5 rounded-xl border border-slate-700">
+        <span class="text-amber-400 font-bold">💰 $</span>
+        <span id="fichas-count" class="font-bold text-amber-300 text-lg">1000</span>
+    </div>
+</header>
+
+<!-- Contenedor Principal: Juego + Reglas a la Derecha -->
+<div class="casino-layout w-full max-w-7xl flex flex-col lg:flex-row" gap-6 my-4 flex-1 items-start justify-center">
+
+<!-- Mesa de Ruleta y Tapete -->
+<main class="flex-1 w-full bg-slate-900/60 border border-slate-800 rounded-3xl p-4 sm:p-6 shadow-2xl flex flex-col items-center gap-6">
+
+    <!-- Sección Superior: Rueda de Ruleta y Panel de Últimos Números -->
+    <div class="w-full flex flex-col md:flex-row items-center justify-around gap-6">
+
+        <!-- Canvas de la Ruleta Física -->
+        <div class="relative flex items-center justify-center">
+            <canvas id="rouletteCanvas" width="380" height="380" class="roulette-wheel-canvas rounded-full shadow-2xl"></canvas>
+            <!-- Marcador central de número resultante -->
+            <div id="center-result" class="absolute pointer-events-none w-16 h-16 rounded-full flex flex-col items-center justify-center font-black text-xl shadow-lg border-2 border-amber-400 bg-slate-950/90 text-amber-300">
+                <span id="last-num-val">-</span>
+            </div>
+        </div>
+
+        <!-- Panel de Control de Apuestas y Resultados -->
+        <div class="flex flex-col items-center md:items-start gap-4 min-w-[240px]">
+
+            <!-- Historial de Números -->
+            <div class="w-full bg-slate-950/80 border border-slate-800 rounded-2xl p-4">
+                <span class="text-xs uppercase tracking-widest text-slate-400 font-bold block mb-2">Últimos Números</span>
+                <div id="history-container" class="flex items-center gap-1.5 flex-wrap min-h-[36px]">
+                    <span class="text-xs text-slate-500">Haz girar la ruleta...</span>
+                </div>
+            </div>
+
+            <!-- Resumen de Apuestas Activas -->
+            <div class="w-full bg-slate-950/80 border border-slate-800 rounded-2xl p-4 flex justify-between items-center">
+                <div>
+                    <span class="text-xs uppercase tracking-wider text-slate-400 font-semibold block">Total Apostado:</span>
+                    <span id="total-bet" class="text-amber-400 font-black text-2xl">$0</span>
+                </div>
+                <button onclick="limpiarApuestas()" class="text-xs font-bold px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-rose-400 border border-slate-700 transition">
+                    Limpiar Tapete
+                </button>
+            </div>
+
+            <!-- Botón de Giro Principal -->
+            <button id="btn-spin" onclick="girarRuleta()" class="w-full btn-action bg-emerald-600 hover:bg-emerald-500 text-white font-black text-lg py-3.5 px-6 rounded-2xl shadow-xl transition flex items-center justify-center gap-3">
+                <span>GIRAR RULETA 🎡</span>
+            </button>
+
+            <!-- Banner de Estado / Mensaje de Ganancia -->
+            <div id="result-bets" class="result-bets w-full text-center text-sm text-slate-300 bg-slate-950/50 border border-slate-800 rounded-xl p-3">Todavía no hay un resultado.</div>
+            <div id="status-banner" class="w-full text-center py-2 px-4 rounded-xl font-bold text-sm min-h-[36px] flex items-center justify-center">
+                Selecciona fichas y colócalas en el tapete para apostar.
+            </div>
+        </div>
+    </div>
+
+    <!-- Selector de Ficha Activa -->
+    <div class="w-full flex flex-wrap items-center justify-center gap-3 bg-slate-950/60 border border-slate-800 rounded-2xl p-3">
+        <span class="text-xs uppercase tracking-widest text-slate-400 font-bold mr-2">Ficha a colocar:</span>
+        <button type="button" onclick="seleccionarFicha(10)" id="chip-sel-10" class="chip-select chip-10 active">$10</button>
+        <button type="button" onclick="seleccionarFicha(25)" id="chip-sel-25" class="chip-select chip-25">$25</button>
+        <button type="button" onclick="seleccionarFicha(50)" id="chip-sel-50" class="chip-select chip-50">$50</button>
+        <button type="button" onclick="seleccionarFicha(100)" id="chip-sel-100" class="chip-select chip-100">$100</button>
+        <button type="button" onclick="seleccionarFicha(500)" id="chip-sel-500" class="chip-select chip-500">$500</button>
+    </div>
+
+    <!-- Tapete de Casino Real (Mesa de Fieltro Verde) -->
+    <div class="casino-table w-full rounded-2xl p-4 sm:p-6 overflow-x-auto">
+        <div class="roulette-board min-w-[650px]">
+
+            <!-- Casilla del CERO (a la izquierda) -->
+            <div class="board-zero bet-target" data-bet="num-0" onclick="colocarApuesta('num-0')">
+                <span class="font-black text-xl">0</span>
+                <div class="bet-chip-badge hidden" id="badge-num-0">0</div>
+            </div>
+
+            <!-- Cuadrícula Principal de Números (1 al 36) -->
+            <div class="board-numbers">
+                <!-- Fila 1: 3, 6, 9, 12, 15, 18, 21, 24, 27, 30, 33, 36 -->
+                <!-- Fila 2: 2, 5, 8, 11, 14, 17, 20, 23, 26, 29, 32, 35 -->
+                <!-- Fila 3: 1, 4, 7, 10, 13, 16, 19, 22, 25, 28, 31, 34 -->
+                <div id="numbers-grid" class="grid grid-cols-12 gap-1"></div>
+            </div>
+
+            <!-- Columna 2:1 a la derecha -->
+            <div class="board-columns flex flex-col gap-1">
+                <button class="col-bet bet-target" data-bet="col-3" onclick="colocarApuesta('col-3')">
+                    2:1
+                    <div class="bet-chip-badge hidden" id="badge-col-3">0</div>
+                </button>
+                <button class="col-bet bet-target" data-bet="col-2" onclick="colocarApuesta('col-2')">
+                    2:1
+                    <div class="bet-chip-badge hidden" id="badge-col-2">0</div>
+                </button>
+                <button class="col-bet bet-target" data-bet="col-1" onclick="colocarApuesta('col-1')">
+                    2:1
+                    <div class="bet-chip-badge hidden" id="badge-col-1">0</div>
+                </button>
+            </div>
+
+            <!-- Apuestas de Docenas (1st 12, 2nd 12, 3rd 12) -->
+            <div class="board-dozens col-span-full grid grid-cols-3 gap-1 mt-1">
+                <button class="outside-bet bet-target" data-bet="doz-1" onclick="colocarApuesta('doz-1')">
+                    1ª DOCENA (1-12)
+                    <div class="bet-chip-badge hidden" id="badge-doz-1">0</div>
+                </button>
+                <button class="outside-bet bet-target" data-bet="doz-2" onclick="colocarApuesta('doz-2')">
+                    2ª DOCENA (13-24)
+                    <div class="bet-chip-badge hidden" id="badge-doz-2">0</div>
+                </button>
+                <button class="outside-bet bet-target" data-bet="doz-3" onclick="colocarApuesta('doz-3')">
+                    3ª DOCENA (25-36)
+                    <div class="bet-chip-badge hidden" id="badge-doz-3">0</div>
+                </button>
+            </div>
+
+            <!-- Apuestas Externas (1-18, Par, Rojo, Negro, Impar, 19-36) -->
+            <div class="board-outside col-span-full grid grid-cols-6 gap-1 mt-1">
+                <button class="outside-bet bet-target" data-bet="low" onclick="colocarApuesta('low')">
+                    1 a 18
+                    <div class="bet-chip-badge hidden" id="badge-low">0</div>
+                </button>
+                <button class="outside-bet bet-target" data-bet="even" onclick="colocarApuesta('even')">
+                    PAR
+                    <div class="bet-chip-badge hidden" id="badge-even">0</div>
+                </button>
+                <button class="outside-bet bet-target bg-red-700 hover:bg-red-600 text-white font-bold" data-bet="red" onclick="colocarApuesta('red')">
+                    ROJO
+                    <div class="bet-chip-badge hidden" id="badge-red">0</div>
+                </button>
+                <button class="outside-bet bet-target bg-slate-900 hover:bg-slate-800 text-white font-bold" data-bet="black" onclick="colocarApuesta('black')">
+                    NEGRO
+                    <div class="bet-chip-badge hidden" id="badge-black">0</div>
+                </button>
+                <button class="outside-bet bet-target" data-bet="odd" onclick="colocarApuesta('odd')">
+                    IMPAR
+                    <div class="bet-chip-badge hidden" id="badge-odd">0</div>
+                </button>
+                <button class="outside-bet bet-target" data-bet="high" onclick="colocarApuesta('high')">
+                    19 a 36
+                    <div class="bet-chip-badge hidden" id="badge-high">0</div>
+                </button>
+            </div>
+
+        </div>
+    </div>
+</main>
+</div>
+
+</body>
+</html>
