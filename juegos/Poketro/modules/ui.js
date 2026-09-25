@@ -1,4 +1,23 @@
-import { POKER_HANDS_INFO, LEGENDARY_SHOP } from './pokemonData.js';
+import { POKER_HANDS_INFO, LEGENDARY_SHOP, POKEMON_DATA } from './pokemonData.js';
+
+function findPokemon(name) {
+  return POKEMON_DATA.find(p => p.name === name);
+}
+
+// Formatea el multiplicador mostrando decimales solo cuando hacen falta (por los jokers x1.5, x2, etc.)
+function formatMult(n) {
+  const rounded = Math.round(n * 100) / 100;
+  return Number.isInteger(rounded) ? String(rounded) : rounded.toFixed(1);
+}
+
+function contribLabel(res) {
+  if (!res || !res.triggered) return '';
+  const parts = [];
+  if (res.chips) parts.push(`+${res.chips}🔷`);
+  if (res.mult) parts.push(`+${res.mult}✖`);
+  if (res.xmult && res.xmult !== 1) parts.push(`×${formatMult(res.xmult)}`);
+  return parts.join(' ');
+}
 
 export function updateUI(gameState) {
   document.getElementById('roundDisplay').innerText = gameState.round;
@@ -39,13 +58,26 @@ export function renderHand(gameState, evalRes, onSelectCard) {
   document.getElementById('selectedCount').innerText = gameState.selectedIndices.length;
 }
 
-export function showPlayResult(cardsPlayed, evalRes) {
+function jokerOverlayCardMarkup(joker) {
+  return `
+    <div class="joker-card relative w-16 h-24 sm:w-20 sm:h-28 bg-gradient-to-b from-amber-900/50 via-slate-900 to-slate-900 border-2 border-slate-700 rounded-lg flex flex-col justify-between p-1.5 shadow-lg opacity-40 grayscale">
+      <div class="text-[8px] text-center font-bold text-yellow-300 truncate leading-tight">${joker.name}</div>
+      <div class="flex-1 flex items-center justify-center">
+        <img src="${joker.img}" alt="${joker.name}" class="w-9 h-9 sm:w-11 sm:h-11 object-contain pointer-events-none" />
+      </div>
+    </div>
+  `;
+}
+
+export function showPlayResult(cardsPlayed, evalRes, jokers) {
   const overlay = document.getElementById('playResultOverlay');
   const container = document.getElementById('playResultCards');
   const handNameEl = document.getElementById('playResultHandName');
   const chipsEl = document.getElementById('playResultChips');
   const multEl = document.getElementById('playResultMult');
   const scoreEl = document.getElementById('playResultScore');
+  const jokerStrip = document.getElementById('playResultJokers');
+  const jokerStripWrap = document.getElementById('playResultJokersWrap');
   if (!overlay || !container) return;
 
   container.innerHTML = '';
@@ -76,14 +108,72 @@ export function showPlayResult(cardsPlayed, evalRes) {
     container.appendChild(cardEl);
   });
 
+  // --- Tira de Comodines: aparecen apagados y "saltan" + brillan en el momento en que aportan ---
+  const jokerList = jokers || [];
+  const jokerResults = evalRes.jokerResults || [];
+  const jokerElsById = {};
+
+  if (jokerStrip) {
+    jokerStrip.innerHTML = '';
+    if (jokerStripWrap) {
+      jokerStripWrap.classList.toggle('hidden', jokerList.length === 0);
+      jokerStripWrap.classList.toggle('flex', jokerList.length > 0);
+    }
+    jokerList.forEach(j => {
+      const wrap = document.createElement('div');
+      wrap.className = 'relative';
+      wrap.innerHTML = jokerOverlayCardMarkup(j);
+      jokerStrip.appendChild(wrap);
+      jokerElsById[j.id] = wrap.firstElementChild;
+    });
+  }
+
+  const triggered = jokerResults.filter(r => r.triggered && jokerElsById[r.id]);
+
   // Los números del panel lateral aparecen un instante después de que las cartas se asienten
   setTimeout(() => {
-    chipsEl.innerText = evalRes.totalChips;
-    multEl.innerText = evalRes.totalMult;
-    scoreEl.innerText = evalRes.estimatedTotal;
-    scoreEl.classList.remove('score-pop');
-    void scoreEl.offsetWidth;
-    scoreEl.classList.add('score-pop');
+    chipsEl.innerText = evalRes.baseChips;
+    multEl.innerText = formatMult(evalRes.baseMult);
+    chipsEl.classList.remove('score-pop'); void chipsEl.offsetWidth; chipsEl.classList.add('score-pop');
+    multEl.classList.remove('score-pop'); void multEl.offsetWidth; multEl.classList.add('score-pop');
+
+    let runningChips = evalRes.baseChips;
+    let runningMult = evalRes.baseMult;
+
+    triggered.forEach((res, i) => {
+      setTimeout(() => {
+        const el = jokerElsById[res.id];
+        if (el) {
+          el.classList.remove('opacity-40', 'grayscale');
+          el.classList.remove('joker-trigger-anim');
+          void el.offsetWidth;
+          el.classList.add('joker-trigger-anim', 'border-yellow-300');
+
+          const badge = document.createElement('div');
+          badge.className = 'joker-float-badge';
+          badge.innerText = contribLabel(res);
+          el.parentElement.appendChild(badge);
+          setTimeout(() => badge.remove(), 1000);
+        }
+
+        runningChips += res.chips || 0;
+        runningMult += res.mult || 0;
+        if (res.xmult && res.xmult !== 1) runningMult *= res.xmult;
+
+        chipsEl.innerText = runningChips;
+        multEl.innerText = formatMult(runningMult);
+        chipsEl.classList.remove('value-pop'); void chipsEl.offsetWidth; chipsEl.classList.add('value-pop');
+        multEl.classList.remove('value-pop'); void multEl.offsetWidth; multEl.classList.add('value-pop');
+      }, i * 600);
+    });
+
+    const totalDelay = triggered.length * 600 + 350;
+    setTimeout(() => {
+      scoreEl.innerText = evalRes.estimatedTotal;
+      scoreEl.classList.remove('score-pop');
+      void scoreEl.offsetWidth;
+      scoreEl.classList.add('score-pop');
+    }, totalDelay);
   }, 250);
 
   overlay.classList.remove('hidden');
@@ -93,10 +183,13 @@ export function hidePlayResult() {
   document.getElementById('playResultOverlay')?.classList.add('hidden');
 }
 
-function jokerCardMarkup(joker, { showCost = false, disabled = false } = {}) {
+function jokerCardMarkup(joker, { showCost = false, disabled = false, resultInfo = null } = {}) {
+  const isActive = resultInfo && resultInfo.triggered;
+  const label = isActive ? contribLabel(resultInfo) : '';
   return `
-    <div class="joker-card relative w-24 h-32 sm:w-28 sm:h-38 md:w-28 md:h-40 bg-gradient-to-b from-amber-900/50 via-slate-900 to-slate-900 border-2 border-yellow-500/70 rounded-xl flex flex-col justify-between p-2 shadow-lg ${disabled ? 'opacity-40' : ''}">
+    <div class="joker-card relative w-24 h-32 sm:w-28 sm:h-38 md:w-28 md:h-40 bg-gradient-to-b from-amber-900/50 via-slate-900 to-slate-900 border-2 rounded-xl flex flex-col justify-between p-2 shadow-lg ${disabled ? 'opacity-40' : ''} ${isActive ? 'joker-active' : 'border-yellow-500/70'}">
       ${showCost ? `<div class="absolute -top-2 -right-2 bg-amber-500 text-slate-950 text-[10px] font-black px-2 py-0.5 rounded-full border border-amber-300 shadow z-10">$${joker.cost}</div>` : ''}
+      ${label ? `<div class="joker-live-badge">${label}</div>` : ''}
       <div class="text-[10px] md:text-xs text-center font-bold text-yellow-300 truncate">${joker.name}</div>
       <div class="flex-1 flex items-center justify-center">
         <img src="${joker.img}" alt="${joker.name}" class="w-14 h-14 md:w-16 md:h-16 object-contain pointer-events-none drop-shadow-[0_0_8px_rgba(250,204,21,0.5)]" />
@@ -106,7 +199,9 @@ function jokerCardMarkup(joker, { showCost = false, disabled = false } = {}) {
   `;
 }
 
-export function renderJokers(jokers) {
+// jokerResults (opcional): resultado en vivo de evaluateHand para resaltar qué comodines
+// aportarían con la selección actual de cartas (antes incluso de jugar la mano).
+export function renderJokers(jokers, jokerResults = null) {
   const container = document.getElementById('jokersContainer');
   const noText = document.getElementById('noJokersText');
 
@@ -116,7 +211,10 @@ export function renderJokers(jokers) {
     return;
   }
 
-  container.innerHTML = jokers.map(j => jokerCardMarkup(j)).join('');
+  container.innerHTML = jokers.map(j => {
+    const resultInfo = jokerResults ? jokerResults.find(r => r.id === j.id) : null;
+    return jokerCardMarkup(j, { resultInfo });
+  }).join('');
 }
 
 export function updateEvaluatorUI(res) {
@@ -130,7 +228,7 @@ export function updateEvaluatorUI(res) {
 
   document.getElementById('detectedHandDisplay').innerText = res.handName;
   document.getElementById('baseChipsDisplay').innerText = res.totalChips;
-  document.getElementById('baseMultDisplay').innerText = res.totalMult;
+  document.getElementById('baseMultDisplay').innerText = formatMult(res.totalMult);
   document.getElementById('estimatedTotalDisplay').innerText = res.estimatedTotal;
 }
 
@@ -141,14 +239,26 @@ export function renderHandsModalInfo() {
 
   POKER_HANDS_INFO.forEach(item => {
     const row = document.createElement('div');
-    row.className = "bg-slate-800 border border-slate-700 rounded-xl p-3 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2";
+    row.className = "bg-slate-800 border border-slate-700 rounded-xl p-3 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3";
+
+    const miniCards = item.example.map(ex => {
+      const poke = findPokemon(ex.name);
+      if (!poke) return '';
+      return `
+        <div class="flex flex-col items-center bg-slate-900 border border-slate-700 rounded-lg p-1 w-12 sm:w-14 shrink-0">
+          <img src="${poke.img}" alt="${ex.name}" class="w-8 h-8 sm:w-9 sm:h-9 object-contain" />
+          <span class="text-[8px] sm:text-[9px] text-amber-300 font-bold leading-tight">${poke.valStr}${ex.suit}</span>
+        </div>
+      `;
+    }).join('');
+
     row.innerHTML = `
       <div>
         <div class="font-bold text-indigo-300">${item.name}</div>
         <div class="text-xs text-slate-400">Base: <span class="text-cyan-400">${item.chips} fichas</span> × <span class="text-rose-400">${item.mult} Mult</span></div>
       </div>
-      <div class="flex gap-1.5 bg-slate-900 p-1.5 rounded-lg border border-slate-800">
-        ${item.example.map(ex => `<span class="text-xs bg-slate-700 px-2 py-1 rounded text-amber-300 font-semibold">${ex}</span>`).join('')}
+      <div class="flex gap-1.5 bg-slate-900 p-1.5 rounded-lg border border-slate-800 overflow-x-auto max-w-full">
+        ${miniCards}
       </div>
     `;
     container.appendChild(row);
@@ -197,7 +307,12 @@ export function renderShop(gameState, onBuyJoker, onBuyPack, onChoosePackCard) {
       if (!pack.opened) {
         const canAfford = gameState.money >= pack.cost;
         packEl.innerHTML = `
-          <div class="envelope w-20 h-28 sm:w-24 sm:h-32 rounded-lg flex items-center justify-center text-3xl">🎴</div>
+          <div class="pokeball-wrap pokeball-idle">
+            <div class="pokeball">
+              <div class="pokeball-band"></div>
+              <div class="pokeball-button"></div>
+            </div>
+          </div>
           <div class="text-xs text-slate-300 font-semibold">Sobre Legendario</div>
           <div class="text-[10px] text-slate-500">Contiene 2 Pokémon, elige 1</div>
           <button id="pack-btn-${pack.id}" ${canAfford ? '' : 'disabled'}
