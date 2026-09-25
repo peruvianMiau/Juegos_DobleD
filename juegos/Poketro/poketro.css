@@ -1,0 +1,202 @@
+body {
+    font-family: 'Rubik', sans-serif;
+    background-color: #020617;
+    color: #f8fafc;
+    user-select: none;
+}
+
+.pixel-font {
+    font-family: 'Press Start 2P', cursive;
+}
+
+.card-container {
+    perspective: 1000px;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.card-selected {
+    transform: translateY(-28px);
+    box-shadow: 0 0 15px rgba(250, 204, 21, 0.8);
+}
+
+.card-scoring {
+    border: 3px solid #38bdf8 !important;
+    box-shadow: 0 0 20px #38bdf8 !important;
+    animation: pulse-glow 1.5s infinite alternate;
+}
+
+@keyframes pulse-glow {
+    from { box-shadow: 0 0 10px #38bdf8; }
+    to { box-shadow: 0 0 26px #0284c7; }
+}
+
+.modal-backdrop {
+    background-color: rgba(15, 23, 42, 0.85);
+    backdrop-filter: blur(4px);
+}
+
+.joker-card {
+    transition: transform 0.15s ease;
+}
+
+.joker-card:hover {
+    transform: translateY(-3px);
+}
+
+/* --- Sobre estilo Pokéball --- */
+.pokeball-wrap {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 6px;
+}
+
+.pokeball {
+    position: relative;
+    width: 72px;
+    height: 72px;
+    border-radius: 50%;
+    background:
+        linear-gradient(to bottom, #f87171 0%, #ef4444 46%, #0f172a 46%, #0f172a 54%, #f8fafc 54%, #f1f5f9 100%);
+    border: 3px solid #0f172a;
+    box-shadow: 0 0 18px rgba(239, 68, 68, 0.55), inset 0 -6px 10px rgba(0, 0, 0, 0.25), inset 0 6px 8px rgba(255, 255, 255, 0.15);
+}
+
+.pokeball-band {
+    position: absolute;
+    left: -3px;
+    right: -3px;
+    top: 50%;
+    height: 8px;
+    transform: translateY(-50%);
+    background: #0f172a;
+}
+
+.pokeball-button {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    background: #f8fafc;
+    border: 3px solid #0f172a;
+    transform: translate(-50%, -50%);
+    box-shadow: inset 0 0 4px rgba(0, 0, 0, 0.35);
+}
+
+.pokeball-button::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #cbd5e1;
+    transform: translate(-50%, -50%);
+}
+
+.pokeball-idle .pokeball {
+    animation: pokeball-wiggle 2.6s ease-in-out infinite;
+}
+
+@keyframes pokeball-wiggle {
+    0%, 100% { transform: rotate(0deg) translateY(0); }
+    8% { transform: rotate(-10deg) translateY(-1px); }
+    16% { transform: rotate(8deg) translateY(0); }
+    24% { transform: rotate(-5deg); }
+    32% { transform: rotate(0deg); }
+}
+
+/* --- Overlay de resultado de mano jugada --- */
+.result-card {
+    animation: card-pop-in 0.45s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+
+.result-card-unused {
+    opacity: 0.35;
+    filter: grayscale(60%);
+}
+
+@keyframes card-pop-in {
+    0% { transform: scale(0.4) translateY(50px) rotate(-4deg); opacity: 0; }
+    65% { transform: scale(1.08) translateY(-8px) rotate(1deg); opacity: 1; }
+    100% { transform: scale(1) translateY(0) rotate(0deg); opacity: 1; }
+}
+
+#playResultScore {
+    animation: score-pop 0.35s ease-out 0.35s both;
+}
+
+@keyframes score-pop {
+    0% { transform: scale(0.4); opacity: 0; }
+    100% { transform: scale(1); opacity: 1; }
+}
+
+/* --- Comodines: resaltado en vivo mientras seleccionas cartas --- */
+.joker-active {
+    border-color: #34d399 !important;
+    box-shadow: 0 0 16px rgba(52, 211, 153, 0.65);
+}
+
+.joker-live-badge {
+    position: absolute;
+    top: -10px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: #065f46;
+    color: #6ee7b7;
+    font-size: 9px;
+    font-weight: 800;
+    padding: 1px 6px;
+    border-radius: 9999px;
+    border: 1px solid #10b981;
+    white-space: nowrap;
+    z-index: 5;
+}
+
+/* --- Comodines: salto + brillo cuando REALMENTE aportan al jugar la mano --- */
+.joker-trigger-anim {
+    animation: joker-jump 0.7s ease;
+}
+
+@keyframes joker-jump {
+    0% { transform: translateY(0) scale(1); box-shadow: none; }
+    30% { transform: translateY(-20px) scale(1.15); box-shadow: 0 0 26px rgba(250, 204, 21, 0.95); }
+    55% { transform: translateY(4px) scale(0.96); box-shadow: 0 0 18px rgba(250, 204, 21, 0.7); }
+    75% { transform: translateY(-4px) scale(1.03); }
+    100% { transform: translateY(0) scale(1); box-shadow: 0 0 12px rgba(250, 204, 21, 0.4); }
+}
+
+.joker-float-badge {
+    position: absolute;
+    top: -16px;
+    left: 50%;
+    transform: translate(-50%, 0) scale(0.6);
+    font-weight: 900;
+    font-size: 11px;
+    color: #fde047;
+    text-shadow: 0 0 6px rgba(250, 204, 21, 0.9);
+    white-space: nowrap;
+    pointer-events: none;
+    animation: joker-float-up 1s ease forwards;
+    z-index: 10;
+}
+
+@keyframes joker-float-up {
+    0% { opacity: 0; transform: translate(-50%, 0) scale(0.6); }
+    20% { opacity: 1; transform: translate(-50%, -10px) scale(1.15); }
+    80% { opacity: 1; transform: translate(-50%, -28px) scale(1); }
+    100% { opacity: 0; transform: translate(-50%, -42px) scale(0.9); }
+}
+
+/* --- Fichas y Mult que "laten" cada vez que un Comodín suma su aporte --- */
+.value-pop {
+    animation: value-pop 0.35s ease-out;
+}
+
+@keyframes value-pop {
+    0% { transform: scale(1.5); color: #fde047; }
+    100% { transform: scale(1); }
+}
