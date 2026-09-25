@@ -1,6 +1,13 @@
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
 
+// Configuración del Grid (Cuadrícula)
+const TILE_SIZE = 40; // Tamaño de celda 40x40px
+
+function snapToGrid(val) {
+    return Math.floor(val / TILE_SIZE) * TILE_SIZE + TILE_SIZE / 2;
+}
+
 // Web Audio API
 const AudioCtx = window.AudioContext || window.webkitAudioContext;
 let audioCtx = null;
@@ -73,23 +80,23 @@ let velocidad = 1;
 let juegoTerminado = false;
 let globalTime = 0;
 
-let tipoTorreSeleccionado = 'arrow';
+let tipoTorreSeleccionado = null;
 let torreInspeccionada = null;
 let mousePos = { x: -100, y: -100, dentro: false };
 
-// Sendero (Camino de waypoints)
+// Sendero
 const CAMINO = [
-    { x: -20, y: 110 },
-    { x: 220, y: 110 },
-    { x: 220, y: 360 },
-    { x: 440, y: 360 },
-    { x: 440, y: 150 },
-    { x: 670, y: 150 },
-    { x: 670, y: 440 },
-    { x: 820, y: 440 }
+    { x: -20, y: 100 },
+    { x: 220, y: 100 },
+    { x: 220, y: 340 },
+    { x: 460, y: 340 },
+    { x: 460, y: 140 },
+    { x: 660, y: 140 },
+    { x: 660, y: 420 },
+    { x: 820, y: 420 }
 ];
 
-const ANCHO_CAMINO = 56;
+const ANCHO_CAMINO = TILE_SIZE;
 
 // Elementos decorativos
 const DECORACIONES = [];
@@ -101,7 +108,7 @@ function generarDecoraciones() {
         let cercaCamino = false;
 
         for (let j = 0; j < CAMINO.length - 1; j++) {
-            if (distanciaPuntoASegmento(x, y, CAMINO[j].x, CAMINO[j].y, CAMINO[j + 1].x, CAMINO[j + 1].y) < ANCHO_CAMINO / 2 + 20) {
+            if (distanciaPuntoASegmento(x, y, CAMINO[j].x, CAMINO[j].y, CAMINO[j + 1].x, CAMINO[j + 1].y) < ANCHO_CAMINO / 2 + 15) {
                 cercaCamino = true;
                 break;
             }
@@ -204,7 +211,7 @@ function distanciaPuntoASegmento(px, py, x1, y1, x2, y2) {
 function estaEnCamino(x, y) {
     for (let i = 0; i < CAMINO.length - 1; i++) {
         const d = distanciaPuntoASegmento(x, y, CAMINO[i].x, CAMINO[i].y, CAMINO[i + 1].x, CAMINO[i + 1].y);
-        if (d < ANCHO_CAMINO / 2 + 16) return true;
+        if (d < ANCHO_CAMINO / 2) return true;
     }
     return false;
 }
@@ -217,13 +224,22 @@ function actualizarMarcadoresUI() {
 }
 
 function seleccionarTipoTorre(tipo) {
-    tipoTorreSeleccionado = tipo;
-    torreInspeccionada = null;
+    if (tipoTorreSeleccionado === tipo) {
+        tipoTorreSeleccionado = null;
+    } else {
+        tipoTorreSeleccionado = tipo;
+        torreInspeccionada = null;
+    }
     actualizarPanelInspector();
 
     document.querySelectorAll('.tower-btn').forEach(btn => {
-        btn.classList.toggle('active', btn.dataset.type === tipo);
+        btn.classList.toggle('active', btn.dataset.type === tipoTorreSeleccionado);
     });
+}
+
+function deseleccionarTorreConstruccion() {
+    tipoTorreSeleccionado = null;
+    document.querySelectorAll('.tower-btn').forEach(btn => btn.classList.remove('active'));
 }
 
 function actualizarPanelInspector() {
@@ -252,8 +268,7 @@ function actualizarPanelInspector() {
         upgradeBtn.innerHTML = `⭐ Mejorar ($<span id="upgrade-cost">${costoUpgrade}</span>)`;
     }
 
-    const valorVenta = Math.round(torreInspeccionada.inversionTotal * 0.7);
-    document.getElementById('sell-value').innerText = valorVenta;
+    document.getElementById('sell-value').innerText = Math.round(torreInspeccionada.inversionTotal * 0.7);
 }
 
 function mejorarTorreSeleccionada() {
@@ -319,21 +334,21 @@ function iniciarSiguienteOleada() {
 
     colaSpawn = [];
     const count = 6 + oleadaActual * 3;
+    const multiVelocidad = 1 + (oleadaActual - 1) * 0.05;
 
     for (let i = 0; i < count; i++) {
         let tipo = 'goblin';
         let hp = 45 + oleadaActual * 18;
-        // Velocidad ajustada
-        let speed = 2;
-        let recompensa = 9 + Math.floor(oleadaActual * 1.2);
+        let speed = 2.0 * multiVelocidad;
+        let recompensa = 4 + Math.floor(oleadaActual * 0.6);
         let color = '#10b981';
         let radio = 11;
 
         if (oleadaActual >= 3 && i % 3 === 0) {
             tipo = 'orc';
             hp = 110 + oleadaActual * 28;
-            speed = 1.50;
-            recompensa = 18 + oleadaActual * 2;
+            speed = 1.50 * multiVelocidad;
+            recompensa = 8 + oleadaActual;
             color = '#f97316';
             radio = 15;
         }
@@ -341,8 +356,8 @@ function iniciarSiguienteOleada() {
         if (oleadaActual >= 6 && i % 4 === 0) {
             tipo = 'golem';
             hp = 280 + oleadaActual * 45;
-            speed = 1.10;
-            recompensa = 36 + oleadaActual * 3;
+            speed = 1.10 * multiVelocidad;
+            recompensa = 16 + oleadaActual * 1.5;
             color = '#64748b';
             radio = 18;
         }
@@ -350,11 +365,15 @@ function iniciarSiguienteOleada() {
         if (oleadaActual === 10 && i === count - 1) {
             tipo = 'boss';
             hp = 1400;
-            speed = 0.58;
-            recompensa = 180;
+            speed = 0.58 * multiVelocidad;
+            recompensa = 80;
             color = '#dc2626';
             radio = 24;
         }
+
+        // Lógica de escudo asignada por cada enemigo individualmente
+        const tieneEscudo = oleadaActual >= 5 && Math.random() < 0.35;
+        const valorEscudo = tieneEscudo ? Math.round(hp * 0.5) : 0;
 
         colaSpawn.push({
             tipo,
@@ -362,39 +381,69 @@ function iniciarSiguienteOleada() {
             hp: hp,
             speedBase: speed,
             speed: speed,
-            recompensa,
+            recompensa: Math.round(recompensa),
             color,
             radio,
             puntoIdx: 0,
             x: CAMINO[0].x,
             y: CAMINO[0].y,
             slowTimer: 0,
-            animOffset: Math.random() * Math.PI * 2
+            animOffset: Math.random() * Math.PI * 2,
+            escudo: valorEscudo,
+            escudoMax: valorEscudo
         });
     }
 
     actualizarMarcadoresUI();
 }
 
+function aplicarDanioEnemigo(enemigo, cantidadDanio) {
+    if (enemigo.escudo > 0) {
+        if (enemigo.escudo >= cantidadDanio) {
+            enemigo.escudo -= cantidadDanio;
+        } else {
+            const sobrante = cantidadDanio - enemigo.escudo;
+            enemigo.escudo = 0;
+            enemigo.hp -= sobrante;
+
+            for (let i = 0; i < 6; i++) {
+                particulas.push({
+                    x: enemigo.x, y: enemigo.y,
+                    vx: (Math.random() - 0.5) * 4, vy: (Math.random() - 0.5) * 4,
+                    color: '#38bdf8', size: 2.5, life: 15
+                });
+            }
+        }
+    } else {
+        enemigo.hp -= cantidadDanio;
+    }
+}
+
 canvas.addEventListener('click', (e) => {
     if (juegoTerminado) return;
     const rect = canvas.getBoundingClientRect();
-    const x = ((e.clientX - rect.left) / rect.width) * canvas.width;
-    const y = ((e.clientY - rect.top) / rect.height) * canvas.height;
+    const rawX = ((e.clientX - rect.left) / rect.width) * canvas.width;
+    const rawY = ((e.clientY - rect.top) / rect.height) * canvas.height;
 
-    const torreClickeada = torres.find(t => distSq(t.x, t.y, x, y) < 22 * 22);
+    const x = snapToGrid(rawX);
+    const y = snapToGrid(rawY);
+
+    const torreClickeada = torres.find(t => distSq(t.x, t.y, x, y) < 20 * 20);
     if (torreClickeada) {
         torreInspeccionada = torreClickeada;
+        deseleccionarTorreConstruccion();
         actualizarPanelInspector();
         return;
     }
+
+    if (!tipoTorreSeleccionado) return;
 
     const info = DATOS_TORRES[tipoTorreSeleccionado];
     if (oro < info.costo) return;
     if (estaEnCamino(x, y)) return;
 
     for (let t of torres) {
-        if (distSq(t.x, t.y, x, y) < 36 * 36) return;
+        if (distSq(t.x, t.y, x, y) < (TILE_SIZE - 2) * (TILE_SIZE - 2)) return;
     }
 
     oro -= info.costo;
@@ -414,7 +463,9 @@ canvas.addEventListener('click', (e) => {
     });
 
     playSound('coin');
+    deseleccionarTorreConstruccion();
     actualizarMarcadoresUI();
+    actualizarPanelInspector();
 });
 
 canvas.addEventListener('mousemove', (e) => {
@@ -500,7 +551,7 @@ function update() {
 
                 if (t.tipo === 'laser') {
                     t.objetivoLaser = objetivo;
-                    objetivo.hp -= t.danioPorFrame;
+                    aplicarDanioEnemigo(objetivo, t.danioPorFrame);
                     if (Math.random() < 0.3) {
                         particulas.push({
                             x: objetivo.x,
@@ -572,7 +623,6 @@ function update() {
 
         if (oleadaEnProgreso && colaSpawn.length === 0 && enemigos.length === 0) {
             oleadaEnProgreso = false;
-            oro += 40 + oleadaActual * 6;
             playSound('coin');
             actualizarMarcadoresUI();
 
@@ -644,7 +694,7 @@ function impactarProyectil(p) {
     if (p.tipo === 'cannon') {
         for (let e of enemigos) {
             if (distSq(p.x, p.y, e.x, e.y) <= p.splash * p.splash) {
-                e.hp -= p.danio;
+                aplicarDanioEnemigo(e, p.danio);
             }
         }
         for (let k = 0; k < 20; k++) {
@@ -659,7 +709,7 @@ function impactarProyectil(p) {
             });
         }
     } else if (p.tipo === 'ice') {
-        p.objetivo.hp -= p.danio;
+        aplicarDanioEnemigo(p.objetivo, p.danio);
         p.objetivo.slowTimer = 75;
         for (let k = 0; k < 10; k++) {
             particulas.push({
@@ -673,7 +723,7 @@ function impactarProyectil(p) {
             });
         }
     } else {
-        p.objetivo.hp -= p.danio;
+        aplicarDanioEnemigo(p.objetivo, p.danio);
         for (let k = 0; k < 6; k++) {
             particulas.push({
                 x: p.x,
@@ -688,23 +738,52 @@ function impactarProyectil(p) {
     }
 }
 
+function drawGrid() {
+    if (!tipoTorreSeleccionado) return;
+
+    const alpha = 0.18 + Math.sin(globalTime * 3) * 0.08;
+    ctx.strokeStyle = `rgba(255, 255, 255, ${alpha})`;
+    ctx.lineWidth = 1;
+
+    ctx.beginPath();
+    for (let x = 0; x <= canvas.width; x += TILE_SIZE) {
+        ctx.moveTo(x, 0);
+        ctx.lineTo(x, canvas.height);
+    }
+    for (let y = 0; y <= canvas.height; y += TILE_SIZE) {
+        ctx.moveTo(0, y);
+        ctx.lineTo(canvas.width, y);
+    }
+    ctx.stroke();
+}
+
+// Canvas en memoria para renderizado estático del fondo
+const bgCanvas = document.createElement('canvas');
+bgCanvas.width = 800;
+bgCanvas.height = 500;
+const bgCtx = bgCanvas.getContext('2d');
+
+function preRenderFondo() {
+    bgCtx.fillStyle = '#0a2315';
+    bgCtx.fillRect(0, 0, bgCanvas.width, bgCanvas.height);
+
+    bgCtx.fillStyle = 'rgba(16, 185, 129, 0.04)';
+    bgCtx.beginPath();
+    for (let i = 0; i < bgCanvas.width; i += 40) {
+        for (let j = 0; j < bgCanvas.height; j += 40) {
+            bgCtx.moveTo(i + 32, j + 20);
+            bgCtx.arc(i + 20, j + 20, 12, 0, Math.PI * 2);
+        }
+    }
+    bgCtx.fill();
+}
+
+preRenderFondo();
+
 function draw() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-    const gradFondo = ctx.createRadialGradient(400, 250, 50, 400, 250, 500);
-    gradFondo.addColorStop(0, '#0f3822');
-    gradFondo.addColorStop(1, '#061a0e');
-    ctx.fillStyle = gradFondo;
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-    ctx.fillStyle = 'rgba(16, 185, 129, 0.04)';
-    for (let i = 0; i < canvas.width; i += 40) {
-        for (let j = 0; j < canvas.height; j += 40) {
-            ctx.beginPath();
-            ctx.arc(i + 20, j + 20, 12, 0, Math.PI * 2);
-            ctx.fill();
-        }
-    }
+    ctx.drawImage(bgCanvas, 0, 0);
 
     for (let dec of DECORACIONES) {
         if (dec.tipo === 'tree') {
@@ -737,30 +816,23 @@ function draw() {
     ctx.lineCap = 'round';
     ctx.lineJoin = 'round';
 
-    ctx.lineWidth = ANCHO_CAMINO + 12;
-    ctx.strokeStyle = 'rgba(0, 0, 0, 0.4)';
-    ctx.beginPath();
-    ctx.moveTo(CAMINO[0].x, CAMINO[0].y + 4);
-    for (let i = 1; i < CAMINO.length; i++) ctx.lineTo(CAMINO[i].x, CAMINO[i].y + 4);
-    ctx.stroke();
-
-    ctx.lineWidth = ANCHO_CAMINO + 6;
-    ctx.strokeStyle = '#2d1808';
-    ctx.beginPath();
-    ctx.moveTo(CAMINO[0].x, CAMINO[0].y);
-    for (let i = 1; i < CAMINO.length; i++) ctx.lineTo(CAMINO[i].x, CAMINO[i].y);
-    ctx.stroke();
-
     ctx.lineWidth = ANCHO_CAMINO;
-    ctx.strokeStyle = '#54381e';
+    ctx.strokeStyle = '#2b1a09';
     ctx.beginPath();
     ctx.moveTo(CAMINO[0].x, CAMINO[0].y);
     for (let i = 1; i < CAMINO.length; i++) ctx.lineTo(CAMINO[i].x, CAMINO[i].y);
     ctx.stroke();
 
-    ctx.lineWidth = ANCHO_CAMINO - 12;
-    ctx.strokeStyle = '#634427';
-    ctx.setLineDash([12, 16]);
+    ctx.lineWidth = ANCHO_CAMINO - 4;
+    ctx.strokeStyle = '#5c3d24';
+    ctx.beginPath();
+    ctx.moveTo(CAMINO[0].x, CAMINO[0].y);
+    for (let i = 1; i < CAMINO.length; i++) ctx.lineTo(CAMINO[i].x, CAMINO[i].y);
+    ctx.stroke();
+
+    ctx.lineWidth = 2;
+    ctx.strokeStyle = 'rgba(217, 119, 6, 0.35)';
+    ctx.setLineDash([8, 8]);
     ctx.beginPath();
     ctx.moveTo(CAMINO[0].x, CAMINO[0].y);
     for (let i = 1; i < CAMINO.length; i++) ctx.lineTo(CAMINO[i].x, CAMINO[i].y);
@@ -771,7 +843,7 @@ function draw() {
     ctx.strokeStyle = '#c084fc';
     ctx.lineWidth = 3;
     ctx.beginPath();
-    ctx.arc(15, CAMINO[0].y, 22 + Math.sin(globalTime * 3) * 2, 0, Math.PI * 2);
+    ctx.arc(15, CAMINO[0].y, 20 + Math.sin(globalTime * 3) * 2, 0, Math.PI * 2);
     ctx.fill();
     ctx.stroke();
 
@@ -793,6 +865,8 @@ function draw() {
     ctx.textBaseline = 'middle';
     ctx.fillText('🏰', dest.x - 10, dest.y);
 
+    drawGrid();
+
     if (torreInspeccionada) {
         ctx.fillStyle = 'rgba(245, 158, 11, 0.12)';
         ctx.strokeStyle = 'rgba(245, 158, 11, 0.8)';
@@ -805,22 +879,25 @@ function draw() {
         ctx.setLineDash([]);
     }
 
-    if (mousePos.dentro && !torreInspeccionada && !juegoTerminado) {
-        const info = DATOS_TORRES[tipoTorreSeleccionado];
-        const puedeConstruir = oro >= info.costo && !estaEnCamino(mousePos.x, mousePos.y);
+    if (mousePos.dentro && tipoTorreSeleccionado && !torreInspeccionada && !juegoTerminado) {
+        const snappedX = snapToGrid(mousePos.x);
+        const snappedY = snapToGrid(mousePos.y);
 
-        ctx.fillStyle = puedeConstruir ? 'rgba(16, 185, 129, 0.18)' : 'rgba(239, 68, 68, 0.22)';
+        const info = DATOS_TORRES[tipoTorreSeleccionado];
+        let celdaOcupada = torres.some(t => distSq(t.x, t.y, snappedX, snappedY) < (TILE_SIZE - 2) * (TILE_SIZE - 2));
+        const puedeConstruir = oro >= info.costo && !estaEnCamino(snappedX, snappedY) && !celdaOcupada;
+
+        ctx.fillStyle = puedeConstruir ? 'rgba(16, 185, 129, 0.3)' : 'rgba(239, 68, 68, 0.35)';
         ctx.strokeStyle = puedeConstruir ? '#10b981' : '#ef4444';
         ctx.lineWidth = 2;
+        ctx.fillRect(snappedX - TILE_SIZE / 2, snappedY - TILE_SIZE / 2, TILE_SIZE, TILE_SIZE);
+        ctx.strokeRect(snappedX - TILE_SIZE / 2, snappedY - TILE_SIZE / 2, TILE_SIZE, TILE_SIZE);
+
+        ctx.fillStyle = puedeConstruir ? 'rgba(16, 185, 129, 0.1)' : 'rgba(239, 68, 68, 0.12)';
         ctx.beginPath();
-        ctx.arc(mousePos.x, mousePos.y, info.rango, 0, Math.PI * 2);
+        ctx.arc(snappedX, snappedY, info.rango, 0, Math.PI * 2);
         ctx.fill();
         ctx.stroke();
-
-        ctx.fillStyle = puedeConstruir ? 'rgba(255, 255, 255, 0.5)' : 'rgba(239, 68, 68, 0.6)';
-        ctx.beginPath();
-        ctx.arc(mousePos.x, mousePos.y, 18, 0, Math.PI * 2);
-        ctx.fill();
     }
 
     for (let t of torres) {
@@ -889,6 +966,7 @@ function draw() {
         ctx.shadowBlur = 0;
     }
 
+    // Renderizado correcto de Enemigos y sus Escudos
     for (let e of enemigos) {
         ctx.save();
         const floatY = Math.sin(globalTime * 8 + e.animOffset) * 2;
@@ -904,6 +982,15 @@ function draw() {
             ctx.beginPath();
             ctx.arc(0, 0, e.radio + 5, 0, Math.PI * 2);
             ctx.fill();
+        }
+
+        // Aura azul si el enemigo conserva su escudo
+        if (e.escudo > 0) {
+            ctx.strokeStyle = '#38bdf8';
+            ctx.lineWidth = 2.5;
+            ctx.beginPath();
+            ctx.arc(0, 0, e.radio + 4, 0, Math.PI * 2);
+            ctx.stroke();
         }
 
         ctx.fillStyle = e.color;
@@ -925,13 +1012,21 @@ function draw() {
         ctx.arc(e.radio * 0.3 + 0.5, -2, 1.2, 0, Math.PI * 2);
         ctx.fill();
 
+        // Barra de Vida
         const anchoBarra = e.radio * 2.4;
         const pct = Math.max(0, e.hp / e.hpMax);
         ctx.fillStyle = 'rgba(0, 0, 0, 0.8)';
-        ctx.fillRect(-anchoBarra / 2, -e.radio - 10, anchoBarra, 5);
+        ctx.fillRect(-anchoBarra / 2, -e.radio - 10, anchoBarra, 4);
 
         ctx.fillStyle = pct > 0.5 ? '#10b981' : (pct > 0.2 ? '#f59e0b' : '#ef4444');
-        ctx.fillRect(-anchoBarra / 2, -e.radio - 10, anchoBarra * pct, 5);
+        ctx.fillRect(-anchoBarra / 2, -e.radio - 10, anchoBarra * pct, 4);
+
+        // Barra de Escudo (sobre la barra de vida)
+        if (e.escudoMax > 0 && e.escudo > 0) {
+            const pctEscudo = e.escudo / e.escudoMax;
+            ctx.fillStyle = '#0284c7';
+            ctx.fillRect(-anchoBarra / 2, -e.radio - 15, anchoBarra * pctEscudo, 3);
+        }
 
         ctx.restore();
     }
@@ -988,6 +1083,7 @@ function reiniciarJuego() {
     textosFlotantes = [];
     colaSpawn = [];
     torreInspeccionada = null;
+    deseleccionarTorreConstruccion();
 
     document.getElementById('game-overlay').classList.add('hidden');
     const waveBtn = document.getElementById('btn-wave');
@@ -1005,7 +1101,6 @@ document.addEventListener('DOMContentLoaded', () => {
     requestAnimationFrame(loop);
 });
 
-// Función para abrir/cerrar la ventana flotante de reglas
 function toggleRulesModal(mostrar) {
     const modal = document.getElementById('rules-modal');
     if (mostrar) {
