@@ -3,16 +3,16 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>RPG Roguelike - Mazmorras y Leyendas</title>
+    <title>RPG Roguelike - Mazmorras Nocturnas</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="rpg_turnos.css">
     <script src="rpg_turnos.js" defer></script>
 </head>
 <body class="min-h-screen bg-slate-950 text-slate-100 font-sans flex flex-col items-center justify-between p-3 sm:p-6 select-none">
 
-<!-- Header Unificado con Indicador de Piso -->
-<header class="w-full max-w-[90rem] flex items-center justify-between bg-slate-900/90 backdrop-blur border border-slate-800 rounded-2xl px-6 py-4 shadow-xl z-10">
-    <a href="../../index.html" class="inline-flex items-center gap-2 text-indigo-400 hover:text-indigo-300 font-bold text-base transition-colors">
+<!-- Header Unificado con Estadísticas Globales -->
+<header class="w-full max-w-[90rem] flex flex-wrap items-center justify-between gap-3 bg-slate-900/90 backdrop-blur border border-emerald-900/60 rounded-2xl px-6 py-4 shadow-2xl z-10">
+    <a href="../../index.html" class="inline-flex items-center gap-2 text-emerald-400 hover:text-emerald-300 font-bold text-base transition-colors">
         <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
         </svg>
@@ -20,49 +20,58 @@
     </a>
 
     <div class="flex items-center gap-4">
-        <h1 class="text-xl sm:text-3xl font-black bg-gradient-to-r from-amber-400 via-indigo-400 to-pink-400 bg-clip-text text-transparent">
+        <h1 class="text-xl sm:text-3xl font-black bg-gradient-to-r from-emerald-400 via-teal-300 to-amber-300 bg-clip-text text-transparent">
             ROGUELIKE MAZMORRAS ⚔️
         </h1>
-        <button onclick="toggleRulesModal(true)" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 border border-indigo-500/40 text-indigo-300 font-bold text-sm rounded-xl transition shadow-lg flex items-center gap-2">
+        <button onclick="toggleRulesModal(true)" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 border border-emerald-500/40 text-emerald-300 font-bold text-sm rounded-xl transition shadow-lg flex items-center gap-2">
             <span>📜</span> <span>Reglas</span>
         </button>
     </div>
 
-    <div class="flex items-center gap-4">
-        <div class="flex items-center gap-2 bg-amber-950/80 px-4 py-2 rounded-xl border border-amber-600/60 shadow-lg">
-            <span class="text-amber-400 font-bold text-lg">🏰</span>
-            <span id="header-floor-display" class="font-black text-amber-300 text-base">PISO 1</span>
+    <!-- Indicadores del Jugador -->
+    <div class="flex flex-wrap items-center gap-3">
+        <div class="flex items-center gap-2 bg-emerald-950/80 px-3.5 py-1.5 rounded-xl border border-emerald-600/60 shadow-lg">
+            <span class="text-amber-400 font-bold text-base">🏰</span>
+            <span id="header-floor-display" class="font-black text-amber-300 text-sm">PISO 1</span>
         </div>
-        <div class="flex items-center gap-2 bg-slate-800/80 px-4 py-2 rounded-xl border border-slate-700">
-            <span class="text-indigo-400 font-bold text-lg">🎖️</span>
-            <span id="hero-level-display" class="font-black text-indigo-300 text-base">Nv. 1</span>
+        <div class="flex items-center gap-2 bg-slate-800/80 px-3.5 py-1.5 rounded-xl border border-slate-700">
+            <span class="text-indigo-400 font-bold text-base">🎖️</span>
+            <span id="hero-level-display" class="font-black text-indigo-300 text-sm">Nv. 1</span>
         </div>
-        <div class="flex items-center gap-2 bg-slate-800/80 px-4 py-2 rounded-xl border border-slate-700">
-            <span class="text-amber-400 font-bold text-lg">✨ EXP</span>
-            <span id="hero-exp-display" class="font-bold text-amber-300 text-sm">0/100</span>
+        <div class="flex items-center gap-2 bg-slate-800/80 px-3.5 py-1.5 rounded-xl border border-slate-700">
+            <span class="text-rose-400 font-bold text-base">⚔️ ATQ</span>
+            <span id="header-atq-display" class="font-black text-rose-300 text-sm">0</span>
         </div>
-        <div class="flex items-center gap-2 bg-slate-800/80 px-4 py-2 rounded-xl border border-slate-700">
-            <span class="text-amber-400 font-bold text-lg">💰</span>
-            <span id="hero-gold-display" class="font-black text-amber-300 text-base">50g</span>
+        <div class="flex items-center gap-2 bg-slate-800/80 px-3.5 py-1.5 rounded-xl border border-slate-700">
+            <span class="text-teal-400 font-bold text-base">🛡️ DEF</span>
+            <span id="header-def-display" class="font-black text-teal-300 text-sm">0</span>
+        </div>
+        <div class="flex items-center gap-2 bg-slate-800/80 px-3.5 py-1.5 rounded-xl border border-slate-700">
+            <span class="text-amber-400 font-bold text-base">✨ EXP</span>
+            <span id="hero-exp-display" class="font-bold text-amber-300 text-xs">0/100</span>
+        </div>
+        <div class="flex items-center gap-2 bg-slate-800/80 px-3.5 py-1.5 rounded-xl border border-slate-700">
+            <span class="text-amber-400 font-bold text-base">💰</span>
+            <span id="hero-gold-display" class="font-black text-amber-300 text-sm">50g</span>
         </div>
     </div>
 </header>
 
-<!-- Modal de Selección de Personaje -->
-<div id="character-select-modal" class="fixed inset-0 z-40 bg-slate-950/85 backdrop-blur-md flex items-center justify-center p-4 sm:p-8 overflow-y-auto pt-20">
-    <div class="w-full max-w-6xl bg-slate-900/95 border-2 border-indigo-500/70 rounded-3xl p-6 sm:p-10 shadow-2xl flex flex-col gap-8 my-auto">
+<!-- Modal Selección Personaje -->
+<div id="character-select-modal" class="fixed inset-0 z-40 bg-slate-950/90 backdrop-blur-md flex items-center justify-center p-4 sm:p-8 overflow-y-auto pt-20">
+    <div class="w-full max-w-6xl bg-slate-900/95 border-2 border-emerald-500/60 rounded-3xl p-6 sm:p-10 shadow-2xl flex flex-col gap-8 my-auto">
         <div class="text-center">
-            <span class="text-xs font-black uppercase tracking-widest text-indigo-400">Escoge a tu Héroe</span>
+            <span class="text-xs font-black uppercase tracking-widest text-emerald-400">Escoge a tu Héroe</span>
             <h2 class="text-3xl sm:text-4xl font-black text-slate-100 mt-1">Selección de Personaje ⚔️</h2>
             <p class="text-sm text-slate-400 mt-1">Cada héroe cuenta con sus propias estadísticas y 4 habilidades exclusivas.</p>
         </div>
 
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6" id="class-cards-container">
-            <!-- Tarjetas inyectadas por JS -->
+            <!-- Tarjetas JS -->
         </div>
 
         <div class="flex items-center justify-center gap-4 pt-4 border-t border-slate-800">
-            <button onclick="confirmarSeleccionPersonaje()" class="px-10 py-4 bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 hover:from-indigo-500 hover:to-pink-500 text-white font-black text-lg rounded-2xl shadow-2xl transition transform hover:scale-105">
+            <button onclick="confirmarSeleccionPersonaje()" class="px-10 py-4 bg-gradient-to-r from-emerald-600 via-teal-600 to-indigo-600 hover:from-emerald-500 hover:to-indigo-500 text-white font-black text-lg rounded-2xl shadow-2xl transition transform hover:scale-105">
                 ⚔️ Comenzar Aventura
             </button>
         </div>
@@ -72,7 +81,7 @@
 <!-- Contenedor Principal -->
 <div class="w-full max-w-[90rem] flex flex-col gap-6 my-4 flex-1 items-center justify-center">
 
-    <main class="w-full bg-slate-900/60 border border-slate-800 rounded-3xl p-5 sm:p-8 shadow-2xl flex flex-col items-center gap-6 min-h-[650px]">
+    <main class="w-full bg-slate-900/70 border border-slate-800 rounded-3xl p-5 sm:p-8 shadow-2xl flex flex-col items-center gap-6 min-h-[650px]">
 
         <!-- VISTA 1: MAPA DE MAZMORRA -->
         <div id="view-map" class="w-full flex flex-col items-center gap-5">
@@ -83,13 +92,13 @@
                 <span class="text-sm font-black text-amber-300 bg-amber-950 px-3 py-1 rounded-xl border border-amber-800" id="map-floor-text">Piso 1</span>
             </div>
 
-            <div class="map-container relative w-full h-[560px] rounded-2xl border-2 border-amber-900/60 overflow-hidden shadow-2xl flex items-center justify-center">
+            <div class="map-container relative w-full h-[560px] rounded-2xl border-2 border-emerald-900/60 overflow-hidden shadow-2xl flex items-center justify-center">
                 <canvas id="map-canvas" width="1200" height="560" class="w-full h-full block cursor-pointer"></canvas>
             </div>
 
-            <div class="w-full bg-amber-950/20 border border-amber-800/40 rounded-2xl p-4 flex flex-wrap items-center justify-center gap-6 text-sm font-bold text-amber-200">
+            <div class="w-full bg-slate-950/80 border border-slate-800/80 rounded-2xl p-4 flex flex-wrap items-center justify-center gap-6 text-sm font-bold text-emerald-200">
                 <span class="flex items-center gap-2"><span class="w-4 h-4 rounded-full bg-rose-600 inline-block"></span> ⚔️ Enemigo</span>
-                <span class="flex items-center gap-2"><span class="w-4 h-4 rounded-full bg-amber-500 inline-block"></span> 🔥 Hogar/Rest</span>
+                <span class="flex items-center gap-2"><span class="w-4 h-4 rounded-full bg-amber-500 inline-block"></span> 🔥 Fogata</span>
                 <span class="flex items-center gap-2"><span class="w-4 h-4 rounded-full bg-cyan-600 inline-block"></span> ❓ Evento</span>
                 <span class="flex items-center gap-2"><span class="w-4 h-4 rounded-full bg-emerald-600 inline-block"></span> 🛒 Mercado</span>
                 <span class="flex items-center gap-2"><span class="w-4 h-4 rounded-full bg-purple-600 inline-block"></span> 💀 Elite</span>
@@ -97,14 +106,14 @@
             </div>
         </div>
 
-        <!-- VISTA 2: ESCENA DE FOGATA EN BOSQUE NOCTURNO -->
-        <div id="view-campfire" class="hidden w-full h-[560px] relative rounded-3xl border-2 border-amber-600/50 bg-slate-950 overflow-hidden shadow-2xl flex flex-col items-center justify-center">
+        <!-- VISTA 2: ESCENA DE FOGATA -->
+        <div id="view-campfire" class="hidden w-full h-[560px] relative rounded-3xl border-2 border-emerald-500/50 bg-slate-950 overflow-hidden shadow-2xl flex flex-col items-center justify-center">
             <canvas id="campfire-canvas" width="1200" height="560" class="w-full h-full block pixel-art-canvas"></canvas>
 
-            <div class="absolute top-6 right-6 bg-slate-900/90 border-2 border-amber-500/60 backdrop-blur rounded-2xl p-4 shadow-2xl flex flex-col gap-2.5">
+            <div class="absolute top-6 right-6 bg-slate-950/85 border-2 border-emerald-500/60 backdrop-blur rounded-2xl p-4 shadow-2xl flex flex-col gap-2.5">
                 <div class="flex items-center gap-3">
-                    <span class="text-2xl">🔥</span>
-                    <h4 class="font-black text-amber-300 text-sm">Descanso Reparador</h4>
+                    <span class="text-2xl">⛺</span>
+                    <h4 class="font-black text-emerald-300 text-sm">Noche Bajo las Estrellas</h4>
                 </div>
                 <div class="flex flex-col gap-1 text-xs font-bold border-t border-slate-800 pt-2">
                     <div class="text-emerald-400 flex justify-between gap-4">
@@ -119,13 +128,13 @@
             </div>
         </div>
 
-        <!-- VISTA 3: TIENDA CON ROSTRO DETALLADO DE FENRIR EL LYCAN -->
-        <div id="view-merchant" class="hidden w-full h-[560px] relative rounded-3xl border-2 border-emerald-500/50 bg-amber-950/90 overflow-hidden shadow-2xl flex flex-col md:flex-row items-center p-6 sm:p-8 gap-6">
-            <div class="w-full md:w-1/2 h-full bg-slate-950/90 border border-amber-800/80 rounded-2xl p-4 flex flex-col items-center justify-between relative overflow-hidden">
-                <canvas id="werewolf-canvas" width="360" height="360" class="pixel-art-canvas w-full max-h-[340px] rounded-xl my-auto"></canvas>
+        <!-- VISTA 3: TIENDA DE LYRA -->
+        <div id="view-merchant" class="hidden w-full h-[560px] relative rounded-3xl border-2 border-emerald-500/50 bg-slate-950 overflow-hidden shadow-2xl flex flex-col md:flex-row items-center p-6 sm:p-8 gap-6">
+            <div class="w-full md:w-1/2 h-full bg-slate-900/90 border border-emerald-800/80 rounded-2xl p-4 flex flex-col items-center justify-between relative overflow-hidden">
+                <canvas id="vendedora-canvas" width="360" height="360" class="pixel-art-canvas w-full max-h-[340px] rounded-xl my-auto"></canvas>
                 <div class="w-full text-center pb-2">
-                    <h3 class="font-black text-emerald-400 text-lg">Fenrir el Lycan</h3>
-                    <p class="text-xs text-amber-200/80 italic mt-1">"Echa un vistazo a mis productos..."</p>
+                    <h3 class="font-black text-emerald-400 text-lg">Lyra la Mercader</h3>
+                    <p class="text-xs text-emerald-200/80 italic mt-1">"¡Bienvenido aventurero! Mira mis mejores provisiones..."</p>
                 </div>
                 <button onclick="cerrarMercado()" class="w-full py-3 bg-slate-800 hover:bg-slate-700 text-white font-bold text-xs rounded-xl border border-slate-700 transition">
                     Volver al Mapa 🗺️
@@ -133,7 +142,7 @@
             </div>
 
             <div class="w-full md:w-1/2 flex flex-col gap-3 h-full overflow-y-auto pr-2" id="merchant-shelf-container">
-                <!-- Estantes renderizados dinámicamente -->
+                <!-- Estantes JS -->
             </div>
         </div>
 
@@ -169,18 +178,33 @@
 
         <!-- VISTA 5: BATALLA POR TURNOS -->
         <div id="view-battle" class="hidden w-full flex flex-col items-center gap-6">
-            <div class="battlefield w-full rounded-3xl p-6 sm:p-10 flex flex-col md:flex-row items-center justify-between gap-8 border-2 border-slate-800 relative overflow-hidden min-h-[360px]">
-                <!-- Héroe -->
-                <div id="hero-card" class="character-box w-full sm:w-80 bg-slate-950/80 backdrop-blur border-2 border-indigo-500/60 rounded-3xl p-5 shadow-2xl flex flex-col gap-3">
+            <div class="battlefield w-full rounded-3xl p-6 sm:p-10 flex flex-col md:flex-row items-center justify-between gap-8 border-2 border-emerald-800/80 relative overflow-hidden min-h-[400px]">
+                <canvas id="battle-bg-canvas" width="1200" height="400" class="absolute inset-0 w-full h-full pixel-art-canvas pointer-events-none opacity-40"></canvas>
+
+                <!-- Tarjeta Héroe con Stats en Vivo -->
+                <div id="hero-card" class="character-box z-10 w-full sm:w-80 bg-slate-950/85 backdrop-blur border-2 border-emerald-500/60 rounded-3xl p-5 shadow-2xl flex flex-col gap-3">
                     <div class="flex items-center gap-4">
-                        <div class="w-20 h-20 rounded-2xl bg-indigo-950/80 border-2 border-indigo-500/50 flex items-center justify-center p-1 shadow-inner overflow-hidden">
+                        <div class="w-20 h-20 rounded-2xl bg-emerald-950/80 border-2 border-emerald-500/50 flex items-center justify-center p-1 shadow-inner overflow-hidden">
                             <canvas id="hero-pixel-canvas" width="80" height="80" class="pixel-art-canvas w-full h-full block"></canvas>
                         </div>
                         <div>
-                            <h3 class="font-black text-indigo-300 text-lg" id="hero-name">Héroe</h3>
+                            <h3 class="font-black text-emerald-300 text-lg" id="hero-name">Héroe</h3>
                             <span class="text-sm text-slate-400 font-semibold" id="hero-class">Clase</span>
                         </div>
                     </div>
+
+                    <!-- Estadísticas Detalladas de Héroe -->
+                    <div class="grid grid-cols-2 gap-2 bg-slate-900/90 p-2.5 rounded-xl border border-slate-800 text-xs font-bold">
+                        <div class="text-rose-400 flex items-center justify-between">
+                            <span>🗡️ Ataque:</span>
+                            <span id="hero-card-atq" class="text-slate-100">0</span>
+                        </div>
+                        <div class="text-teal-400 flex items-center justify-between">
+                            <span>🛡️ Defensa:</span>
+                            <span id="hero-card-def" class="text-slate-100">0</span>
+                        </div>
+                    </div>
+
                     <div>
                         <div class="flex justify-between text-xs font-bold mb-1">
                             <span class="text-rose-400">❤️ HP</span>
@@ -199,19 +223,18 @@
                             <div id="hero-mp-bar" class="h-full bg-gradient-to-r from-cyan-600 to-cyan-400 rounded-full transition-all duration-300 w-full"></div>
                         </div>
                     </div>
-                    <div class="flex items-center gap-1 min-h-[22px]" id="hero-status-icons"></div>
                 </div>
 
                 <!-- VS -->
-                <div class="flex flex-col items-center justify-center">
-                    <div id="turn-badge" class="px-5 py-2 bg-indigo-600 border border-indigo-400 rounded-xl font-black text-sm uppercase tracking-widest text-indigo-100 shadow-xl animate-pulse">
+                <div class="z-10 flex flex-col items-center justify-center">
+                    <div id="turn-badge" class="px-5 py-2 bg-emerald-600 border border-emerald-400 rounded-xl font-black text-sm uppercase tracking-widest text-emerald-100 shadow-xl animate-pulse">
                         Tu Turno
                     </div>
-                    <span class="text-slate-500 font-black text-3xl my-2">VS</span>
+                    <span class="text-emerald-400/80 font-black text-3xl my-2">VS</span>
                 </div>
 
-                <!-- Enemigo -->
-                <div id="enemy-card" class="character-box w-full sm:w-80 bg-slate-950/80 backdrop-blur border-2 border-rose-500/60 rounded-3xl p-5 shadow-2xl flex flex-col gap-3">
+                <!-- Tarjeta Enemigo con Stats -->
+                <div id="enemy-card" class="character-box z-10 w-full sm:w-80 bg-slate-950/85 backdrop-blur border-2 border-rose-500/60 rounded-3xl p-5 shadow-2xl flex flex-col gap-3">
                     <div class="flex items-center gap-4">
                         <div class="w-20 h-20 rounded-2xl bg-rose-950/80 border-2 border-rose-500/50 flex items-center justify-center p-1 shadow-inner overflow-hidden">
                             <canvas id="enemy-pixel-canvas" width="80" height="80" class="pixel-art-canvas w-full h-full block"></canvas>
@@ -221,6 +244,19 @@
                             <span class="text-sm text-slate-400 font-semibold" id="enemy-type">Tipo</span>
                         </div>
                     </div>
+
+                    <!-- Estadísticas Detalladas de Enemigo -->
+                    <div class="grid grid-cols-2 gap-2 bg-slate-900/90 p-2.5 rounded-xl border border-slate-800 text-xs font-bold">
+                        <div class="text-rose-400 flex items-center justify-between">
+                            <span>🗡️ Ataque:</span>
+                            <span id="enemy-card-atq" class="text-slate-100">0</span>
+                        </div>
+                        <div class="text-teal-400 flex items-center justify-between">
+                            <span>🛡️ Defensa:</span>
+                            <span id="enemy-card-def" class="text-slate-100">0</span>
+                        </div>
+                    </div>
+
                     <div>
                         <div class="flex justify-between text-xs font-bold mb-1">
                             <span class="text-rose-400">❤️ HP</span>
@@ -230,21 +266,20 @@
                             <div id="enemy-hp-bar" class="h-full bg-gradient-to-r from-rose-600 to-rose-400 rounded-full transition-all duration-300 w-full"></div>
                         </div>
                     </div>
-                    <div class="h-4"></div>
-                    <div class="flex items-center gap-1 min-h-[22px]" id="enemy-status-icons"></div>
                 </div>
             </div>
 
             <!-- Combat Log -->
-            <div id="combat-log" class="w-full h-28 bg-slate-950/80 border border-slate-800 rounded-2xl p-4 overflow-y-auto font-mono text-xs sm:text-sm text-slate-300 flex flex-col gap-1.5 shadow-inner">
+            <div id="combat-log" class="w-full h-28 bg-slate-950/90 border border-slate-800 rounded-2xl p-4 overflow-y-auto font-mono text-xs sm:text-sm text-slate-300 flex flex-col gap-1.5 shadow-inner">
             </div>
 
-            <!-- Panel de Acciones -->
-            <div class="w-full bg-slate-950/80 border border-slate-800 rounded-2xl p-5 flex flex-col gap-4">
+            <!-- Panel de Acciones con Rangos de Daño Calculados -->
+            <div class="w-full bg-slate-950/90 border border-slate-800 rounded-2xl p-5 flex flex-col gap-4">
                 <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
                     <button id="btn-attack" onclick="ejecutarAtaqueFisico()" class="action-btn bg-rose-600 hover:bg-rose-500 text-white flex flex-col items-center">
                         <span>🗡️ Atacar</span>
-                        <span class="text-[10px] text-rose-200 font-normal">(Recupera +5 MP)</span>
+                        <span id="btn-attack-range" class="text-[11px] text-amber-200 font-bold mt-0.5">Daño: --</span>
+                        <span class="text-[9px] text-rose-200 font-normal">(Recupera +5 MP)</span>
                     </button>
                     <button id="btn-skills-tab" onclick="alternarSubmenu('skills')" class="action-btn bg-indigo-600 hover:bg-indigo-500 text-white">
                         <span>✨ Habilidades</span>
@@ -252,9 +287,10 @@
                     <button id="btn-inventory-tab" onclick="alternarSubmenu('inventory')" class="action-btn bg-amber-600 hover:bg-amber-500 text-white">
                         <span>🎒 Inventario</span>
                     </button>
-                    <button id="btn-defend" onclick="ejecutarDefensa()" class="action-btn bg-cyan-600 hover:bg-cyan-500 text-white flex flex-col items-center">
+                    <button id="btn-defend" onclick="ejecutarDefensa()" class="action-btn bg-teal-600 hover:bg-teal-500 text-white flex flex-col items-center">
                         <span>🛡️ Defender</span>
-                        <span class="text-[10px] text-cyan-200 font-normal">(Recupera +12 MP)</span>
+                        <span class="text-[10px] text-teal-200 font-bold mt-0.5">-50% Daño recibido</span>
+                        <span class="text-[9px] text-teal-200 font-normal">(Recupera +12 MP)</span>
                     </button>
                 </div>
 
@@ -295,13 +331,13 @@
 
 </div>
 
-<!-- Modal de Reglas -->
+<!-- Modal Reglas -->
 <div id="rules-modal" class="hidden fixed inset-0 bg-slate-950/80 backdrop-blur-md z-50 flex items-center justify-center p-4">
-    <div class="bg-slate-900 border border-slate-800 rounded-3xl p-6 max-w-lg w-full shadow-2xl flex flex-col gap-4 text-slate-300 relative">
+    <div class="bg-slate-900 border border-emerald-800 rounded-3xl p-6 max-w-lg w-full shadow-2xl flex flex-col gap-4 text-slate-300 relative">
         <div class="flex items-center justify-between pb-3 border-b border-slate-800">
-            <div class="flex items-center gap-2 text-amber-400 font-bold text-lg">
+            <div class="flex items-center gap-2 text-emerald-400 font-bold text-lg">
                 <span class="text-2xl">📜</span>
-                <h2>Reglas del Roguelike</h2>
+                <h2>Reglas del Juego</h2>
             </div>
             <button onclick="toggleRulesModal(false)" class="text-slate-400 hover:text-white transition p-1 text-xl font-bold">
                 ✕
@@ -310,23 +346,17 @@
 
         <div class="space-y-3 leading-relaxed max-h-[70vh] overflow-y-auto pr-1 text-xs sm:text-sm">
             <div class="bg-slate-950/60 p-3.5 rounded-2xl border border-slate-800/60">
-                <h3 class="text-amber-400 font-bold mb-1 uppercase">🏰 1. Avance Infinito por Pisos</h3>
-                <p>Al vencer al Jefe del Piso se genera una nueva mazmorra procedural con mayor desafío.</p>
+                <h3 class="text-amber-400 font-bold mb-1 uppercase">🏰 Pisos Infinitos</h3>
+                <p>Derrota al Jefe final para pasar al siguiente piso con mapas diferentes.</p>
             </div>
-
             <div class="bg-slate-950/60 p-3.5 rounded-2xl border border-slate-800/60">
-                <h3 class="text-indigo-400 font-bold mb-1 uppercase">✨ 2. Clases y Habilidades</h3>
-                <p>6 Clases disponibles con habilidades balanceadas.</p>
-            </div>
-
-            <div class="bg-slate-950/60 p-3.5 rounded-2xl border border-slate-800/60">
-                <h3 class="text-emerald-400 font-bold mb-1 uppercase">🐺 3. Vendedor Fenrir el Lycan</h3>
-                <p>Rostro Pixel Art HD renderizado de forma nítida.</p>
+                <h3 class="text-emerald-400 font-bold mb-1 uppercase">📊 Rangos de Daño</h3>
+                <p>Los botones muestran el cálculo exacto del rango de daño Mínimo - Máximo según la defensa enemiga.</p>
             </div>
         </div>
 
         <button onclick="toggleRulesModal(false)" class="w-full py-2.5 bg-slate-800 hover:bg-slate-700 text-white font-bold text-sm rounded-xl transition border border-slate-700">
-            ¡Entendido, a jugar!
+            ¡Entendido!
         </button>
     </div>
 </div>
