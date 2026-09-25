@@ -71,6 +71,7 @@ const OLEADAS_TOTALES = 10;
 let oleadaEnProgreso = false;
 let velocidad = 1;
 let juegoTerminado = false;
+let globalTime = 0;
 
 let tipoTorreSeleccionado = 'arrow';
 let torreInspeccionada = null;
@@ -88,7 +89,30 @@ const CAMINO = [
     { x: 820, y: 440 }
 ];
 
-const ANCHO_CAMINO = 54;
+const ANCHO_CAMINO = 56;
+
+// Elementos decorativos
+const DECORACIONES = [];
+function generarDecoraciones() {
+    DECORACIONES.length = 0;
+    for (let i = 0; i < 40; i++) {
+        const x = Math.random() * 800;
+        const y = Math.random() * 500;
+        let cercaCamino = false;
+
+        for (let j = 0; j < CAMINO.length - 1; j++) {
+            if (distanciaPuntoASegmento(x, y, CAMINO[j].x, CAMINO[j].y, CAMINO[j + 1].x, CAMINO[j + 1].y) < ANCHO_CAMINO / 2 + 20) {
+                cercaCamino = true;
+                break;
+            }
+        }
+
+        if (!cercaCamino) {
+            const tipo = Math.random() < 0.6 ? 'tree' : (Math.random() < 0.8 ? 'rock' : 'flower');
+            DECORACIONES.push({ x, y, tipo, size: Math.random() * 6 + 10 });
+        }
+    }
+}
 
 // Definición de Torres
 const DATOS_TORRES = {
@@ -99,6 +123,7 @@ const DATOS_TORRES = {
         danio: 18,
         cadencia: 24,
         color: '#f59e0b',
+        colorGlow: 'rgba(245, 158, 11, 0.4)',
         icono: '🏹'
     },
     cannon: {
@@ -109,6 +134,7 @@ const DATOS_TORRES = {
         cadencia: 50,
         splash: 70,
         color: '#ef4444',
+        colorGlow: 'rgba(239, 68, 68, 0.4)',
         icono: '💣'
     },
     ice: {
@@ -119,6 +145,7 @@ const DATOS_TORRES = {
         cadencia: 35,
         ralentizar: 0.40,
         color: '#38bdf8',
+        colorGlow: 'rgba(56, 189, 248, 0.4)',
         icono: '❄️'
     },
     laser: {
@@ -127,6 +154,7 @@ const DATOS_TORRES = {
         rango: 130,
         danioPorFrame: 0.95,
         color: '#c084fc',
+        colorGlow: 'rgba(192, 132, 252, 0.4)',
         icono: '⚡'
     }
 };
@@ -139,7 +167,6 @@ let textosFlotantes = [];
 let colaSpawn = [];
 let frameSpawn = 0;
 
-// Utilidades matemáticas
 function distSq(x1, y1, x2, y2) {
     const dx = x2 - x1;
     const dy = y2 - y1;
@@ -204,25 +231,25 @@ function actualizarPanelInspector() {
     const inspectActions = document.getElementById('inspect-actions');
 
     if (!torreInspeccionada) {
-        inspectName.innerText = "Haz clic en una torre para mejorar";
+        inspectName.innerText = "Haz clic en una torre para ver opciones";
         inspectActions.className = 'hidden';
         return;
     }
 
     const info = DATOS_TORRES[torreInspeccionada.tipo];
-    inspectName.innerHTML = `${info.icono} ${info.nombre} <span class="text-emerald-400 font-bold">Nv. ${torreInspeccionada.nivel}</span>`;
+    inspectName.innerHTML = `<span class="text-base mr-1">${info.icono}</span> ${info.nombre} <span class="bg-emerald-950/80 text-emerald-400 border border-emerald-500/40 px-2 py-0.5 rounded-full font-black text-xs ml-1">Nv. ${torreInspeccionada.nivel}</span>`;
     inspectActions.className = 'flex items-center gap-2';
 
     const upgradeBtn = document.getElementById('btn-upgrade');
     if (torreInspeccionada.nivel >= 3) {
         upgradeBtn.disabled = true;
-        upgradeBtn.innerText = 'Máx Nivel';
-        upgradeBtn.className = 'px-3 py-1 bg-slate-700 text-slate-400 font-bold rounded-lg cursor-not-allowed';
+        upgradeBtn.innerText = '★ Máx Nivel';
+        upgradeBtn.className = 'px-3 py-1 bg-slate-800 text-slate-500 font-bold rounded-xl cursor-not-allowed border border-slate-700/50';
     } else {
         upgradeBtn.disabled = false;
-        upgradeBtn.className = 'px-3 py-1 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-lg transition';
+        upgradeBtn.className = 'px-3.5 py-1.5 bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-500 hover:to-emerald-400 text-white font-black rounded-xl transition shadow-lg shadow-emerald-950/40 text-xs flex items-center gap-1';
         const costoUpgrade = Math.round(info.costo * (torreInspeccionada.nivel === 1 ? 0.8 : 1.25));
-        document.getElementById('upgrade-cost').innerText = costoUpgrade;
+        upgradeBtn.innerHTML = `⭐ Mejorar ($<span id="upgrade-cost">${costoUpgrade}</span>)`;
     }
 
     const valorVenta = Math.round(torreInspeccionada.inversionTotal * 0.7);
@@ -243,15 +270,15 @@ function mejorarTorreSeleccionada() {
         torreInspeccionada.danioPorFrame *= 1.4;
         torreInspeccionada.cadencia = Math.max(12, Math.round(torreInspeccionada.cadencia * 0.82));
 
-        for (let i = 0; i < 16; i++) {
+        for (let i = 0; i < 20; i++) {
             particulas.push({
                 x: torreInspeccionada.x,
                 y: torreInspeccionada.y,
-                vx: (Math.random() - 0.5) * 4,
-                vy: (Math.random() - 0.5) * 4 - 2,
+                vx: (Math.random() - 0.5) * 5,
+                vy: (Math.random() - 0.5) * 5 - 2,
                 color: '#fbbf24',
-                size: Math.random() * 3 + 2,
-                life: 30
+                size: Math.random() * 3.5 + 2,
+                life: 35
             });
         }
         playSound('coin');
@@ -277,11 +304,10 @@ function alternarVelocidad() {
     document.getElementById('speed-text').innerText = `${velocidad}x`;
     const btn = document.getElementById('btn-speed');
     btn.className = velocidad === 2
-        ? 'px-3 py-2 rounded-xl bg-amber-500 text-slate-950 font-black text-xs border border-amber-400 transition'
+        ? 'px-3 py-2 rounded-xl bg-amber-500 text-slate-950 font-black text-xs border border-amber-400 transition shadow-lg'
         : 'px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold text-xs border border-slate-700 transition';
 }
 
-// Generación de Oleadas con Velocidades Reducidas
 function iniciarSiguienteOleada() {
     if (oleadaEnProgreso || juegoTerminado) return;
     if (oleadaActual >= OLEADAS_TOTALES) return;
@@ -289,7 +315,7 @@ function iniciarSiguienteOleada() {
     oleadaActual++;
     oleadaEnProgreso = true;
     document.getElementById('btn-wave').disabled = true;
-    document.getElementById('btn-wave').className = 'px-5 py-2 rounded-xl bg-slate-800 text-slate-500 font-black text-sm cursor-not-allowed flex items-center gap-2';
+    document.getElementById('btn-wave').className = 'px-5 py-2 rounded-xl bg-slate-800 text-slate-500 font-black text-sm cursor-not-allowed flex items-center gap-2 border border-slate-700/50';
 
     colaSpawn = [];
     const count = 6 + oleadaActual * 3;
@@ -297,7 +323,8 @@ function iniciarSiguienteOleada() {
     for (let i = 0; i < count; i++) {
         let tipo = 'goblin';
         let hp = 45 + oleadaActual * 18;
-        let speed = 1.25;
+        // Velocidad ajustada
+        let speed = 2;
         let recompensa = 9 + Math.floor(oleadaActual * 1.2);
         let color = '#10b981';
         let radio = 11;
@@ -305,7 +332,7 @@ function iniciarSiguienteOleada() {
         if (oleadaActual >= 3 && i % 3 === 0) {
             tipo = 'orc';
             hp = 110 + oleadaActual * 28;
-            speed = 0.85;
+            speed = 1.50;
             recompensa = 18 + oleadaActual * 2;
             color = '#f97316';
             radio = 15;
@@ -314,7 +341,7 @@ function iniciarSiguienteOleada() {
         if (oleadaActual >= 6 && i % 4 === 0) {
             tipo = 'golem';
             hp = 280 + oleadaActual * 45;
-            speed = 0.55;
+            speed = 1.10;
             recompensa = 36 + oleadaActual * 3;
             color = '#64748b';
             radio = 18;
@@ -323,7 +350,7 @@ function iniciarSiguienteOleada() {
         if (oleadaActual === 10 && i === count - 1) {
             tipo = 'boss';
             hp = 1400;
-            speed = 0.45;
+            speed = 0.58;
             recompensa = 180;
             color = '#dc2626';
             radio = 24;
@@ -341,14 +368,14 @@ function iniciarSiguienteOleada() {
             puntoIdx: 0,
             x: CAMINO[0].x,
             y: CAMINO[0].y,
-            slowTimer: 0
+            slowTimer: 0,
+            animOffset: Math.random() * Math.PI * 2
         });
     }
 
     actualizarMarcadoresUI();
 }
 
-// Colocación de Torres
 canvas.addEventListener('click', (e) => {
     if (juegoTerminado) return;
     const rect = canvas.getBoundingClientRect();
@@ -404,10 +431,12 @@ canvas.addEventListener('mouseleave', () => {
 function update() {
     if (juegoTerminado) return;
 
+    globalTime += 0.05;
+
     for (let s = 0; s < velocidad; s++) {
         if (colaSpawn.length > 0) {
             frameSpawn++;
-            if (frameSpawn >= 42) {
+            if (frameSpawn >= 36) {
                 frameSpawn = 0;
                 enemigos.push(colaSpawn.shift());
             }
@@ -451,7 +480,6 @@ function update() {
             }
         }
 
-        // Bucle de Torres con Corrección de Selección de Objetivo (Fix de Rango Inicial)
         for (let t of torres) {
             let objetivo = null;
             let mayorProgreso = -Infinity;
@@ -473,15 +501,15 @@ function update() {
                 if (t.tipo === 'laser') {
                     t.objetivoLaser = objetivo;
                     objetivo.hp -= t.danioPorFrame;
-                    if (Math.random() < 0.2) {
+                    if (Math.random() < 0.3) {
                         particulas.push({
                             x: objetivo.x,
                             y: objetivo.y,
-                            vx: (Math.random() - 0.5) * 3,
-                            vy: (Math.random() - 0.5) * 3,
+                            vx: (Math.random() - 0.5) * 4,
+                            vy: (Math.random() - 0.5) * 4,
                             color: '#c084fc',
-                            size: 2,
-                            life: 15
+                            size: 2.5,
+                            life: 18
                         });
                     }
                 } else {
@@ -522,10 +550,10 @@ function update() {
                     x: e.x,
                     y: e.y,
                     color: '#facc15',
-                    life: 30
+                    life: 32
                 });
 
-                for (let k = 0; k < 12; k++) {
+                for (let k = 0; k < 14; k++) {
                     particulas.push({
                         x: e.x,
                         y: e.y,
@@ -619,42 +647,42 @@ function impactarProyectil(p) {
                 e.hp -= p.danio;
             }
         }
-        for (let k = 0; k < 18; k++) {
+        for (let k = 0; k < 20; k++) {
             particulas.push({
                 x: p.x,
                 y: p.y,
-                vx: (Math.random() - 0.5) * 6,
-                vy: (Math.random() - 0.5) * 6,
-                color: '#f97316',
+                vx: (Math.random() - 0.5) * 7,
+                vy: (Math.random() - 0.5) * 7,
+                color: Math.random() < 0.5 ? '#f97316' : '#ef4444',
                 size: Math.random() * 4 + 2,
-                life: 20
+                life: 22
             });
         }
     } else if (p.tipo === 'ice') {
         p.objetivo.hp -= p.danio;
         p.objetivo.slowTimer = 75;
-        for (let k = 0; k < 8; k++) {
+        for (let k = 0; k < 10; k++) {
             particulas.push({
                 x: p.x,
                 y: p.y,
-                vx: (Math.random() - 0.5) * 3,
-                vy: (Math.random() - 0.5) * 3,
+                vx: (Math.random() - 0.5) * 4,
+                vy: (Math.random() - 0.5) * 4,
                 color: '#38bdf8',
                 size: 3,
-                life: 18
+                life: 20
             });
         }
     } else {
         p.objetivo.hp -= p.danio;
-        for (let k = 0; k < 5; k++) {
+        for (let k = 0; k < 6; k++) {
             particulas.push({
                 x: p.x,
                 y: p.y,
-                vx: (Math.random() - 0.5) * 3,
-                vy: (Math.random() - 0.5) * 3,
+                vx: (Math.random() - 0.5) * 4,
+                vy: (Math.random() - 0.5) * 4,
                 color: '#fbbf24',
-                size: 2,
-                life: 15
+                size: 2.5,
+                life: 16
             });
         }
     }
@@ -663,14 +691,45 @@ function impactarProyectil(p) {
 function draw() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-    ctx.fillStyle = '#0a2315';
+    const gradFondo = ctx.createRadialGradient(400, 250, 50, 400, 250, 500);
+    gradFondo.addColorStop(0, '#0f3822');
+    gradFondo.addColorStop(1, '#061a0e');
+    ctx.fillStyle = gradFondo;
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-    ctx.fillStyle = '#0d2d1b';
-    for (let i = 20; i < canvas.width; i += 60) {
-        for (let j = 20; j < canvas.height; j += 60) {
+    ctx.fillStyle = 'rgba(16, 185, 129, 0.04)';
+    for (let i = 0; i < canvas.width; i += 40) {
+        for (let j = 0; j < canvas.height; j += 40) {
             ctx.beginPath();
-            ctx.arc(i, j, 8, 0, Math.PI * 2);
+            ctx.arc(i + 20, j + 20, 12, 0, Math.PI * 2);
+            ctx.fill();
+        }
+    }
+
+    for (let dec of DECORACIONES) {
+        if (dec.tipo === 'tree') {
+            ctx.fillStyle = 'rgba(0,0,0,0.3)';
+            ctx.beginPath();
+            ctx.ellipse(dec.x, dec.y + dec.size * 0.6, dec.size * 0.8, dec.size * 0.4, 0, 0, Math.PI * 2);
+            ctx.fill();
+
+            ctx.fillStyle = '#064e3b';
+            ctx.beginPath();
+            ctx.arc(dec.x, dec.y, dec.size, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.fillStyle = '#059669';
+            ctx.beginPath();
+            ctx.arc(dec.x - dec.size * 0.2, dec.y - dec.size * 0.2, dec.size * 0.6, 0, Math.PI * 2);
+            ctx.fill();
+        } else if (dec.tipo === 'rock') {
+            ctx.fillStyle = '#334155';
+            ctx.beginPath();
+            ctx.arc(dec.x, dec.y, dec.size * 0.5, 0, Math.PI * 2);
+            ctx.fill();
+        } else {
+            ctx.fillStyle = '#f43f5e';
+            ctx.beginPath();
+            ctx.arc(dec.x, dec.y, 3, 0, Math.PI * 2);
             ctx.fill();
         }
     }
@@ -678,71 +737,104 @@ function draw() {
     ctx.lineCap = 'round';
     ctx.lineJoin = 'round';
 
+    ctx.lineWidth = ANCHO_CAMINO + 12;
+    ctx.strokeStyle = 'rgba(0, 0, 0, 0.4)';
+    ctx.beginPath();
+    ctx.moveTo(CAMINO[0].x, CAMINO[0].y + 4);
+    for (let i = 1; i < CAMINO.length; i++) ctx.lineTo(CAMINO[i].x, CAMINO[i].y + 4);
+    ctx.stroke();
+
     ctx.lineWidth = ANCHO_CAMINO + 6;
-    ctx.strokeStyle = '#291b0f';
+    ctx.strokeStyle = '#2d1808';
     ctx.beginPath();
     ctx.moveTo(CAMINO[0].x, CAMINO[0].y);
     for (let i = 1; i < CAMINO.length; i++) ctx.lineTo(CAMINO[i].x, CAMINO[i].y);
     ctx.stroke();
 
     ctx.lineWidth = ANCHO_CAMINO;
-    ctx.strokeStyle = '#452b14';
+    ctx.strokeStyle = '#54381e';
     ctx.beginPath();
     ctx.moveTo(CAMINO[0].x, CAMINO[0].y);
     for (let i = 1; i < CAMINO.length; i++) ctx.lineTo(CAMINO[i].x, CAMINO[i].y);
     ctx.stroke();
 
-    ctx.lineWidth = 3;
-    ctx.strokeStyle = '#5a3a1d';
-    ctx.setLineDash([8, 12]);
+    ctx.lineWidth = ANCHO_CAMINO - 12;
+    ctx.strokeStyle = '#634427';
+    ctx.setLineDash([12, 16]);
     ctx.beginPath();
     ctx.moveTo(CAMINO[0].x, CAMINO[0].y);
     for (let i = 1; i < CAMINO.length; i++) ctx.lineTo(CAMINO[i].x, CAMINO[i].y);
     ctx.stroke();
     ctx.setLineDash([]);
 
-    ctx.fillStyle = '#1e293b';
-    ctx.strokeStyle = '#f59e0b';
+    ctx.fillStyle = 'rgba(168, 85, 247, 0.3)';
+    ctx.strokeStyle = '#c084fc';
     ctx.lineWidth = 3;
     ctx.beginPath();
-    ctx.arc(CAMINO[CAMINO.length - 1].x - 10, CAMINO[CAMINO.length - 1].y, 28, 0, Math.PI * 2);
+    ctx.arc(15, CAMINO[0].y, 22 + Math.sin(globalTime * 3) * 2, 0, Math.PI * 2);
     ctx.fill();
     ctx.stroke();
-    ctx.font = '22px sans-serif';
+
+    const dest = CAMINO[CAMINO.length - 1];
+    ctx.fillStyle = 'rgba(0,0,0,0.5)';
+    ctx.beginPath();
+    ctx.ellipse(dest.x - 10, dest.y + 16, 32, 12, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.fillStyle = '#1e293b';
+    ctx.strokeStyle = '#f59e0b';
+    ctx.lineWidth = 3.5;
+    ctx.beginPath();
+    ctx.arc(dest.x - 10, dest.y, 30, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+    ctx.font = '24px sans-serif';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    ctx.fillText('🏰', CAMINO[CAMINO.length - 1].x - 10, CAMINO[CAMINO.length - 1].y);
+    ctx.fillText('🏰', dest.x - 10, dest.y);
 
     if (torreInspeccionada) {
         ctx.fillStyle = 'rgba(245, 158, 11, 0.12)';
         ctx.strokeStyle = 'rgba(245, 158, 11, 0.8)';
-        ctx.lineWidth = 1.5;
+        ctx.lineWidth = 2;
+        ctx.setLineDash([6, 6]);
         ctx.beginPath();
         ctx.arc(torreInspeccionada.x, torreInspeccionada.y, torreInspeccionada.rango, 0, Math.PI * 2);
         ctx.fill();
         ctx.stroke();
+        ctx.setLineDash([]);
     }
 
     if (mousePos.dentro && !torreInspeccionada && !juegoTerminado) {
         const info = DATOS_TORRES[tipoTorreSeleccionado];
         const puedeConstruir = oro >= info.costo && !estaEnCamino(mousePos.x, mousePos.y);
 
-        ctx.fillStyle = puedeConstruir ? 'rgba(16, 185, 129, 0.15)' : 'rgba(239, 68, 68, 0.2)';
+        ctx.fillStyle = puedeConstruir ? 'rgba(16, 185, 129, 0.18)' : 'rgba(239, 68, 68, 0.22)';
         ctx.strokeStyle = puedeConstruir ? '#10b981' : '#ef4444';
-        ctx.lineWidth = 1.5;
+        ctx.lineWidth = 2;
         ctx.beginPath();
         ctx.arc(mousePos.x, mousePos.y, info.rango, 0, Math.PI * 2);
         ctx.fill();
         ctx.stroke();
 
-        ctx.fillStyle = puedeConstruir ? 'rgba(255, 255, 255, 0.4)' : 'rgba(239, 68, 68, 0.5)';
+        ctx.fillStyle = puedeConstruir ? 'rgba(255, 255, 255, 0.5)' : 'rgba(239, 68, 68, 0.6)';
         ctx.beginPath();
-        ctx.arc(mousePos.x, mousePos.y, 16, 0, Math.PI * 2);
+        ctx.arc(mousePos.x, mousePos.y, 18, 0, Math.PI * 2);
         ctx.fill();
     }
 
     for (let t of torres) {
         const info = DATOS_TORRES[t.tipo];
+
+        ctx.fillStyle = 'rgba(0,0,0,0.4)';
+        ctx.beginPath();
+        ctx.ellipse(t.x, t.y + 8, 20, 10, 0, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.fillStyle = info.colorGlow;
+        ctx.beginPath();
+        ctx.arc(t.x, t.y, 22, 0, Math.PI * 2);
+        ctx.fill();
 
         ctx.fillStyle = '#0f172a';
         ctx.strokeStyle = t === torreInspeccionada ? '#fbbf24' : '#334155';
@@ -757,7 +849,10 @@ function draw() {
         ctx.rotate(t.angulo);
 
         ctx.fillStyle = info.color;
-        ctx.fillRect(8, -3, 10, 6);
+        ctx.fillRect(8, -4, 12, 8);
+        ctx.strokeStyle = '#000';
+        ctx.lineWidth = 1;
+        ctx.strokeRect(8, -4, 12, 8);
         ctx.restore();
 
         ctx.font = '16px sans-serif';
@@ -768,14 +863,14 @@ function draw() {
         if (t.nivel > 1) {
             ctx.fillStyle = '#fbbf24';
             ctx.font = '10px sans-serif';
-            ctx.fillText(t.nivel === 2 ? '★★' : '★★★', t.x, t.y - 23);
+            ctx.fillText(t.nivel === 2 ? '★★' : '★★★', t.x, t.y - 24);
         }
 
         if (t.tipo === 'laser' && t.objetivoLaser) {
             ctx.strokeStyle = '#c084fc';
-            ctx.lineWidth = 3;
+            ctx.lineWidth = 4;
             ctx.shadowColor = '#d8b4fe';
-            ctx.shadowBlur = 10;
+            ctx.shadowBlur = 12;
             ctx.beginPath();
             ctx.moveTo(t.x, t.y);
             ctx.lineTo(t.objetivoLaser.x, t.objetivoLaser.y);
@@ -787,21 +882,27 @@ function draw() {
     for (let p of proyectiles) {
         ctx.fillStyle = p.color;
         ctx.shadowColor = p.color;
-        ctx.shadowBlur = 6;
+        ctx.shadowBlur = 8;
         ctx.beginPath();
-        ctx.arc(p.x, p.y, p.tipo === 'cannon' ? 5 : 3.5, 0, Math.PI * 2);
+        ctx.arc(p.x, p.y, p.tipo === 'cannon' ? 6 : 4, 0, Math.PI * 2);
         ctx.fill();
         ctx.shadowBlur = 0;
     }
 
     for (let e of enemigos) {
         ctx.save();
-        ctx.translate(e.x, e.y);
+        const floatY = Math.sin(globalTime * 8 + e.animOffset) * 2;
+        ctx.translate(e.x, e.y + floatY);
+
+        ctx.fillStyle = 'rgba(0,0,0,0.35)';
+        ctx.beginPath();
+        ctx.ellipse(0, e.radio * 0.8, e.radio, e.radio * 0.4, 0, 0, Math.PI * 2);
+        ctx.fill();
 
         if (e.slowTimer > 0) {
-            ctx.fillStyle = 'rgba(56, 189, 248, 0.35)';
+            ctx.fillStyle = 'rgba(56, 189, 248, 0.4)';
             ctx.beginPath();
-            ctx.arc(0, 0, e.radio + 4, 0, Math.PI * 2);
+            ctx.arc(0, 0, e.radio + 5, 0, Math.PI * 2);
             ctx.fill();
         }
 
@@ -810,22 +911,27 @@ function draw() {
         ctx.arc(0, 0, e.radio, 0, Math.PI * 2);
         ctx.fill();
         ctx.strokeStyle = '#000';
-        ctx.lineWidth = 1.5;
+        ctx.lineWidth = 2;
         ctx.stroke();
 
         ctx.fillStyle = '#fff';
         ctx.beginPath();
-        ctx.arc(-e.radio * 0.3, -2, 2.5, 0, Math.PI * 2);
-        ctx.arc(e.radio * 0.3, -2, 2.5, 0, Math.PI * 2);
+        ctx.arc(-e.radio * 0.3, -2, 2.8, 0, Math.PI * 2);
+        ctx.arc(e.radio * 0.3, -2, 2.8, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = '#000';
+        ctx.beginPath();
+        ctx.arc(-e.radio * 0.3 + 0.5, -2, 1.2, 0, Math.PI * 2);
+        ctx.arc(e.radio * 0.3 + 0.5, -2, 1.2, 0, Math.PI * 2);
         ctx.fill();
 
-        const anchoBarra = e.radio * 2.2;
+        const anchoBarra = e.radio * 2.4;
         const pct = Math.max(0, e.hp / e.hpMax);
-        ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
-        ctx.fillRect(-anchoBarra / 2, -e.radio - 9, anchoBarra, 4);
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.8)';
+        ctx.fillRect(-anchoBarra / 2, -e.radio - 10, anchoBarra, 5);
 
         ctx.fillStyle = pct > 0.5 ? '#10b981' : (pct > 0.2 ? '#f59e0b' : '#ef4444');
-        ctx.fillRect(-anchoBarra / 2, -e.radio - 9, anchoBarra * pct, 4);
+        ctx.fillRect(-anchoBarra / 2, -e.radio - 10, anchoBarra * pct, 5);
 
         ctx.restore();
     }
@@ -837,7 +943,7 @@ function draw() {
         ctx.fill();
     }
 
-    ctx.font = 'bold 12px sans-serif';
+    ctx.font = 'black 13px sans-serif';
     ctx.textAlign = 'center';
     for (let t of textosFlotantes) {
         ctx.fillStyle = t.color;
@@ -861,11 +967,11 @@ function finalizarJuego(victoria) {
     if (victoria) {
         title.innerText = "¡VICTORIA REAL! 👑";
         title.className = "text-3xl sm:text-4xl font-black text-amber-400";
-        msg.innerText = `¡Has defendido el castillo con éxito a través de las 10 oleadas! Oro final: $${oro}.`;
+        msg.innerText = `¡Has defendido el reino con éxito a través de las 10 oleadas! Oro acumulado: $${oro}.`;
     } else {
         title.innerText = "¡CASTILLO DERROTADO! 💀";
         title.className = "text-3xl sm:text-4xl font-black text-rose-500";
-        msg.innerText = `Los invasores superaron tus defensas en la oleada ${oleadaActual}. ¡Inténtalo de nuevo con otra estrategia de torres!`;
+        msg.innerText = `Los invasores superaron tus defensas en la oleada ${oleadaActual}. ¡Inténtalo de nuevo ajustando tu estrategia de torres!`;
     }
 }
 
@@ -893,7 +999,18 @@ function reiniciarJuego() {
 }
 
 document.addEventListener('DOMContentLoaded', () => {
+    generarDecoraciones();
     actualizarMarcadoresUI();
     actualizarPanelInspector();
     requestAnimationFrame(loop);
 });
+
+// Función para abrir/cerrar la ventana flotante de reglas
+function toggleRulesModal(mostrar) {
+    const modal = document.getElementById('rules-modal');
+    if (mostrar) {
+        modal.classList.remove('hidden');
+    } else {
+        modal.classList.add('hidden');
+    }
+}
