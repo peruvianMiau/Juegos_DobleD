@@ -1,0 +1,111 @@
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    user-select: none;
+}
+
+body {
+    background-color: #0f172a;
+    color: #f8fafc;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+}
+
+.game-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+}
+
+.ui-header {
+    display: flex;
+    justify-content: space-between;
+    width: 800px;
+    background-color: #1e293b;
+    padding: 12px 20px;
+    border-radius: 12px;
+    border: 1px solid #334155;
+    font-weight: bold;
+}
+
+.level-badge {
+    color: #fbbf24;
+    font-size: 1.1rem;
+}
+
+.score-container {
+    display: flex;
+    gap: 20px;
+}
+
+.fire-score { color: #f97316; }
+.water-score { color: #38bdf8; }
+
+canvas {
+    background-color: #020617;
+    border: 3px solid #334155;
+    border-radius: 12px;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+}
+
+.controls-guide {
+    display: flex;
+    justify-content: space-between;
+    width: 800px;
+}
+
+.player-guide {
+    padding: 8px 16px;
+    border-radius: 8px;
+    font-size: 0.9rem;
+    background-color: #1e293b;
+    border: 1px solid #334155;
+}
+
+.player-guide.fire { color: #fdba74; border-color: #ea580c; }
+.player-guide.water { color: #7dd3fc; border-color: #0284c7; }
+
+/* Modales y avisos */
+.overlay {
+    position: fixed;
+    inset: 0;
+    background-color: rgba(15, 23, 42, 0.85);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    backdrop-filter: blur(4px);
+}
+
+.overlay.hidden { display: none; }
+
+.modal {
+    background-color: #1e293b;
+    border: 2px solid #475569;
+    padding: 30px;
+    border-radius: 16px;
+    text-align: center;
+    max-width: 400px;
+    box-shadow: 0 20px 30px rgba(0,0,0,0.7);
+}
+
+.modal h2 { margin-bottom: 10px; color: #f8fafc; }
+.modal p { margin-bottom: 20px; color: #94a3b8; }
+
+.modal button {
+    background-color: #22c55e;
+    color: #022c22;
+    font-weight: bold;
+    border: none;
+    padding: 10px 24px;
+    border-radius: 8px;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.modal button:hover { background-color: #4ade80; }

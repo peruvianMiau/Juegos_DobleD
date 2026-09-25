@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fuego y Agua - 2 Jugadores</title>
+    <!-- TailwindCSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="fire_water.css">
+    <script src="fire_water.js" defer></script>
+</head>
+<body class="min-h-screen bg-slate-950 text-slate-100 font-sans flex flex-col items-center justify-between p-3 sm:p-6 select-none">
+
+<!-- Header Unificado Estilo Arcade -->
+<header class="w-full max-w-7xl flex flex-wrap items-center justify-between gap-4 bg-slate-900/80 backdrop-blur border border-slate-800 rounded-2xl px-5 py-3 shadow-xl">
+    <a href="../../index.html" class="inline-flex items-center gap-2 text-emerald-400 hover:text-emerald-300 font-semibold text-sm sm:text-base transition-colors">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
+        </svg>
+        Volver al Menú
+    </a>
+
+    <h1 class="text-lg sm:text-2xl font-black bg-gradient-to-r from-orange-500 via-amber-300 to-cyan-400 bg-clip-text text-transparent drop-shadow">
+        FUEGO 🔥 Y AGUA 💧
+    </h1>
+
+    <!-- Indicadores de Nivel y Marcadores de Gemas -->
+    <div class="flex items-center gap-3">
+        <div class="flex items-center gap-1.5 bg-slate-800/80 px-3.5 py-1.5 rounded-xl border border-slate-700 shadow-inner">
+            <span class="text-xs uppercase font-bold text-slate-400">Nivel</span>
+            <span class="font-black text-amber-300 text-sm sm:text-base"><span id="level-display">1</span> / 5</span>
+        </div>
+
+        <div class="flex items-center gap-2 bg-slate-800/80 px-3.5 py-1.5 rounded-xl border border-orange-500/30 shadow-inner">
+            <span class="text-orange-400 font-bold">🔥 Gemas:</span>
+            <span id="fire-gems" class="font-black text-orange-300 text-base">0</span>
+        </div>
+
+        <div class="flex items-center gap-2 bg-slate-800/80 px-3.5 py-1.5 rounded-xl border border-cyan-500/30 shadow-inner">
+            <span class="text-cyan-400 font-bold">💧 Gemas:</span>
+            <span id="water-gems" class="font-black text-cyan-300 text-base">0</span>
+        </div>
+    </div>
+</header>
+
+<!-- Contenedor Principal (Lienzo + Panel Lateral) -->
+<div class="w-full max-w-7xl flex flex-col xl:flex-row gap-6 my-4 flex-1 items-start justify-center">
+
+    <!-- MESA PRINCIPAL DEL JUEGO -->
+    <main class="flex-1 w-full bg-slate-900/60 border border-slate-800 rounded-3xl p-4 sm:p-6 shadow-2xl flex flex-col items-center gap-5">
+
+        <!-- Lienzo / Canvas del Juego -->
+        <div class="relative w-full flex justify-center items-center bg-slate-950 rounded-2xl border-2 border-slate-800/80 overflow-hidden shadow-2xl">
+            <canvas id="gameCanvas" width="800" height="500" class="w-full max-w-[800px] h-auto block"></canvas>
+        </div>
+
+        <!-- Guía de Controles Inferior -->
+        <div class="w-full bg-slate-950/80 border border-slate-800 rounded-2xl p-4 flex flex-col sm:flex-row items-center justify-around gap-4 shadow-md">
+            <div class="player-guide fire flex items-center gap-3 bg-orange-950/30 border border-orange-500/30 px-4 py-2.5 rounded-xl w-full sm:w-auto justify-center">
+                <span class="text-2xl">🔥</span>
+                <div class="flex flex-col">
+                    <span class="text-xs font-bold text-orange-400 uppercase tracking-wider">Jugador 1 (Fuego)</span>
+                    <span class="text-sm font-semibold text-slate-200">Teclas <kbd class="px-1.5 py-0.5 bg-slate-800 border border-slate-700 rounded text-xs font-mono text-orange-300">W</kbd> <kbd class="px-1.5 py-0.5 bg-slate-800 border border-slate-700 rounded text-xs font-mono text-orange-300">A</kbd> <kbd class="px-1.5 py-0.5 bg-slate-800 border border-slate-700 rounded text-xs font-mono text-orange-300">D</kbd></span>
+                </div>
+            </div>
+
+            <div class="h-8 w-px bg-slate-800 hidden sm:block"></div>
+
+            <div class="player-guide water flex items-center gap-3 bg-cyan-950/30 border border-cyan-500/30 px-4 py-2.5 rounded-xl w-full sm:w-auto justify-center">
+                <span class="text-2xl">💧</span>
+                <div class="flex flex-col">
+                    <span class="text-xs font-bold text-cyan-400 uppercase tracking-wider">Jugador 2 (Agua)</span>
+                    <span class="text-sm font-semibold text-slate-200">Flechas <kbd class="px-1.5 py-0.5 bg-slate-800 border border-slate-700 rounded text-xs font-mono text-cyan-300">▲</kbd> <kbd class="px-1.5 py-0.5 bg-slate-800 border border-slate-700 rounded text-xs font-mono text-cyan-300">◀</kbd> <kbd class="px-1.5 py-0.5 bg-slate-800 border border-slate-700 rounded text-xs font-mono text-cyan-300">▶</kbd></span>
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- PANEL LATERAL DE INSTRUCCIONES / REGLAS -->
+    <aside class="w-full xl:w-80 bg-slate-900/80 backdrop-blur border border-slate-800 rounded-3xl p-5 shadow-xl flex flex-col gap-4 text-slate-300 text-sm">
+        <div class="flex items-center gap-2 pb-3 border-b border-slate-800 text-amber-400 font-bold text-base">
+            <span class="text-xl">📜</span>
+            <h2>Instrucciones</h2>
+        </div>
+
+        <div class="space-y-3 leading-relaxed">
+            <div class="bg-slate-950/60 p-3.5 rounded-2xl border border-slate-800/60">
+                <h3 class="text-amber-400 font-bold mb-1 text-xs uppercase tracking-wider">🎯 Objetivo</h3>
+                <p class="text-xs text-slate-300">Trabajen en equipo para recolectar todas las gemas y llegar juntos a las puertas de salida de cada nivel.</p>
+            </div>
+
+            <div class="bg-slate-950/60 p-3.5 rounded-2xl border border-slate-800/60">
+                <h3 class="text-orange-400 font-bold mb-1 text-xs uppercase tracking-wider">🔥 Chico Fuego</h3>
+                <p class="text-xs text-slate-300">Puede recolectar las gemas rojas y atravesar el fuego, pero no puede tocar el agua.</p>
+            </div>
+
+            <div class="bg-slate-950/60 p-3.5 rounded-2xl border border-slate-800/60">
+                <h3 class="text-cyan-400 font-bold mb-1 text-xs uppercase tracking-wider">💧 Chica Agua</h3>
+                <p class="text-xs text-slate-300">Puede recolectar las gemas azules y atravesar el agua, pero no puede tocar el fuego.</p>
+            </div>
+
+            <div class="bg-slate-950/60 p-3.5 rounded-2xl border border-slate-800/60">
+                <h3 class="text-emerald-400 font-bold mb-1 text-xs uppercase tracking-wider">⚠️ Lava y Peligros</h3>
+                <p class="text-xs text-slate-300">Ningún personaje debe tocar los charcos de lava verde o tóxica, o ambos perderán la partida.</p>
+            </div>
+        </div>
+    </aside>
+
+</div>
+
+<!-- Modales / Pantallas superpuestas -->
+<div id="overlay" class="overlay hidden fixed inset-0 bg-slate-950/80 backdrop-blur-md z-50 flex items-center justify-center p-4">
+    <div class="modal bg-slate-900 border border-slate-800 rounded-3xl p-6 sm:p-8 max-w-md w-full shadow-2xl flex flex-col items-center text-center gap-4 animate-in fade-in zoom-in duration-200">
+        <div class="w-16 h-16 rounded-2xl bg-slate-800 border border-amber-500/30 flex items-center justify-center text-3xl shadow-lg">
+            🏆
+        </div>
+        <h2 id="modal-title" class="text-2xl sm:text-3xl font-black bg-gradient-to-r from-amber-400 to-orange-400 bg-clip-text text-transparent">
+            ¡Nivel Completado!
+        </h2>
+        <p id="modal-msg" class="text-slate-300 text-sm leading-relaxed">
+            Han recogido todas las gemas y llegado a las puertas.
+        </p>
+        <button id="btn-action" onclick="siguienteNivel()" class="w-full py-3.5 bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-500 hover:to-emerald-400 text-white font-black rounded-2xl shadow-lg shadow-emerald-950/50 hover:shadow-emerald-900/60 transition-all transform active:scale-[0.99] text-sm tracking-wide mt-2">
+            Siguiente Nivel
+        </button>
+    </div>
+</div>
+
+</body>
+</html>
