@@ -7,6 +7,11 @@ const TOTAL_NIVELES = 5;
 let juegoTerminado = false;
 let nivelCompletado = false;
 
+// Variables de Cronómetro
+let tiempoInicio = 0;
+let tiempoTranscurrido = 0;
+let timerInterval;
+
 // Teclas presionadas
 const keys = {};
 
@@ -66,8 +71,23 @@ class Jugador {
         this.vx *= FRICCION;
         this.vy += GRAVEDAD;
 
-        // Movimiento X + Colisiones
+        // Movimiento X + Colisiones con Plataformas
         this.x += this.vx;
+
+        // MUROS LATERALES Y TECHO ESTRICTOS (Evitan salir del mapa)
+        if (this.x < 10) {
+            this.x = 10;
+            this.vx = 0;
+        }
+        if (this.x + this.w > canvas.width - 10) {
+            this.x = canvas.width - 10 - this.w;
+            this.vx = 0;
+        }
+        if (this.y < 0) {
+            this.y = 0;
+            this.vy = 0;
+        }
+
         for (let p of plataformas) {
             if (colision(this, p)) {
                 if (this.vx > 0) this.x = p.x - this.w;
@@ -79,6 +99,7 @@ class Jugador {
         // Movimiento Y + Colisiones
         this.y += this.vy;
         this.enSuelo = false;
+
         for (let p of plataformas) {
             if (colision(this, p)) {
                 if (this.vy > 0) { // Cayendo
@@ -114,17 +135,33 @@ function colision(r1, r2) {
         r1.y + r1.h > r2.y;
 }
 
+// Funciones del Cronómetro
+function iniciarTimer() {
+    clearInterval(timerInterval);
+    tiempoInicio = Date.now();
+    document.getElementById('timer-display').innerText = "00:00";
+
+    timerInterval = setInterval(() => {
+        if (!juegoTerminado) {
+            tiempoTranscurrido = Math.floor((Date.now() - tiempoInicio) / 1000);
+            const mins = String(Math.floor(tiempoTranscurrido / 60)).padStart(2, '0');
+            const secs = String(tiempoTranscurrido % 60).padStart(2, '0');
+            document.getElementById('timer-display').innerText = `${mins}:${secs}`;
+        }
+    }, 1000);
+}
+
 // --- DEFINICIÓN DE LOS 5 NIVELES ---
 const NIVELES = [
     // Nivel 1: Introducción
     {
         plataformas: [
-            {x: 0, y: 460, w: 800, h: 40}, // Suelo base
+            {x: 0, y: 460, w: 800, h: 40},
             {x: 150, y: 360, w: 200, h: 20},
             {x: 450, y: 360, w: 200, h: 20},
-            {x: 300, y: 250, w: 200, h: 20},
-            {x: 50, y: 150, w: 250, h: 20},
-            {x: 500, y: 150, w: 250, h: 20}
+            {x: 300, y: 260, w: 200, h: 20},
+            {x: 50, y: 160, w: 250, h: 20},
+            {x: 500, y: 160, w: 250, h: 20}
         ],
         charcos: [
             {x: 200, y: 450, w: 120, h: 10, tipo: 'fuego'},
@@ -136,8 +173,8 @@ const NIVELES = [
             {x: 390, y: 210, w: 15, h: 15, tipo: 'fuego', tomada: false},
             {x: 410, y: 210, w: 15, h: 15, tipo: 'agua', tomada: false}
         ],
-        puertaFuego: {x: 100, y: 90, w: 35, h: 60},
-        puertaAgua: {x: 650, y: 90, w: 35, h: 60},
+        puertaFuego: {x: 100, y: 100, w: 35, h: 60},
+        puertaAgua: {x: 650, y: 100, w: 35, h: 60},
         spawnFuego: {x: 50, y: 410},
         spawnAgua: {x: 700, y: 410}
     },
@@ -165,7 +202,7 @@ const NIVELES = [
         spawnFuego: {x: 30, y: 410},
         spawnAgua: {x: 730, y: 410}
     },
-    // Nivel 3: El veneno mortal (Ácido verde)
+    // Nivel 3: El veneno mortal
     {
         plataformas: [
             {x: 0, y: 460, w: 800, h: 40},
@@ -267,6 +304,9 @@ function cargarNivel(num) {
     document.getElementById('level-display').innerText = num;
     document.getElementById('overlay').classList.add('hidden');
     actualizarUI();
+
+    // Iniciar cronómetro para el nuevo nivel
+    iniciarTimer();
 }
 
 function actualizarUI() {
@@ -280,10 +320,12 @@ function actualizarUI() {
 
 function reiniciarNivel(mensaje) {
     juegoTerminado = true;
+    clearInterval(timerInterval); // Se detiene el cronómetro
+
     const overlay = document.getElementById('overlay');
     document.getElementById('modal-title').innerText = "¡Derrota!";
     document.getElementById('modal-title').style.color = "#ef4444";
-    document.getElementById('modal-msg').innerText = mensaje;
+    document.getElementById('modal-msg').innerHTML = `<p>${mensaje}</p>`;
 
     const btn = document.getElementById('btn-action');
     btn.innerText = "Reintentar";
@@ -305,11 +347,32 @@ function comprobarVictoria() {
     if (tieneTodasGemas && jugadorFuego.enPuerta && jugadorAgua.enPuerta && !nivelCompletado) {
         nivelCompletado = true;
         juegoTerminado = true;
+        clearInterval(timerInterval); // Detener timer al ganar
+
+        // Asignación de Rango según el tiempo
+        let rango = "C";
+        let colorRango = "text-slate-400";
+        if (tiempoTranscurrido <= 15) { rango = "S"; colorRango = "text-amber-400"; }
+        else if (tiempoTranscurrido <= 25) { rango = "A"; colorRango = "text-purple-400"; }
+        else if (tiempoTranscurrido <= 40) { rango = "B"; colorRango = "text-blue-400"; }
 
         const overlay = document.getElementById('overlay');
         document.getElementById('modal-title').innerText = nivelActual === TOTAL_NIVELES ? "¡JUEGO COMPLETADO! 🏆" : "¡Nivel Completado!";
         document.getElementById('modal-title').style.color = "#22c55e";
-        document.getElementById('modal-msg').innerText = nivelActual === TOTAL_NIVELES ? "¡Increíble! Han superado todos los templos juntos." : "Ambos jugadores llegaron a las puertas con todas las gemas.";
+
+        document.getElementById('modal-msg').innerHTML = `
+            Han recogido todas las gemas y llegado a las puertas.
+            <div class="mt-5 bg-slate-950/80 p-5 rounded-2xl border border-slate-700/60 shadow-inner inline-block w-full">
+                <div class="flex justify-between items-center border-b border-slate-800 pb-2 mb-3">
+                    <span class="text-slate-400 uppercase text-xs font-bold">Tiempo Superado</span>
+                    <span class="font-mono text-cyan-400 text-lg">${tiempoTranscurrido}s</span>
+                </div>
+                <div class="flex justify-between items-center">
+                    <span class="text-slate-400 uppercase text-xs font-bold">Rango Obtenido</span>
+                    <span class="text-3xl font-black drop-shadow-md ${colorRango}">${rango}</span>
+                </div>
+            </div>
+        `;
 
         const btn = document.getElementById('btn-action');
         if (nivelActual < TOTAL_NIVELES) {
@@ -382,6 +445,11 @@ function draw() {
     // 2. Dibujar Plataformas
     ctx.fillStyle = '#334155';
     mapa.plataformas.forEach(p => ctx.fillRect(p.x, p.y, p.w, p.h));
+
+    // Dibujar visualmente los Muros Laterales para que el jugador note el encierro
+    ctx.fillStyle = '#1e293b'; // Color un poco más oscuro que las plataformas
+    ctx.fillRect(0, 0, 10, canvas.height); // Muro Izquierdo
+    ctx.fillRect(canvas.width - 10, 0, 10, canvas.height); // Muro Derecho
 
     // 3. Dibujar Charcos (Lava/Agua/Ácido)
     mapa.charcos.forEach(c => {
