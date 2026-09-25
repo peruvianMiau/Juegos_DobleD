@@ -18,18 +18,18 @@ export function renderHand(gameState, evalRes, onSelectCard) {
     const isScoring = evalRes && evalRes.scoringIndices.includes(index);
 
     const cardEl = document.createElement('div');
-    cardEl.className = `card-container relative w-20 h-28 md:w-24 md:h-32 bg-slate-800 border-2 border-slate-600 rounded-xl flex flex-col justify-between p-1.5 cursor-pointer shadow-lg transition-all select-none ${isSelected ? 'card-selected' : ''} ${isScoring ? 'card-scoring' : ''}`;
+    cardEl.className = `card-container relative w-24 h-32 sm:w-28 sm:h-38 md:w-32 md:h-44 bg-slate-800 border-2 border-slate-600 rounded-xl flex flex-col justify-between p-2 cursor-pointer shadow-lg transition-all select-none ${isSelected ? 'card-selected' : ''} ${isScoring ? 'card-scoring' : ''}`;
     cardEl.onclick = () => onSelectCard(index);
 
     cardEl.innerHTML = `
-      <div class="flex justify-between items-center text-xs font-bold">
+      <div class="flex justify-between items-center text-xs md:text-sm font-bold">
         <span class="text-amber-300">${card.valStr}</span>
-        <span class="text-sm">${card.suit}</span>
+        <span class="text-base md:text-lg">${card.suit}</span>
       </div>
       <div class="flex-1 flex items-center justify-center my-0.5">
-        <img src="${card.img}" alt="${card.name}" class="w-12 h-12 md:w-14 md:h-14 object-contain pointer-events-none" />
+        <img src="${card.img}" alt="${card.name}" class="w-16 h-16 md:w-20 md:h-20 object-contain pointer-events-none" />
       </div>
-      <div class="text-[10px] text-center font-semibold text-slate-300 truncate">
+      <div class="text-[10px] md:text-xs text-center font-semibold text-slate-300 truncate">
         ${card.name}
       </div>
     `;
@@ -37,6 +37,50 @@ export function renderHand(gameState, evalRes, onSelectCard) {
   });
 
   document.getElementById('selectedCount').innerText = gameState.selectedIndices.length;
+}
+
+export function showPlayResult(cardsPlayed, evalRes) {
+  const overlay = document.getElementById('playResultOverlay');
+  const container = document.getElementById('playResultCards');
+  const handNameEl = document.getElementById('playResultHandName');
+  const scoreEl = document.getElementById('playResultScore');
+  if (!overlay || !container) return;
+
+  container.innerHTML = '';
+  handNameEl.innerText = evalRes.handName;
+  scoreEl.innerText = '';
+
+  cardsPlayed.forEach(({ card, originalIndex }, i) => {
+    const isScoring = evalRes.scoringIndices.includes(originalIndex);
+
+    const cardEl = document.createElement('div');
+    cardEl.className = `result-card relative w-24 h-32 sm:w-28 sm:h-38 md:w-32 md:h-44 bg-slate-800 border-2 border-slate-600 rounded-xl flex flex-col justify-between p-2 shadow-2xl ${isScoring ? 'card-scoring' : 'result-card-unused'}`;
+    cardEl.style.animationDelay = `${i * 0.08}s`;
+
+    cardEl.innerHTML = `
+      <div class="flex justify-between items-center text-xs md:text-sm font-bold">
+        <span class="text-amber-300">${card.valStr}</span>
+        <span class="text-base md:text-lg">${card.suit}</span>
+      </div>
+      <div class="flex-1 flex items-center justify-center my-0.5">
+        <img src="${card.img}" alt="${card.name}" class="w-16 h-16 md:w-20 md:h-20 object-contain pointer-events-none" />
+      </div>
+      <div class="text-[10px] md:text-xs text-center font-semibold text-slate-300 truncate">
+        ${card.name}
+      </div>
+    `;
+    container.appendChild(cardEl);
+  });
+
+  requestAnimationFrame(() => {
+    scoreEl.innerText = `+${evalRes.estimatedTotal}`;
+  });
+
+  overlay.classList.remove('hidden');
+}
+
+export function hidePlayResult() {
+  document.getElementById('playResultOverlay')?.classList.add('hidden');
 }
 
 export function renderJokers(jokers) {

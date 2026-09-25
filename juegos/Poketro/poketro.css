@@ -1,6 +1,6 @@
 body {
     font-family: 'Rubik', sans-serif;
-    background-color: #0f172a;
+    background-color: #020617;
     color: #f8fafc;
     user-select: none;
 }
@@ -27,10 +27,35 @@ body {
 
 @keyframes pulse-glow {
     from { box-shadow: 0 0 10px #38bdf8; }
-    to { box-shadow: 0 0 22px #0284c7; }
+    to { box-shadow: 0 0 26px #0284c7; }
 }
 
 .modal-backdrop {
     background-color: rgba(15, 23, 42, 0.85);
     backdrop-filter: blur(4px);
+}
+
+/* --- Overlay de resultado de mano jugada --- */
+.result-card {
+    animation: card-pop-in 0.45s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+
+.result-card-unused {
+    opacity: 0.35;
+    filter: grayscale(60%);
+}
+
+@keyframes card-pop-in {
+    0% { transform: scale(0.4) translateY(50px) rotate(-4deg); opacity: 0; }
+    65% { transform: scale(1.08) translateY(-8px) rotate(1deg); opacity: 1; }
+    100% { transform: scale(1) translateY(0) rotate(0deg); opacity: 1; }
+}
+
+#playResultScore {
+    animation: score-pop 0.35s ease-out 0.35s both;
+}
+
+@keyframes score-pop {
+    0% { transform: scale(0.4); opacity: 0; }
+    100% { transform: scale(1); opacity: 1; }
 }

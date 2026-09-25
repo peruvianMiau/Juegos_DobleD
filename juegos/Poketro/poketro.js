@@ -8,7 +8,9 @@ import {
   renderHandsModalInfo,
   renderShop,
   openModal,
-  closeModal
+  closeModal,
+  showPlayResult,
+  hidePlayResult
 } from './modules/ui.js';
 
 let gameState = {
@@ -80,6 +82,21 @@ function playHand() {
   if (gameState.selectedIndices.length === 0 || gameState.handsLeft <= 0) return;
 
   const evalRes = evaluateHand(gameState.selectedIndices, gameState.hand, gameState.jokers);
+  const cardsPlayed = gameState.selectedIndices.map(i => ({ card: gameState.hand[i], originalIndex: i }));
+
+  // Bloquea los controles mientras se muestra la animación de la mano jugada
+  document.getElementById('playBtn').disabled = true;
+  document.getElementById('discardBtn').disabled = true;
+
+  showPlayResult(cardsPlayed, evalRes);
+
+  setTimeout(() => {
+    hidePlayResult();
+    resolvePlayedHand(evalRes);
+  }, 1700);
+}
+
+function resolvePlayedHand(evalRes) {
   gameState.currentScore += evalRes.estimatedTotal;
   gameState.handsLeft--;
 
@@ -92,8 +109,11 @@ function playHand() {
   updateUI(gameState);
   refreshHandUI();
 
+  document.getElementById('playBtn').disabled = false;
+  document.getElementById('discardBtn').disabled = false;
+
   if (gameState.currentScore >= gameState.targetScore) {
-    setTimeout(() => openShopModal(), 500);
+    setTimeout(() => openShopModal(), 400);
   } else if (gameState.handsLeft <= 0) {
     alert("¡Te has quedado sin manos! Juego terminado.");
     resetGame();
@@ -165,10 +185,6 @@ function resetGame() {
 function setupEventListeners() {
   document.getElementById('playBtn').onclick = playHand;
   document.getElementById('discardBtn').onclick = discardCards;
-
-  document.getElementById('openRulesBtn').onclick = () => openModal('rulesModal');
-  document.getElementById('closeRulesBtn').onclick = () => closeModal('rulesModal');
-  document.getElementById('confirmRulesBtn').onclick = () => closeModal('rulesModal');
 
   document.getElementById('openHandsBtn').onclick = () => openModal('handsModal');
   document.getElementById('closeHandsBtn').onclick = () => closeModal('handsModal');
