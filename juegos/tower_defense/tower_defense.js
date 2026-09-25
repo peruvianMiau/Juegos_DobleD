@@ -779,10 +779,6 @@ function drawGrid() {
     ctx.stroke();
 }
 
-// Cache de sprites de "brillo" (glow) pre-renderizados por color/radio.
-// ctx.shadowBlur es muy costoso si se recalcula cada frame para cada proyectil;
-// aquí se calcula UNA sola vez por combinación color+radio y se reutiliza con drawImage,
-// dando el mismo resultado visual a una fracción del costo.
 const glowSpriteCache = {};
 function getGlowSprite(color, radio) {
     const key = color + '_' + radio;
@@ -892,20 +888,20 @@ function preRenderFondo() {
     const dest = CAMINO[CAMINO.length - 1];
     bgCtx.fillStyle = 'rgba(0,0,0,0.5)';
     bgCtx.beginPath();
-    bgCtx.ellipse(dest.x - 10, dest.y + 16, 32, 12, 0, 0, Math.PI * 2);
+    bgCtx.ellipse(dest.x, dest.y + 16, 32, 12, 0, 0, Math.PI * 2);
     bgCtx.fill();
 
     bgCtx.fillStyle = '#1e293b';
     bgCtx.strokeStyle = '#f59e0b';
     bgCtx.lineWidth = 3.5;
     bgCtx.beginPath();
-    bgCtx.arc(dest.x - 10, dest.y, 30, 0, Math.PI * 2);
+    bgCtx.arc(dest.x, dest.y, 30, 0, Math.PI * 2);
     bgCtx.fill();
     bgCtx.stroke();
     bgCtx.font = '24px sans-serif';
     bgCtx.textAlign = 'center';
     bgCtx.textBaseline = 'middle';
-    bgCtx.fillText('🏰', dest.x - 10, dest.y);
+    bgCtx.fillText('🏰', dest.x, dest.y);
 }
 
 // Las decoraciones deben generarse ANTES de hornear el fondo, porque
