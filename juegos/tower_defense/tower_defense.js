@@ -12,6 +12,95 @@ function snapToGrid(val) {
 const AudioCtx = window.AudioContext || window.webkitAudioContext;
 let audioCtx = null;
 
+// Control de Música BGM
+// NOTA: en vez de "setInterval" (que se desincroniza si el frame tarda más de lo
+// normal, porque comparte el mismo hilo que update()/draw()), se usa el reloj de
+// precisión del propio Web Audio (audioCtx.currentTime) programando las notas con
+// antelación ("look-ahead scheduler"). Así la música nunca se atrasa ni tartamudea
+// aunque el juego tenga un pico de carga en un frame puntual.
+let bgmSonando = false;
+let bgmPaso = 0;
+let bgmProximaNota = 0;      // audioCtx.currentTime en el que debe sonar la próxima nota
+let bgmTimerId = null;
+
+const BGM_INTERVALO = 0.2;   // segundos entre notas (equivale a los 200ms anteriores)
+const BGM_ANTICIPACION = 0.1; // cuántos segundos hacia adelante se programan notas
+const BGM_REVISAR_CADA = 30;  // ms entre cada chequeo del scheduler (no crítico: no toca el audio directamente)
+
+// Secuencia de notas (Frecuencias en Hz estilo 8-bits)
+const BGM_NOTAS = [
+    220.00, 261.63, 293.66, 329.63, // A3, C4, D4, E4
+    220.00, 261.63, 329.63, 293.66, // A3, C4, E4, D4
+    196.00, 246.94, 293.66, 329.63, // G3, B3, D4, E4
+    174.61, 220.00, 261.63, 293.66  // F3, A3, C4, D4
+];
+
+function programarNotaBGM(freq, tiempo) {
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+
+    osc.type = 'square';
+    osc.frequency.setValueAtTime(freq, tiempo);
+
+    gain.gain.setValueAtTime(0.025, tiempo);
+    gain.gain.exponentialRampToValueAtTime(0.001, tiempo + 0.18);
+
+    osc.connect(gain);
+    gain.connect(audioCtx.destination);
+
+    osc.start(tiempo);
+    osc.stop(tiempo + 0.18);
+}
+
+function planificadorBGM() {
+    if (!bgmSonando || !audioCtx) return;
+
+    try {
+        // Programa de una vez todas las notas que caen dentro de la ventana de
+        // anticipación, usando siempre la hora exacta (bgmProximaNota), nunca "ahora".
+        while (bgmProximaNota < audioCtx.currentTime + BGM_ANTICIPACION) {
+            const freq = BGM_NOTAS[bgmPaso % BGM_NOTAS.length];
+            programarNotaBGM(freq, bgmProximaNota);
+            bgmProximaNota += BGM_INTERVALO;
+            bgmPaso++;
+        }
+    } catch (e) {}
+
+    bgmTimerId = setTimeout(planificadorBGM, BGM_REVISAR_CADA);
+}
+
+function reproducirMusica() {
+    if (bgmSonando) return;
+    initAudio();
+    bgmSonando = true;
+    bgmPaso = 0;
+    bgmProximaNota = audioCtx.currentTime + 0.05;
+    planificadorBGM();
+}
+
+function detenerMusica() {
+    bgmSonando = false;
+    if (bgmTimerId) {
+        clearTimeout(bgmTimerId);
+        bgmTimerId = null;
+    }
+}
+
+// Pausa la música si el usuario cambia de pestaña (ahorra CPU/batería) y la
+// retoma al volver, reprogramando desde "ahora" para no generar un aluvión de
+// notas atrasadas de golpe.
+document.addEventListener('visibilitychange', () => {
+    if (document.hidden) {
+        if (bgmSonando && bgmTimerId) {
+            clearTimeout(bgmTimerId);
+            bgmTimerId = null;
+        }
+    } else if (bgmSonando && audioCtx) {
+        bgmProximaNota = audioCtx.currentTime + 0.05;
+        planificadorBGM();
+    }
+});
+
 function initAudio() {
     if (!audioCtx) audioCtx = new AudioCtx();
     if (audioCtx.state === 'suspended') audioCtx.resume();
@@ -429,6 +518,7 @@ function aplicarDanioEnemigo(enemigo, cantidadDanio) {
 }
 
 canvas.addEventListener('click', (e) => {
+    reproducirMusica();
     if (juegoTerminado) return;
     const rect = canvas.getBoundingClientRect();
     const rawX = ((e.clientX - rect.left) / rect.width) * canvas.width;
@@ -656,7 +746,16 @@ function update() {
             p.x += p.vx;
             p.y += p.vy;
             p.life--;
-            if (p.life <= 0) particulas.splice(i, 1);
+            if (p.life <= 0) {
+                // swap-and-pop: mueve la última partícula al hueco y achica el
+                // array con pop(). Es O(1) en vez de O(n) como splice(), y como
+                // el orden de dibujo de partículas no afecta el resultado visual
+                // (son puntos sueltos, no se solapan de forma que se note), el
+                // resultado final es idéntico pero mucho más barato con muchas
+                // partículas activas (ráfagas de cañón, muertes múltiples, etc.).
+                particulas[i] = particulas[particulas.length - 1];
+                particulas.pop();
+            }
         }
 
         for (let i = textosFlotantes.length - 1; i >= 0; i--) {
@@ -1106,6 +1205,7 @@ function loop() {
 }
 
 function finalizarJuego(victoria) {
+    detenerMusica()
     juegoTerminado = true;
     const overlay = document.getElementById('game-overlay');
     const title = document.getElementById('overlay-title');
@@ -1124,6 +1224,8 @@ function finalizarJuego(victoria) {
 }
 
 function reiniciarJuego() {
+    detenerMusica();
+    reproducirMusica();
     oro = 180;
     vidas = 20;
     oleadaActual = 0;
