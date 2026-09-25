@@ -168,7 +168,7 @@ function girarRuleta() {
     const btn = document.getElementById('btn-spin');
     btn.disabled = true;
     btn.classList.add('opacity-50', 'cursor-not-allowed');
-    mostrarEstado("¡La ruleta y la bola están girando! ¡Buena suerte!", "text-emerald-400");
+    mostrarEstado("¡La Ruleta y la bola están girando! ¡Buena suerte!", "text-emerald-400");
 
     // El resultado se decide una sola vez. La animación se construye alrededor
     // de ese resultado para que la casilla bajo la bola y el resultado lógico

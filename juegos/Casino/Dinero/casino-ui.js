@@ -10,7 +10,7 @@
         },
         "Ruleta": {
             "title": "Reglas de la Ruleta",
-            "html": "\n<div class=\"bg-slate-950/60 p-3 rounded-xl border border-slate-800/60\">\n<h3 class=\"text-emerald-400 font-semibold mb-1 text-xs uppercase tracking-wider\">🎯 Objetivo</h3>\n<p>Predecir en qué casilla numerada (0 al 36) caerá la bola tras el giro de la ruleta.</p>\n</div>\n<div class=\"bg-slate-950/60 p-3 rounded-xl border border-slate-800/60\">\n<h3 class=\"text-amber-400 font-semibold mb-1 text-xs uppercase tracking-wider\">💰 Pagos de Apuestas</h3>\n<ul class=\"text-xs space-y-1.5 mt-1\">\n<li><strong class=\"text-white\">Pleno (1 número):</strong> Paga <span class=\"text-emerald-400 font-bold\">35 a 1</span>.</li>\n<li><strong class=\"text-white\">Docenas (12 números):</strong> Paga <span class=\"text-emerald-400 font-bold\">2 a 1</span>.</li>\n<li><strong class=\"text-white\">Columnas (12 números):</strong> Paga <span class=\"text-emerald-400 font-bold\">2 a 1</span>.</li>\n<li><strong class=\"text-white\">Rojo o Negro:</strong> Paga <span class=\"text-emerald-400 font-bold\">1 a 1</span>.</li>\n<li><strong class=\"text-white\">Par o Impar:</strong> Paga <span class=\"text-emerald-400 font-bold\">1 a 1</span>.</li>\n<li><strong class=\"text-white\">Bajo (1-18) / Alto (19-36):</strong> Paga <span class=\"text-emerald-400 font-bold\">1 a 1</span>.</li>\n</ul>\n</div>\n<div class=\"bg-slate-950/60 p-3 rounded-xl border border-slate-800/60\">\n<h3 class=\"text-cyan-400 font-semibold mb-1 text-xs uppercase tracking-wider\">🟢 El Cero (0)</h3>\n<p class=\"text-xs\">El 0 es verde. Si la bola cae en el 0, únicamente ganan las apuestas colocadas directamente al número 0.</p>\n</div>\n<div class=\"bg-slate-950/60 p-3 rounded-xl border border-slate-800/60\">\n<h3 class=\"text-purple-400 font-semibold mb-1 text-xs uppercase tracking-wider\">🎲 Cómo Apostar</h3>\n<p class=\"text-xs\">1. Elige el valor de tu ficha ($10, $25, $50, $100, $500).<br/>2. Haz clic en las casillas deseadas del tapete.<br/>3. Presiona <strong>Girar Ruleta</strong> y mira rodar la bola.</p>\n</div>\n"
+            "html": "\n<div class=\"bg-slate-950/60 p-3 rounded-xl border border-slate-800/60\">\n<h3 class=\"text-emerald-400 font-semibold mb-1 text-xs uppercase tracking-wider\">🎯 Objetivo</h3>\n<p>Predecir en qué casilla numerada (0 al 36) caerá la bola tras el giro de la Ruleta.</p>\n</div>\n<div class=\"bg-slate-950/60 p-3 rounded-xl border border-slate-800/60\">\n<h3 class=\"text-amber-400 font-semibold mb-1 text-xs uppercase tracking-wider\">💰 Pagos de Apuestas</h3>\n<ul class=\"text-xs space-y-1.5 mt-1\">\n<li><strong class=\"text-white\">Pleno (1 número):</strong> Paga <span class=\"text-emerald-400 font-bold\">35 a 1</span>.</li>\n<li><strong class=\"text-white\">Docenas (12 números):</strong> Paga <span class=\"text-emerald-400 font-bold\">2 a 1</span>.</li>\n<li><strong class=\"text-white\">Columnas (12 números):</strong> Paga <span class=\"text-emerald-400 font-bold\">2 a 1</span>.</li>\n<li><strong class=\"text-white\">Rojo o Negro:</strong> Paga <span class=\"text-emerald-400 font-bold\">1 a 1</span>.</li>\n<li><strong class=\"text-white\">Par o Impar:</strong> Paga <span class=\"text-emerald-400 font-bold\">1 a 1</span>.</li>\n<li><strong class=\"text-white\">Bajo (1-18) / Alto (19-36):</strong> Paga <span class=\"text-emerald-400 font-bold\">1 a 1</span>.</li>\n</ul>\n</div>\n<div class=\"bg-slate-950/60 p-3 rounded-xl border border-slate-800/60\">\n<h3 class=\"text-cyan-400 font-semibold mb-1 text-xs uppercase tracking-wider\">🟢 El Cero (0)</h3>\n<p class=\"text-xs\">El 0 es verde. Si la bola cae en el 0, únicamente ganan las apuestas colocadas directamente al número 0.</p>\n</div>\n<div class=\"bg-slate-950/60 p-3 rounded-xl border border-slate-800/60\">\n<h3 class=\"text-purple-400 font-semibold mb-1 text-xs uppercase tracking-wider\">🎲 Cómo Apostar</h3>\n<p class=\"text-xs\">1. Elige el valor de tu ficha ($10, $25, $50, $100, $500).<br/>2. Haz clic en las casillas deseadas del tapete.<br/>3. Presiona <strong>Girar Ruleta</strong> y mira rodar la bola.</p>\n</div>\n"
         },
         "Texas Hold'em": {
             "title": "📜 Reglas de esta versión",
@@ -28,11 +28,11 @@
     function gameKey(){
         const p=location.pathname.toLowerCase();
         if(p.includes('blackjack')) return 'Blackjack 21';
-        if(p.includes('higher_lower')) return 'Higher & Lower';
-        if(p.includes('ruleta')) return 'Ruleta';
-        if(p.includes('texas_holdem')) return "Texas Hold'em";
-        if(p.includes('tragamonedas')) return 'Tragamonedas';
-        if(p.includes('video_poker')) return 'Video Poker';
+        if(p.includes('Higher_lower')) return 'Higher & Lower';
+        if(p.includes('Ruleta')) return 'Ruleta';
+        if(p.includes('Texas_holdem')) return "Texas Hold'em";
+        if(p.includes('Tragamonedas')) return 'Tragamonedas';
+        if(p.includes('Video_poker')) return 'Video Poker';
         return null;
     }
     function mount(){
