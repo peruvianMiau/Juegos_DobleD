@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Poketro - Poker Pokémon</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="../Dinero/prestamos.css">
+    <link rel="stylesheet" href="../Dinero/casino-ui.css">
+    <link rel="stylesheet" href="poketro.css">
+    <script src="../Dinero/prestamos.js"></script>
+    <script src="../Dinero/casino-ui.js" defer></script>
+</head>
+<body class="min-h-screen bg-slate-950 text-slate-100 font-sans flex flex-col items-center justify-between p-3 sm:p-6 select-none">
+
+<!-- Header Unificado Estilo Casino -->
+<header class="w-full max-w-7xl flex items-center justify-between bg-slate-900/80 backdrop-blur border border-slate-800 rounded-2xl px-5 py-3 shadow-lg">
+    <a href="../../../index.html" class="inline-flex items-center gap-2 text-emerald-400 hover:text-emerald-300 font-semibold text-sm sm:text-base transition-colors">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
+        </svg>
+        Volver al Menú
+    </a>
+    <h1 class="text-xl sm:text-2xl font-black bg-gradient-to-r from-amber-400 via-rose-500 to-indigo-400 bg-clip-text text-transparent">
+        POKETRO 🎴⚡
+    </h1>
+    <div class="flex items-center gap-2 bg-slate-800/80 px-3 py-1.5 rounded-xl border border-slate-700">
+        <span class="text-amber-400 font-bold">💰 $</span>
+        <span id="fichas-count" class="font-bold text-amber-300 text-lg">1000</span>
+    </div>
+</header>
+
+<!-- Contenedor Principal: Juego + Sidebar de Reglas a la Derecha -->
+<div class="casino-layout w-full max-w-7xl flex flex-col lg:flex-row gap-6 my-4 flex-1 items-start justify-center">
+
+    <!-- Tablero Principal del Juego -->
+    <main id="game-container" class="flex-1 w-full bg-slate-900/60 border border-slate-800 rounded-3xl p-4 sm:p-6 shadow-2xl flex flex-col lg:flex-row gap-4">
+
+        <!-- Sidebar Interna de Estadísticas de la Mano -->
+        <aside id="sidebar">
+            <div class="stat-box">
+                <span class="label">OBJETIVO</span>
+                <span id="target-score" class="value">300</span>
+            </div>
+
+            <div class="stat-box">
+                <span class="label">PUNTAJE ACTUAL</span>
+                <span id="current-score" class="value">0</span>
+            </div>
+
+            <div class="calc-banner">
+                <div class="chip-pill"><span id="calc-chips">0</span> CHIPS</div>
+                <span class="multiply-sign">X</span>
+                <div class="mult-pill"><span id="calc-mult">0</span> MULT</div>
+            </div>
+
+            <div class="stat-box">
+                <span class="label">MANOS</span>
+                <span id="hands-left" class="value">4</span>
+            </div>
+
+            <div class="stat-box">
+                <span class="label">DESCARTES</span>
+                <span id="discards-left" class="value">3</span>
+            </div>
+
+            <button id="btn-show-combos" class="btn btn-combos mt-2">
+                📖 Ver Combos
+            </button>
+        </aside>
+
+        <!-- Contenido Principal de Cartas -->
+        <section id="main-content">
+            <!-- Área de Comodines / Ítems -->
+            <div id="jokers-area">
+                <div class="section-title">Comodines Activos</div>
+                <div id="jokers-list" class="slots-container"></div>
+            </div>
+
+            <!-- Área de Jugada y Puntuación -->
+            <div id="play-area">
+                <div id="multiplier-display">
+                    <span class="total-label">Total Mano: </span>
+                    <span id="calc-total" class="total-val">0</span>
+                </div>
+                <div id="hand-type-tag">Formación: Ninguno</div>
+                <div id="selection-counter" class="text-xs text-amber-400 font-semibold mt-1">
+                    Seleccionadas: <span id="selected-count">0</span> / 5
+                </div>
+            </div>
+
+            <!-- Cartas en la mano del jugador -->
+            <div id="hand-area">
+                <div id="player-hand" class="cards-container"></div>
+            </div>
+
+            <!-- Botones de Acción -->
+            <div id="actions-bar">
+                <button id="play-btn" class="btn btn-primary">Jugar Mano (1-5)</button>
+                <button id="discard-btn" class="btn btn-danger">Descartar (1-5)</button>
+            </div>
+        </section>
+    </main>
+
+    <!-- Sidebar con Reglas del Juego al lado derecho -->
+    <aside class="w-full lg:w-80 bg-slate-900/60 border border-slate-800 rounded-3xl p-5 shadow-2xl flex flex-col gap-4 text-sm">
+        <h2 class="text-lg font-bold text-amber-400 border-b border-slate-800 pb-2 flex items-center gap-2">
+            <span>📜</span> Reglas de Poketro
+        </h2>
+
+        <div class="space-y-3 text-slate-300">
+            <div>
+                <h3 class="font-bold text-slate-100 mb-1">🎯 Objetivo:</h3>
+                <p class="text-xs text-slate-400">
+                    Alcanza o supera el puntaje de objetivo combinando los poderes de tu equipo Pokémon antes de quedarte sin manos.
+                </p>
+            </div>
+
+            <div>
+                <h3 class="font-bold text-slate-100 mb-1">🎴 Selección de Cartas:</h3>
+                <p class="text-xs text-slate-400">
+                    Puedes seleccionar un <strong>máximo de 5 cartas</strong> a la vez para realizar una jugada o un descarte.
+                </p>
+            </div>
+
+            <div>
+                <h3 class="font-bold text-slate-100 mb-1">🔥 Multiplicadores y Chips:</h3>
+                <p class="text-xs text-slate-400">
+                    El valor de cada mano se calcula como: <br>
+                    <span class="text-amber-300 font-mono">(Chips Base + Poder) × (Mult Base + Mult Cartas)</span>.
+                </p>
+            </div>
+
+            <div>
+                <h3 class="font-bold text-slate-100 mb-1">🃏 Comodines:</h3>
+                <p class="text-xs text-slate-400">
+                    Los ítems activos otorgan bonificaciones globales de Chips y Multiplicadores en todas las jugadas.
+                </p>
+            </div>
+        </div>
+    </aside>
+
+</div>
+
+<!-- Modal para Lista de Combos -->
+<div id="combos-modal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4 z-50 hidden">
+    <div class="bg-slate-900 border border-slate-700 rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4">
+        <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+            <h3 class="text-lg font-bold text-amber-400">📊 Tabla de Combos Poketro</h3>
+            <button id="close-combos-modal" class="text-slate-400 hover:text-white font-bold text-xl">&times;</button>
+        </div>
+        <div class="space-y-3 text-sm">
+            <div class="bg-slate-950/60 p-3 rounded-xl border border-slate-800 flex justify-between items-center">
+                <div>
+                    <div class="font-bold text-slate-100">Pokémon Individual</div>
+                    <div class="text-xs text-slate-400">Cualquier carta seleccionada</div>
+                </div>
+                <div class="text-right font-mono text-xs text-amber-300">+5 Chips / x1 Mult</div>
+            </div>
+            <div class="bg-slate-950/60 p-3 rounded-xl border border-slate-800 flex justify-between items-center">
+                <div>
+                    <div class="font-bold text-slate-100">Pareja Monotipo</div>
+                    <div class="text-xs text-slate-400">2 Pokémon del mismo tipo</div>
+                </div>
+                <div class="text-right font-mono text-xs text-amber-300">+20 Chips / x2 Mult</div>
+            </div>
+            <div class="bg-slate-950/60 p-3 rounded-xl border border-slate-800 flex justify-between items-center">
+                <div>
+                    <div class="font-bold text-slate-100">Tercia de Tipo</div>
+                    <div class="text-xs text-slate-400">3 Pokémon del mismo tipo</div>
+                </div>
+                <div class="text-right font-mono text-xs text-amber-300">+40 Chips / x3 Mult</div>
+            </div>
+            <div class="bg-slate-950/60 p-3 rounded-xl border border-slate-800 flex justify-between items-center">
+                <div>
+                    <div class="font-bold text-slate-100">Equipo Elemental (Flush)</div>
+                    <div class="text-xs text-slate-400">5 Pokémon exactamente del mismo tipo</div>
+                </div>
+                <div class="text-right font-mono text-xs text-amber-300">+70 Chips / x5 Mult</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script type="module" src="poketro.js"></script>
+</body>
+</html>
