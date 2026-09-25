@@ -1,9 +1,105 @@
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
 
+// Configuración del Grid (Cuadrícula)
+const TILE_SIZE = 40; // Tamaño de celda 40x40px
+
+function snapToGrid(val) {
+    return Math.floor(val / TILE_SIZE) * TILE_SIZE + TILE_SIZE / 2;
+}
+
 // Web Audio API
 const AudioCtx = window.AudioContext || window.webkitAudioContext;
 let audioCtx = null;
+
+// Control de Música BGM
+// NOTA: en vez de "setInterval" (que se desincroniza si el frame tarda más de lo
+// normal, porque comparte el mismo hilo que update()/draw()), se usa el reloj de
+// precisión del propio Web Audio (audioCtx.currentTime) programando las notas con
+// antelación ("look-ahead scheduler"). Así la música nunca se atrasa ni tartamudea
+// aunque el juego tenga un pico de carga en un frame puntual.
+let bgmSonando = false;
+let bgmPaso = 0;
+let bgmProximaNota = 0;      // audioCtx.currentTime en el que debe sonar la próxima nota
+let bgmTimerId = null;
+
+const BGM_INTERVALO = 0.2;   // segundos entre notas (equivale a los 200ms anteriores)
+const BGM_ANTICIPACION = 0.1; // cuántos segundos hacia adelante se programan notas
+const BGM_REVISAR_CADA = 30;  // ms entre cada chequeo del scheduler (no crítico: no toca el audio directamente)
+
+// Secuencia de notas (Frecuencias en Hz estilo 8-bits)
+const BGM_NOTAS = [
+    220.00, 261.63, 293.66, 329.63, // A3, C4, D4, E4
+    220.00, 261.63, 329.63, 293.66, // A3, C4, E4, D4
+    196.00, 246.94, 293.66, 329.63, // G3, B3, D4, E4
+    174.61, 220.00, 261.63, 293.66  // F3, A3, C4, D4
+];
+
+function programarNotaBGM(freq, tiempo) {
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+
+    osc.type = 'square';
+    osc.frequency.setValueAtTime(freq, tiempo);
+
+    gain.gain.setValueAtTime(0.025, tiempo);
+    gain.gain.exponentialRampToValueAtTime(0.001, tiempo + 0.18);
+
+    osc.connect(gain);
+    gain.connect(audioCtx.destination);
+
+    osc.start(tiempo);
+    osc.stop(tiempo + 0.18);
+}
+
+function planificadorBGM() {
+    if (!bgmSonando || !audioCtx) return;
+
+    try {
+        // Programa de una vez todas las notas que caen dentro de la ventana de
+        // anticipación, usando siempre la hora exacta (bgmProximaNota), nunca "ahora".
+        while (bgmProximaNota < audioCtx.currentTime + BGM_ANTICIPACION) {
+            const freq = BGM_NOTAS[bgmPaso % BGM_NOTAS.length];
+            programarNotaBGM(freq, bgmProximaNota);
+            bgmProximaNota += BGM_INTERVALO;
+            bgmPaso++;
+        }
+    } catch (e) {}
+
+    bgmTimerId = setTimeout(planificadorBGM, BGM_REVISAR_CADA);
+}
+
+function reproducirMusica() {
+    if (bgmSonando) return;
+    initAudio();
+    bgmSonando = true;
+    bgmPaso = 0;
+    bgmProximaNota = audioCtx.currentTime + 0.05;
+    planificadorBGM();
+}
+
+function detenerMusica() {
+    bgmSonando = false;
+    if (bgmTimerId) {
+        clearTimeout(bgmTimerId);
+        bgmTimerId = null;
+    }
+}
+
+// Pausa la música si el usuario cambia de pestaña (ahorra CPU/batería) y la
+// retoma al volver, reprogramando desde "ahora" para no generar un aluvión de
+// notas atrasadas de golpe.
+document.addEventListener('visibilitychange', () => {
+    if (document.hidden) {
+        if (bgmSonando && bgmTimerId) {
+            clearTimeout(bgmTimerId);
+            bgmTimerId = null;
+        }
+    } else if (bgmSonando && audioCtx) {
+        bgmProximaNota = audioCtx.currentTime + 0.05;
+        planificadorBGM();
+    }
+});
 
 function initAudio() {
     if (!audioCtx) audioCtx = new AudioCtx();
@@ -73,23 +169,32 @@ let velocidad = 1;
 let juegoTerminado = false;
 let globalTime = 0;
 
-let tipoTorreSeleccionado = 'arrow';
+let tipoTorreSeleccionado = null;
 let torreInspeccionada = null;
 let mousePos = { x: -100, y: -100, dentro: false };
 
-// Sendero (Camino de waypoints)
+// Referencias DOM cacheadas (evita buscar el DOM repetidamente cada frame)
+const uiGoldCount = document.getElementById('gold-count');
+const uiLivesCount = document.getElementById('lives-count');
+const uiWaveDisplay = document.getElementById('wave-display');
+const uiEnemiesLeft = document.getElementById('enemies-left');
+
+// Marca que la UI necesita actualizarse; se aplica una sola vez al final de update()
+let uiDirty = false;
+
+// sendero
 const CAMINO = [
-    { x: -20, y: 110 },
-    { x: 220, y: 110 },
-    { x: 220, y: 360 },
-    { x: 440, y: 360 },
-    { x: 440, y: 150 },
-    { x: 670, y: 150 },
-    { x: 670, y: 440 },
-    { x: 820, y: 440 }
+    { x: 20, y: 100 },
+    { x: 220, y: 100 },
+    { x: 220, y: 340 },
+    { x: 460, y: 340 },
+    { x: 460, y: 140 },
+    { x: 660, y: 140 },
+    { x: 660, y: 420 },
+    { x: 740, y: 420 }
 ];
 
-const ANCHO_CAMINO = 56;
+const ANCHO_CAMINO = TILE_SIZE;
 
 // Elementos decorativos
 const DECORACIONES = [];
@@ -101,7 +206,7 @@ function generarDecoraciones() {
         let cercaCamino = false;
 
         for (let j = 0; j < CAMINO.length - 1; j++) {
-            if (distanciaPuntoASegmento(x, y, CAMINO[j].x, CAMINO[j].y, CAMINO[j + 1].x, CAMINO[j + 1].y) < ANCHO_CAMINO / 2 + 20) {
+            if (distanciaPuntoASegmento(x, y, CAMINO[j].x, CAMINO[j].y, CAMINO[j + 1].x, CAMINO[j + 1].y) < ANCHO_CAMINO / 2 + 15) {
                 cercaCamino = true;
                 break;
             }
@@ -204,26 +309,35 @@ function distanciaPuntoASegmento(px, py, x1, y1, x2, y2) {
 function estaEnCamino(x, y) {
     for (let i = 0; i < CAMINO.length - 1; i++) {
         const d = distanciaPuntoASegmento(x, y, CAMINO[i].x, CAMINO[i].y, CAMINO[i + 1].x, CAMINO[i + 1].y);
-        if (d < ANCHO_CAMINO / 2 + 16) return true;
+        if (d < ANCHO_CAMINO / 2) return true;
     }
     return false;
 }
 
 function actualizarMarcadoresUI() {
-    document.getElementById('gold-count').innerText = oro;
-    document.getElementById('lives-count').innerText = vidas;
-    document.getElementById('wave-display').innerText = `Oleada ${oleadaActual} / ${OLEADAS_TOTALES}`;
-    document.getElementById('enemies-left').innerText = `${enemigos.length + colaSpawn.length} vivos`;
+    uiGoldCount.innerText = oro;
+    uiLivesCount.innerText = vidas;
+    uiWaveDisplay.innerText = `Oleada ${oleadaActual} / ${OLEADAS_TOTALES}`;
+    uiEnemiesLeft.innerText = `${enemigos.length + colaSpawn.length} vivos`;
 }
 
 function seleccionarTipoTorre(tipo) {
-    tipoTorreSeleccionado = tipo;
-    torreInspeccionada = null;
+    if (tipoTorreSeleccionado === tipo) {
+        tipoTorreSeleccionado = null;
+    } else {
+        tipoTorreSeleccionado = tipo;
+        torreInspeccionada = null;
+    }
     actualizarPanelInspector();
 
     document.querySelectorAll('.tower-btn').forEach(btn => {
-        btn.classList.toggle('active', btn.dataset.type === tipo);
+        btn.classList.toggle('active', btn.dataset.type === tipoTorreSeleccionado);
     });
+}
+
+function deseleccionarTorreConstruccion() {
+    tipoTorreSeleccionado = null;
+    document.querySelectorAll('.tower-btn').forEach(btn => btn.classList.remove('active'));
 }
 
 function actualizarPanelInspector() {
@@ -252,8 +366,7 @@ function actualizarPanelInspector() {
         upgradeBtn.innerHTML = `⭐ Mejorar ($<span id="upgrade-cost">${costoUpgrade}</span>)`;
     }
 
-    const valorVenta = Math.round(torreInspeccionada.inversionTotal * 0.7);
-    document.getElementById('sell-value').innerText = valorVenta;
+    document.getElementById('sell-value').innerText = Math.round(torreInspeccionada.inversionTotal * 0.7);
 }
 
 function mejorarTorreSeleccionada() {
@@ -319,21 +432,21 @@ function iniciarSiguienteOleada() {
 
     colaSpawn = [];
     const count = 6 + oleadaActual * 3;
+    const multiVelocidad = 1 + (oleadaActual - 1) * 0.05;
 
     for (let i = 0; i < count; i++) {
         let tipo = 'goblin';
         let hp = 45 + oleadaActual * 18;
-        // Velocidad ajustada
-        let speed = 2;
-        let recompensa = 9 + Math.floor(oleadaActual * 1.2);
+        let speed = 2.0 * multiVelocidad;
+        let recompensa = 4 + Math.floor(oleadaActual * 0.6);
         let color = '#10b981';
         let radio = 11;
 
         if (oleadaActual >= 3 && i % 3 === 0) {
             tipo = 'orc';
             hp = 110 + oleadaActual * 28;
-            speed = 1.50;
-            recompensa = 18 + oleadaActual * 2;
+            speed = 1.50 * multiVelocidad;
+            recompensa = 8 + oleadaActual;
             color = '#f97316';
             radio = 15;
         }
@@ -341,8 +454,8 @@ function iniciarSiguienteOleada() {
         if (oleadaActual >= 6 && i % 4 === 0) {
             tipo = 'golem';
             hp = 280 + oleadaActual * 45;
-            speed = 1.10;
-            recompensa = 36 + oleadaActual * 3;
+            speed = 1.10 * multiVelocidad;
+            recompensa = 16 + oleadaActual * 1.5;
             color = '#64748b';
             radio = 18;
         }
@@ -350,11 +463,15 @@ function iniciarSiguienteOleada() {
         if (oleadaActual === 10 && i === count - 1) {
             tipo = 'boss';
             hp = 1400;
-            speed = 0.58;
-            recompensa = 180;
+            speed = 0.58 * multiVelocidad;
+            recompensa = 80;
             color = '#dc2626';
             radio = 24;
         }
+
+        // Lógica de escudo asignada por cada enemigo individualmente
+        const tieneEscudo = oleadaActual >= 5 && Math.random() < 0.35;
+        const valorEscudo = tieneEscudo ? Math.round(hp * 0.5) : 0;
 
         colaSpawn.push({
             tipo,
@@ -362,39 +479,70 @@ function iniciarSiguienteOleada() {
             hp: hp,
             speedBase: speed,
             speed: speed,
-            recompensa,
+            recompensa: Math.round(recompensa),
             color,
             radio,
             puntoIdx: 0,
             x: CAMINO[0].x,
             y: CAMINO[0].y,
             slowTimer: 0,
-            animOffset: Math.random() * Math.PI * 2
+            animOffset: Math.random() * Math.PI * 2,
+            escudo: valorEscudo,
+            escudoMax: valorEscudo
         });
     }
 
     actualizarMarcadoresUI();
 }
 
+function aplicarDanioEnemigo(enemigo, cantidadDanio) {
+    if (enemigo.escudo > 0) {
+        if (enemigo.escudo >= cantidadDanio) {
+            enemigo.escudo -= cantidadDanio;
+        } else {
+            const sobrante = cantidadDanio - enemigo.escudo;
+            enemigo.escudo = 0;
+            enemigo.hp -= sobrante;
+
+            for (let i = 0; i < 6; i++) {
+                particulas.push({
+                    x: enemigo.x, y: enemigo.y,
+                    vx: (Math.random() - 0.5) * 4, vy: (Math.random() - 0.5) * 4,
+                    color: '#38bdf8', size: 2.5, life: 15
+                });
+            }
+        }
+    } else {
+        enemigo.hp -= cantidadDanio;
+    }
+}
+
 canvas.addEventListener('click', (e) => {
+    reproducirMusica();
     if (juegoTerminado) return;
     const rect = canvas.getBoundingClientRect();
-    const x = ((e.clientX - rect.left) / rect.width) * canvas.width;
-    const y = ((e.clientY - rect.top) / rect.height) * canvas.height;
+    const rawX = ((e.clientX - rect.left) / rect.width) * canvas.width;
+    const rawY = ((e.clientY - rect.top) / rect.height) * canvas.height;
 
-    const torreClickeada = torres.find(t => distSq(t.x, t.y, x, y) < 22 * 22);
+    const x = snapToGrid(rawX);
+    const y = snapToGrid(rawY);
+
+    const torreClickeada = torres.find(t => distSq(t.x, t.y, x, y) < 20 * 20);
     if (torreClickeada) {
         torreInspeccionada = torreClickeada;
+        deseleccionarTorreConstruccion();
         actualizarPanelInspector();
         return;
     }
+
+    if (!tipoTorreSeleccionado) return;
 
     const info = DATOS_TORRES[tipoTorreSeleccionado];
     if (oro < info.costo) return;
     if (estaEnCamino(x, y)) return;
 
     for (let t of torres) {
-        if (distSq(t.x, t.y, x, y) < 36 * 36) return;
+        if (distSq(t.x, t.y, x, y) < (TILE_SIZE - 2) * (TILE_SIZE - 2)) return;
     }
 
     oro -= info.costo;
@@ -414,7 +562,9 @@ canvas.addEventListener('click', (e) => {
     });
 
     playSound('coin');
+    deseleccionarTorreConstruccion();
     actualizarMarcadoresUI();
+    actualizarPanelInspector();
 });
 
 canvas.addEventListener('mousemove', (e) => {
@@ -457,9 +607,10 @@ function update() {
                 vidas--;
                 playSound('hurt');
                 enemigos.splice(i, 1);
-                actualizarMarcadoresUI();
+                uiDirty = true;
 
                 if (vidas <= 0) {
+                    actualizarMarcadoresUI();
                     finalizarJuego(false);
                     return;
                 }
@@ -480,6 +631,13 @@ function update() {
             }
         }
 
+        // Progreso de cada enemigo en el camino, calculado UNA vez (antes se recalculaba
+        // por cada torre × cada enemigo, ahora es solo una vez × cada enemigo)
+        for (let e of enemigos) {
+            const sig = CAMINO[e.puntoIdx + 1];
+            e.progreso = e.puntoIdx * 1000000 - distSq(e.x, e.y, sig ? sig.x : e.x, sig ? sig.y : e.y);
+        }
+
         for (let t of torres) {
             let objetivo = null;
             let mayorProgreso = -Infinity;
@@ -487,9 +645,8 @@ function update() {
             for (let e of enemigos) {
                 const d2 = distSq(t.x, t.y, e.x, e.y);
                 if (d2 <= t.rango * t.rango) {
-                    const progreso = e.puntoIdx * 1000000 - distSq(e.x, e.y, CAMINO[e.puntoIdx + 1]?.x || e.x, CAMINO[e.puntoIdx + 1]?.y || e.y);
-                    if (progreso > mayorProgreso) {
-                        mayorProgreso = progreso;
+                    if (e.progreso > mayorProgreso) {
+                        mayorProgreso = e.progreso;
                         objetivo = e;
                     }
                 }
@@ -500,7 +657,7 @@ function update() {
 
                 if (t.tipo === 'laser') {
                     t.objetivoLaser = objetivo;
-                    objetivo.hp -= t.danioPorFrame;
+                    aplicarDanioEnemigo(objetivo, t.danioPorFrame);
                     if (Math.random() < 0.3) {
                         particulas.push({
                             x: objetivo.x,
@@ -566,15 +723,14 @@ function update() {
                 }
 
                 enemigos.splice(i, 1);
-                actualizarMarcadoresUI();
+                uiDirty = true;
             }
         }
 
         if (oleadaEnProgreso && colaSpawn.length === 0 && enemigos.length === 0) {
             oleadaEnProgreso = false;
-            oro += 40 + oleadaActual * 6;
             playSound('coin');
-            actualizarMarcadoresUI();
+            uiDirty = true;
 
             const waveBtn = document.getElementById('btn-wave');
             if (oleadaActual >= OLEADAS_TOTALES) {
@@ -590,7 +746,16 @@ function update() {
             p.x += p.vx;
             p.y += p.vy;
             p.life--;
-            if (p.life <= 0) particulas.splice(i, 1);
+            if (p.life <= 0) {
+                // swap-and-pop: mueve la última partícula al hueco y achica el
+                // array con pop(). Es O(1) en vez de O(n) como splice(), y como
+                // el orden de dibujo de partículas no afecta el resultado visual
+                // (son puntos sueltos, no se solapan de forma que se note), el
+                // resultado final es idéntico pero mucho más barato con muchas
+                // partículas activas (ráfagas de cañón, muertes múltiples, etc.).
+                particulas[i] = particulas[particulas.length - 1];
+                particulas.pop();
+            }
         }
 
         for (let i = textosFlotantes.length - 1; i >= 0; i--) {
@@ -599,6 +764,12 @@ function update() {
             t.life--;
             if (t.life <= 0) textosFlotantes.splice(i, 1);
         }
+    }
+
+    // Una sola escritura al DOM por frame en vez de una por cada evento (oro, muerte, etc.)
+    if (uiDirty) {
+        actualizarMarcadoresUI();
+        uiDirty = false;
     }
 }
 
@@ -644,7 +815,7 @@ function impactarProyectil(p) {
     if (p.tipo === 'cannon') {
         for (let e of enemigos) {
             if (distSq(p.x, p.y, e.x, e.y) <= p.splash * p.splash) {
-                e.hp -= p.danio;
+                aplicarDanioEnemigo(e, p.danio);
             }
         }
         for (let k = 0; k < 20; k++) {
@@ -659,7 +830,7 @@ function impactarProyectil(p) {
             });
         }
     } else if (p.tipo === 'ice') {
-        p.objetivo.hp -= p.danio;
+        aplicarDanioEnemigo(p.objetivo, p.danio);
         p.objetivo.slowTimer = 75;
         for (let k = 0; k < 10; k++) {
             particulas.push({
@@ -673,7 +844,7 @@ function impactarProyectil(p) {
             });
         }
     } else {
-        p.objetivo.hp -= p.danio;
+        aplicarDanioEnemigo(p.objetivo, p.danio);
         for (let k = 0; k < 6; k++) {
             particulas.push({
                 x: p.x,
@@ -688,110 +859,169 @@ function impactarProyectil(p) {
     }
 }
 
-function draw() {
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
+function drawGrid() {
+    if (!tipoTorreSeleccionado) return;
 
-    const gradFondo = ctx.createRadialGradient(400, 250, 50, 400, 250, 500);
-    gradFondo.addColorStop(0, '#0f3822');
-    gradFondo.addColorStop(1, '#061a0e');
-    ctx.fillStyle = gradFondo;
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    const alpha = 0.18 + Math.sin(globalTime * 3) * 0.08;
+    ctx.strokeStyle = `rgba(255, 255, 255, ${alpha})`;
+    ctx.lineWidth = 1;
 
-    ctx.fillStyle = 'rgba(16, 185, 129, 0.04)';
-    for (let i = 0; i < canvas.width; i += 40) {
-        for (let j = 0; j < canvas.height; j += 40) {
-            ctx.beginPath();
-            ctx.arc(i + 20, j + 20, 12, 0, Math.PI * 2);
-            ctx.fill();
+    ctx.beginPath();
+    for (let x = 0; x <= canvas.width; x += TILE_SIZE) {
+        ctx.moveTo(x, 0);
+        ctx.lineTo(x, canvas.height);
+    }
+    for (let y = 0; y <= canvas.height; y += TILE_SIZE) {
+        ctx.moveTo(0, y);
+        ctx.lineTo(canvas.width, y);
+    }
+    ctx.stroke();
+}
+
+const glowSpriteCache = {};
+function getGlowSprite(color, radio) {
+    const key = color + '_' + radio;
+    let sprite = glowSpriteCache[key];
+    if (sprite) return sprite;
+
+    const pad = 10; // espacio extra para que el blur no se recorte
+    const size = (radio + pad) * 2;
+    sprite = document.createElement('canvas');
+    sprite.width = size;
+    sprite.height = size;
+
+    const sctx = sprite.getContext('2d');
+    sctx.shadowColor = color;
+    sctx.shadowBlur = 8;
+    sctx.fillStyle = color;
+    sctx.beginPath();
+    sctx.arc(size / 2, size / 2, radio, 0, Math.PI * 2);
+    sctx.fill();
+
+    glowSpriteCache[key] = sprite;
+    return sprite;
+}
+
+// Canvas en memoria para renderizado estático del fondo
+const bgCanvas = document.createElement('canvas');
+bgCanvas.width = 800;
+bgCanvas.height = 500;
+const bgCtx = bgCanvas.getContext('2d');
+
+function preRenderFondo() {
+    bgCtx.fillStyle = '#0a2315';
+    bgCtx.fillRect(0, 0, bgCanvas.width, bgCanvas.height);
+
+    bgCtx.fillStyle = 'rgba(16, 185, 129, 0.04)';
+    bgCtx.beginPath();
+    for (let i = 0; i < bgCanvas.width; i += 40) {
+        for (let j = 0; j < bgCanvas.height; j += 40) {
+            bgCtx.moveTo(i + 32, j + 20);
+            bgCtx.arc(i + 20, j + 20, 12, 0, Math.PI * 2);
         }
     }
+    bgCtx.fill();
 
+    // --- Decoraciones (árboles, rocas, flores) ---
+    // Son estáticas: nunca se mueven, así que se hornean aquí en vez de
+    // redibujarse 40 veces por frame en draw().
     for (let dec of DECORACIONES) {
         if (dec.tipo === 'tree') {
-            ctx.fillStyle = 'rgba(0,0,0,0.3)';
-            ctx.beginPath();
-            ctx.ellipse(dec.x, dec.y + dec.size * 0.6, dec.size * 0.8, dec.size * 0.4, 0, 0, Math.PI * 2);
-            ctx.fill();
+            bgCtx.fillStyle = 'rgba(0,0,0,0.3)';
+            bgCtx.beginPath();
+            bgCtx.ellipse(dec.x, dec.y + dec.size * 0.6, dec.size * 0.8, dec.size * 0.4, 0, 0, Math.PI * 2);
+            bgCtx.fill();
 
-            ctx.fillStyle = '#064e3b';
-            ctx.beginPath();
-            ctx.arc(dec.x, dec.y, dec.size, 0, Math.PI * 2);
-            ctx.fill();
-            ctx.fillStyle = '#059669';
-            ctx.beginPath();
-            ctx.arc(dec.x - dec.size * 0.2, dec.y - dec.size * 0.2, dec.size * 0.6, 0, Math.PI * 2);
-            ctx.fill();
+            bgCtx.fillStyle = '#064e3b';
+            bgCtx.beginPath();
+            bgCtx.arc(dec.x, dec.y, dec.size, 0, Math.PI * 2);
+            bgCtx.fill();
+            bgCtx.fillStyle = '#059669';
+            bgCtx.beginPath();
+            bgCtx.arc(dec.x - dec.size * 0.2, dec.y - dec.size * 0.2, dec.size * 0.6, 0, Math.PI * 2);
+            bgCtx.fill();
         } else if (dec.tipo === 'rock') {
-            ctx.fillStyle = '#334155';
-            ctx.beginPath();
-            ctx.arc(dec.x, dec.y, dec.size * 0.5, 0, Math.PI * 2);
-            ctx.fill();
+            bgCtx.fillStyle = '#334155';
+            bgCtx.beginPath();
+            bgCtx.arc(dec.x, dec.y, dec.size * 0.5, 0, Math.PI * 2);
+            bgCtx.fill();
         } else {
-            ctx.fillStyle = '#f43f5e';
-            ctx.beginPath();
-            ctx.arc(dec.x, dec.y, 3, 0, Math.PI * 2);
-            ctx.fill();
+            bgCtx.fillStyle = '#f43f5e';
+            bgCtx.beginPath();
+            bgCtx.arc(dec.x, dec.y, 3, 0, Math.PI * 2);
+            bgCtx.fill();
         }
     }
 
-    ctx.lineCap = 'round';
-    ctx.lineJoin = 'round';
+    // --- Camino (sendero) ---
+    // También estático: antes se trazaba con 3 pasadas de stroke en cada frame.
+    bgCtx.lineCap = 'round';
+    bgCtx.lineJoin = 'round';
 
-    ctx.lineWidth = ANCHO_CAMINO + 12;
-    ctx.strokeStyle = 'rgba(0, 0, 0, 0.4)';
-    ctx.beginPath();
-    ctx.moveTo(CAMINO[0].x, CAMINO[0].y + 4);
-    for (let i = 1; i < CAMINO.length; i++) ctx.lineTo(CAMINO[i].x, CAMINO[i].y + 4);
-    ctx.stroke();
+    bgCtx.lineWidth = ANCHO_CAMINO;
+    bgCtx.strokeStyle = '#2b1a09';
+    bgCtx.beginPath();
+    bgCtx.moveTo(CAMINO[0].x, CAMINO[0].y);
+    for (let i = 1; i < CAMINO.length; i++) bgCtx.lineTo(CAMINO[i].x, CAMINO[i].y);
+    bgCtx.stroke();
 
-    ctx.lineWidth = ANCHO_CAMINO + 6;
-    ctx.strokeStyle = '#2d1808';
-    ctx.beginPath();
-    ctx.moveTo(CAMINO[0].x, CAMINO[0].y);
-    for (let i = 1; i < CAMINO.length; i++) ctx.lineTo(CAMINO[i].x, CAMINO[i].y);
-    ctx.stroke();
+    bgCtx.lineWidth = ANCHO_CAMINO - 4;
+    bgCtx.strokeStyle = '#5c3d24';
+    bgCtx.beginPath();
+    bgCtx.moveTo(CAMINO[0].x, CAMINO[0].y);
+    for (let i = 1; i < CAMINO.length; i++) bgCtx.lineTo(CAMINO[i].x, CAMINO[i].y);
+    bgCtx.stroke();
 
-    ctx.lineWidth = ANCHO_CAMINO;
-    ctx.strokeStyle = '#54381e';
-    ctx.beginPath();
-    ctx.moveTo(CAMINO[0].x, CAMINO[0].y);
-    for (let i = 1; i < CAMINO.length; i++) ctx.lineTo(CAMINO[i].x, CAMINO[i].y);
-    ctx.stroke();
+    bgCtx.lineWidth = 2;
+    bgCtx.strokeStyle = 'rgba(217, 119, 6, 0.35)';
+    bgCtx.setLineDash([8, 8]);
+    bgCtx.beginPath();
+    bgCtx.moveTo(CAMINO[0].x, CAMINO[0].y);
+    for (let i = 1; i < CAMINO.length; i++) bgCtx.lineTo(CAMINO[i].x, CAMINO[i].y);
+    bgCtx.stroke();
+    bgCtx.setLineDash([]);
 
-    ctx.lineWidth = ANCHO_CAMINO - 12;
-    ctx.strokeStyle = '#634427';
-    ctx.setLineDash([12, 16]);
-    ctx.beginPath();
-    ctx.moveTo(CAMINO[0].x, CAMINO[0].y);
-    for (let i = 1; i < CAMINO.length; i++) ctx.lineTo(CAMINO[i].x, CAMINO[i].y);
-    ctx.stroke();
-    ctx.setLineDash([]);
+    // --- Castillo (destino) ---
+    // Estático (sin animación), así que también se hornea aquí. El portal de
+    // entrada SÍ pulsa (usa globalTime) y por eso se sigue dibujando en draw().
+    const dest = CAMINO[CAMINO.length - 1];
+    bgCtx.fillStyle = 'rgba(0,0,0,0.5)';
+    bgCtx.beginPath();
+    bgCtx.ellipse(dest.x, dest.y + 16, 32, 12, 0, 0, Math.PI * 2);
+    bgCtx.fill();
 
+    bgCtx.fillStyle = '#1e293b';
+    bgCtx.strokeStyle = '#f59e0b';
+    bgCtx.lineWidth = 3.5;
+    bgCtx.beginPath();
+    bgCtx.arc(dest.x, dest.y, 30, 0, Math.PI * 2);
+    bgCtx.fill();
+    bgCtx.stroke();
+    bgCtx.font = '24px sans-serif';
+    bgCtx.textAlign = 'center';
+    bgCtx.textBaseline = 'middle';
+    bgCtx.fillText('🏰', dest.x, dest.y);
+}
+
+// Las decoraciones deben generarse ANTES de hornear el fondo, porque
+// preRenderFondo() ahora las dibuja de forma permanente en bgCanvas.
+generarDecoraciones();
+preRenderFondo();
+
+function draw() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.drawImage(bgCanvas, 0, 0);
+
+    // El portal de entrada
     ctx.fillStyle = 'rgba(168, 85, 247, 0.3)';
     ctx.strokeStyle = '#c084fc';
     ctx.lineWidth = 3;
     ctx.beginPath();
-    ctx.arc(15, CAMINO[0].y, 22 + Math.sin(globalTime * 3) * 2, 0, Math.PI * 2);
+    ctx.arc(CAMINO[0].x, CAMINO[0].y, 20 + Math.sin(globalTime * 3) * 2, 0, Math.PI * 2); // Usa CAMINO[0].x en lugar de 15
     ctx.fill();
     ctx.stroke();
 
-    const dest = CAMINO[CAMINO.length - 1];
-    ctx.fillStyle = 'rgba(0,0,0,0.5)';
-    ctx.beginPath();
-    ctx.ellipse(dest.x - 10, dest.y + 16, 32, 12, 0, 0, Math.PI * 2);
-    ctx.fill();
-
-    ctx.fillStyle = '#1e293b';
-    ctx.strokeStyle = '#f59e0b';
-    ctx.lineWidth = 3.5;
-    ctx.beginPath();
-    ctx.arc(dest.x - 10, dest.y, 30, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.stroke();
-    ctx.font = '24px sans-serif';
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.fillText('🏰', dest.x - 10, dest.y);
+    drawGrid();
 
     if (torreInspeccionada) {
         ctx.fillStyle = 'rgba(245, 158, 11, 0.12)';
@@ -805,22 +1035,25 @@ function draw() {
         ctx.setLineDash([]);
     }
 
-    if (mousePos.dentro && !torreInspeccionada && !juegoTerminado) {
-        const info = DATOS_TORRES[tipoTorreSeleccionado];
-        const puedeConstruir = oro >= info.costo && !estaEnCamino(mousePos.x, mousePos.y);
+    if (mousePos.dentro && tipoTorreSeleccionado && !torreInspeccionada && !juegoTerminado) {
+        const snappedX = snapToGrid(mousePos.x);
+        const snappedY = snapToGrid(mousePos.y);
 
-        ctx.fillStyle = puedeConstruir ? 'rgba(16, 185, 129, 0.18)' : 'rgba(239, 68, 68, 0.22)';
+        const info = DATOS_TORRES[tipoTorreSeleccionado];
+        let celdaOcupada = torres.some(t => distSq(t.x, t.y, snappedX, snappedY) < (TILE_SIZE - 2) * (TILE_SIZE - 2));
+        const puedeConstruir = oro >= info.costo && !estaEnCamino(snappedX, snappedY) && !celdaOcupada;
+
+        ctx.fillStyle = puedeConstruir ? 'rgba(16, 185, 129, 0.3)' : 'rgba(239, 68, 68, 0.35)';
         ctx.strokeStyle = puedeConstruir ? '#10b981' : '#ef4444';
         ctx.lineWidth = 2;
+        ctx.fillRect(snappedX - TILE_SIZE / 2, snappedY - TILE_SIZE / 2, TILE_SIZE, TILE_SIZE);
+        ctx.strokeRect(snappedX - TILE_SIZE / 2, snappedY - TILE_SIZE / 2, TILE_SIZE, TILE_SIZE);
+
+        ctx.fillStyle = puedeConstruir ? 'rgba(16, 185, 129, 0.1)' : 'rgba(239, 68, 68, 0.12)';
         ctx.beginPath();
-        ctx.arc(mousePos.x, mousePos.y, info.rango, 0, Math.PI * 2);
+        ctx.arc(snappedX, snappedY, info.rango, 0, Math.PI * 2);
         ctx.fill();
         ctx.stroke();
-
-        ctx.fillStyle = puedeConstruir ? 'rgba(255, 255, 255, 0.5)' : 'rgba(239, 68, 68, 0.6)';
-        ctx.beginPath();
-        ctx.arc(mousePos.x, mousePos.y, 18, 0, Math.PI * 2);
-        ctx.fill();
     }
 
     for (let t of torres) {
@@ -880,15 +1113,12 @@ function draw() {
     }
 
     for (let p of proyectiles) {
-        ctx.fillStyle = p.color;
-        ctx.shadowColor = p.color;
-        ctx.shadowBlur = 8;
-        ctx.beginPath();
-        ctx.arc(p.x, p.y, p.tipo === 'cannon' ? 6 : 4, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.shadowBlur = 0;
+        const radio = p.tipo === 'cannon' ? 6 : 4;
+        const sprite = getGlowSprite(p.color, radio);
+        ctx.drawImage(sprite, p.x - sprite.width / 2, p.y - sprite.height / 2);
     }
 
+    // Renderizado correcto de Enemigos y sus Escudos
     for (let e of enemigos) {
         ctx.save();
         const floatY = Math.sin(globalTime * 8 + e.animOffset) * 2;
@@ -904,6 +1134,15 @@ function draw() {
             ctx.beginPath();
             ctx.arc(0, 0, e.radio + 5, 0, Math.PI * 2);
             ctx.fill();
+        }
+
+        // Aura azul si el enemigo conserva su escudo
+        if (e.escudo > 0) {
+            ctx.strokeStyle = '#38bdf8';
+            ctx.lineWidth = 2.5;
+            ctx.beginPath();
+            ctx.arc(0, 0, e.radio + 4, 0, Math.PI * 2);
+            ctx.stroke();
         }
 
         ctx.fillStyle = e.color;
@@ -925,13 +1164,21 @@ function draw() {
         ctx.arc(e.radio * 0.3 + 0.5, -2, 1.2, 0, Math.PI * 2);
         ctx.fill();
 
+        // Barra de Vida
         const anchoBarra = e.radio * 2.4;
         const pct = Math.max(0, e.hp / e.hpMax);
         ctx.fillStyle = 'rgba(0, 0, 0, 0.8)';
-        ctx.fillRect(-anchoBarra / 2, -e.radio - 10, anchoBarra, 5);
+        ctx.fillRect(-anchoBarra / 2, -e.radio - 10, anchoBarra, 4);
 
         ctx.fillStyle = pct > 0.5 ? '#10b981' : (pct > 0.2 ? '#f59e0b' : '#ef4444');
-        ctx.fillRect(-anchoBarra / 2, -e.radio - 10, anchoBarra * pct, 5);
+        ctx.fillRect(-anchoBarra / 2, -e.radio - 10, anchoBarra * pct, 4);
+
+        // Barra de Escudo (sobre la barra de vida)
+        if (e.escudoMax > 0 && e.escudo > 0) {
+            const pctEscudo = e.escudo / e.escudoMax;
+            ctx.fillStyle = '#0284c7';
+            ctx.fillRect(-anchoBarra / 2, -e.radio - 15, anchoBarra * pctEscudo, 3);
+        }
 
         ctx.restore();
     }
@@ -958,6 +1205,7 @@ function loop() {
 }
 
 function finalizarJuego(victoria) {
+    detenerMusica()
     juegoTerminado = true;
     const overlay = document.getElementById('game-overlay');
     const title = document.getElementById('overlay-title');
@@ -976,6 +1224,8 @@ function finalizarJuego(victoria) {
 }
 
 function reiniciarJuego() {
+    detenerMusica();
+    reproducirMusica();
     oro = 180;
     vidas = 20;
     oleadaActual = 0;
@@ -988,6 +1238,7 @@ function reiniciarJuego() {
     textosFlotantes = [];
     colaSpawn = [];
     torreInspeccionada = null;
+    deseleccionarTorreConstruccion();
 
     document.getElementById('game-overlay').classList.add('hidden');
     const waveBtn = document.getElementById('btn-wave');
@@ -999,13 +1250,14 @@ function reiniciarJuego() {
 }
 
 document.addEventListener('DOMContentLoaded', () => {
-    generarDecoraciones();
+    // Nota: generarDecoraciones() ya se ejecutó antes de preRenderFondo() más arriba,
+    // así que el fondo horneado (bgCanvas) coincide con DECORACIONES. No se vuelve
+    // a generar aquí para no desincronizar el fondo ya dibujado.
     actualizarMarcadoresUI();
     actualizarPanelInspector();
     requestAnimationFrame(loop);
 });
 
-// Función para abrir/cerrar la ventana flotante de reglas
 function toggleRulesModal(mostrar) {
     const modal = document.getElementById('rules-modal');
     if (mostrar) {
