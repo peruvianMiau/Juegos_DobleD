@@ -1,5 +1,3 @@
-// Tower Defense - Lógica del Juego en Canvas con Sistema de Oleadas, Torres y Mejoras
-
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
 
@@ -66,7 +64,7 @@ function playSound(type) {
 }
 
 // Configuración y Estados del Juego
-let oro = 160;
+let oro = 180;
 let vidas = 20;
 let oleadaActual = 0;
 const OLEADAS_TOTALES = 10;
@@ -97,38 +95,37 @@ const DATOS_TORRES = {
     arrow: {
         nombre: 'Torre Arquera',
         costo: 50,
-        rango: 115,
-        danio: 16,
-        cadencia: 30, // frames
+        rango: 125,
+        danio: 18,
+        cadencia: 24,
         color: '#f59e0b',
         icono: '🏹'
     },
     cannon: {
         nombre: 'Torre Cañón',
-        costo: 100,
-        rango: 95,
-        danio: 45,
-        cadencia: 65,
-        splash: 65,
+        costo: 90,
+        rango: 105,
+        danio: 40,
+        cadencia: 50,
+        splash: 70,
         color: '#ef4444',
         icono: '💣'
     },
     ice: {
         nombre: 'Torre de Hielo',
-        costo: 80,
-        rango: 105,
-        danio: 8,
-        cadencia: 40,
-        ralentizar: 0.45,
-        duracionSlow: 80,
+        costo: 75,
+        rango: 110,
+        danio: 10,
+        cadencia: 35,
+        ralentizar: 0.40,
         color: '#38bdf8',
         icono: '❄️'
     },
     laser: {
         nombre: 'Torre Láser',
-        costo: 130,
-        rango: 125,
-        danioPorFrame: 1.8,
+        costo: 140,
+        rango: 130,
+        danioPorFrame: 0.95,
         color: '#c084fc',
         icono: '⚡'
     }
@@ -142,7 +139,7 @@ let textosFlotantes = [];
 let colaSpawn = [];
 let frameSpawn = 0;
 
-// Utilidades matemáticas de colisión y distancia
+// Utilidades matemáticas
 function distSq(x1, y1, x2, y2) {
     const dx = x2 - x1;
     const dy = y2 - y1;
@@ -185,7 +182,6 @@ function estaEnCamino(x, y) {
     return false;
 }
 
-// Actualización de UI superior
 function actualizarMarcadoresUI() {
     document.getElementById('gold-count').innerText = oro;
     document.getElementById('lives-count').innerText = vidas;
@@ -193,7 +189,6 @@ function actualizarMarcadoresUI() {
     document.getElementById('enemies-left').innerText = `${enemigos.length + colaSpawn.length} vivos`;
 }
 
-// Selector de tipos de torre
 function seleccionarTipoTorre(tipo) {
     tipoTorreSeleccionado = tipo;
     torreInspeccionada = null;
@@ -226,7 +221,7 @@ function actualizarPanelInspector() {
     } else {
         upgradeBtn.disabled = false;
         upgradeBtn.className = 'px-3 py-1 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-lg transition';
-        const costoUpgrade = Math.round(info.costo * (torreInspeccionada.nivel === 1 ? 0.9 : 1.4));
+        const costoUpgrade = Math.round(info.costo * (torreInspeccionada.nivel === 1 ? 0.8 : 1.25));
         document.getElementById('upgrade-cost').innerText = costoUpgrade;
     }
 
@@ -237,17 +232,17 @@ function actualizarPanelInspector() {
 function mejorarTorreSeleccionada() {
     if (!torreInspeccionada || torreInspeccionada.nivel >= 3) return;
     const info = DATOS_TORRES[torreInspeccionada.tipo];
-    const costoUpgrade = Math.round(info.costo * (torreInspeccionada.nivel === 1 ? 0.9 : 1.4));
+    const costoUpgrade = Math.round(info.costo * (torreInspeccionada.nivel === 1 ? 0.8 : 1.25));
 
     if (oro >= costoUpgrade) {
         oro -= costoUpgrade;
         torreInspeccionada.nivel++;
         torreInspeccionada.inversionTotal += costoUpgrade;
-        torreInspeccionada.rango += 18;
-        torreInspeccionada.danio *= 1.5;
-        torreInspeccionada.cadencia = Math.max(15, Math.round(torreInspeccionada.cadencia * 0.85));
+        torreInspeccionada.rango += 16;
+        torreInspeccionada.danio *= 1.45;
+        torreInspeccionada.danioPorFrame *= 1.4;
+        torreInspeccionada.cadencia = Math.max(12, Math.round(torreInspeccionada.cadencia * 0.82));
 
-        // Partículas de mejora doradas
         for (let i = 0; i < 16; i++) {
             particulas.push({
                 x: torreInspeccionada.x,
@@ -286,7 +281,7 @@ function alternarVelocidad() {
         : 'px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold text-xs border border-slate-700 transition';
 }
 
-// Generación de Oleadas
+// Generación de Oleadas con Velocidades Reducidas
 function iniciarSiguienteOleada() {
     if (oleadaEnProgreso || juegoTerminado) return;
     if (oleadaActual >= OLEADAS_TOTALES) return;
@@ -296,41 +291,40 @@ function iniciarSiguienteOleada() {
     document.getElementById('btn-wave').disabled = true;
     document.getElementById('btn-wave').className = 'px-5 py-2 rounded-xl bg-slate-800 text-slate-500 font-black text-sm cursor-not-allowed flex items-center gap-2';
 
-    // Composición de enemigos para la oleada
     colaSpawn = [];
-    const count = 7 + oleadaActual * 3;
+    const count = 6 + oleadaActual * 3;
 
     for (let i = 0; i < count; i++) {
         let tipo = 'goblin';
-        let hp = 55 + oleadaActual * 25;
-        let speed = 2.1;
-        let recompensa = 8 + Math.floor(oleadaActual * 1.5);
+        let hp = 45 + oleadaActual * 18;
+        let speed = 1.25;
+        let recompensa = 9 + Math.floor(oleadaActual * 1.2);
         let color = '#10b981';
         let radio = 11;
 
         if (oleadaActual >= 3 && i % 3 === 0) {
             tipo = 'orc';
-            hp = 140 + oleadaActual * 40;
-            speed = 1.4;
-            recompensa = 16 + oleadaActual * 2;
+            hp = 110 + oleadaActual * 28;
+            speed = 0.85;
+            recompensa = 18 + oleadaActual * 2;
             color = '#f97316';
             radio = 15;
         }
 
-        if (oleadaActual >= 6 && i % 5 === 0) {
+        if (oleadaActual >= 6 && i % 4 === 0) {
             tipo = 'golem';
-            hp = 380 + oleadaActual * 70;
-            speed = 0.9;
-            recompensa = 35 + oleadaActual * 4;
+            hp = 280 + oleadaActual * 45;
+            speed = 0.55;
+            recompensa = 36 + oleadaActual * 3;
             color = '#64748b';
             radio = 18;
         }
 
         if (oleadaActual === 10 && i === count - 1) {
             tipo = 'boss';
-            hp = 2500;
-            speed = 0.75;
-            recompensa = 150;
+            hp = 1400;
+            speed = 0.45;
+            recompensa = 180;
             color = '#dc2626';
             radio = 24;
         }
@@ -361,7 +355,6 @@ canvas.addEventListener('click', (e) => {
     const x = ((e.clientX - rect.left) / rect.width) * canvas.width;
     const y = ((e.clientY - rect.top) / rect.height) * canvas.height;
 
-    // ¿Hizo clic en una torre existente?
     const torreClickeada = torres.find(t => distSq(t.x, t.y, x, y) < 22 * 22);
     if (torreClickeada) {
         torreInspeccionada = torreClickeada;
@@ -369,19 +362,14 @@ canvas.addEventListener('click', (e) => {
         return;
     }
 
-    // Si no, intentar construir una torre nueva
     const info = DATOS_TORRES[tipoTorreSeleccionado];
     if (oro < info.costo) return;
-
-    // Validar que no esté en el camino
     if (estaEnCamino(x, y)) return;
 
-    // Validar distancia mínima con otras torres
     for (let t of torres) {
         if (distSq(t.x, t.y, x, y) < 36 * 36) return;
     }
 
-    // Construir
     oro -= info.costo;
     torres.push({
         x,
@@ -413,35 +401,30 @@ canvas.addEventListener('mouseleave', () => {
     mousePos.dentro = false;
 });
 
-// Bucle de Simulación del Juego
 function update() {
     if (juegoTerminado) return;
 
     for (let s = 0; s < velocidad; s++) {
-        // 1. Spawning de enemigos
         if (colaSpawn.length > 0) {
             frameSpawn++;
-            if (frameSpawn >= 38) {
+            if (frameSpawn >= 42) {
                 frameSpawn = 0;
                 enemigos.push(colaSpawn.shift());
             }
         }
 
-        // 2. Movimiento de enemigos a lo largo del sendero
         for (let i = enemigos.length - 1; i >= 0; i--) {
             const e = enemigos[i];
 
-            // Gestión de ralentización (hielo)
             if (e.slowTimer > 0) {
                 e.slowTimer--;
-                e.speed = e.speedBase * 0.5;
+                e.speed = e.speedBase * 0.6;
             } else {
                 e.speed = e.speedBase;
             }
 
             const target = CAMINO[e.puntoIdx + 1];
             if (!target) {
-                // Llegó al final -> Pierde 1 vida
                 vidas--;
                 playSound('hurt');
                 enemigos.splice(i, 1);
@@ -468,16 +451,15 @@ function update() {
             }
         }
 
-        // 3. Lógica de torres (búsqueda y ataque)
+        // Bucle de Torres con Corrección de Selección de Objetivo (Fix de Rango Inicial)
         for (let t of torres) {
-            // Buscar enemigos dentro de rango (priorizar al más avanzado en el camino)
             let objetivo = null;
-            let mayorProgreso = -1;
+            let mayorProgreso = -Infinity;
 
             for (let e of enemigos) {
                 const d2 = distSq(t.x, t.y, e.x, e.y);
                 if (d2 <= t.rango * t.rango) {
-                    const progreso = e.puntoIdx * 1000 + (CAMINO[e.puntoIdx + 1] ? -distSq(e.x, e.y, CAMINO[e.puntoIdx + 1].x, CAMINO[e.puntoIdx + 1].y) : 0);
+                    const progreso = e.puntoIdx * 1000000 - distSq(e.x, e.y, CAMINO[e.puntoIdx + 1]?.x || e.x, CAMINO[e.puntoIdx + 1]?.y || e.y);
                     if (progreso > mayorProgreso) {
                         mayorProgreso = progreso;
                         objetivo = e;
@@ -516,7 +498,6 @@ function update() {
             if (t.cooldown > 0) t.cooldown--;
         }
 
-        // 4. Actualización de proyectiles
         for (let i = proyectiles.length - 1; i >= 0; i--) {
             const p = proyectiles[i];
             const dx = p.objetivo.x - p.x;
@@ -524,7 +505,6 @@ function update() {
             const dist = Math.sqrt(dx * dx + dy * dy);
 
             if (dist <= p.velocidad || !enemigos.includes(p.objetivo)) {
-                // Impacto
                 impactarProyectil(p);
                 proyectiles.splice(i, 1);
             } else {
@@ -533,7 +513,6 @@ function update() {
             }
         }
 
-        // 5. Eliminar enemigos muertos y dar oro
         for (let i = enemigos.length - 1; i >= 0; i--) {
             const e = enemigos[i];
             if (e.hp <= 0) {
@@ -546,7 +525,6 @@ function update() {
                     life: 30
                 });
 
-                // Efecto de explosión de chispas
                 for (let k = 0; k < 12; k++) {
                     particulas.push({
                         x: e.x,
@@ -564,10 +542,9 @@ function update() {
             }
         }
 
-        // 6. Fin de oleada
         if (oleadaEnProgreso && colaSpawn.length === 0 && enemigos.length === 0) {
             oleadaEnProgreso = false;
-            oro += 30 + oleadaActual * 5; // Bonus por completar oleada
+            oro += 40 + oleadaActual * 6;
             playSound('coin');
             actualizarMarcadoresUI();
 
@@ -580,7 +557,6 @@ function update() {
             }
         }
 
-        // 7. Partículas y textos
         for (let i = particulas.length - 1; i >= 0; i--) {
             const p = particulas[i];
             p.x += p.vx;
@@ -605,7 +581,7 @@ function dispararProyectil(torre, objetivo) {
             x: torre.x,
             y: torre.y,
             objetivo,
-            velocidad: 8.5,
+            velocidad: 9.0,
             danio: torre.danio,
             tipo: 'arrow',
             color: '#f59e0b'
@@ -616,9 +592,9 @@ function dispararProyectil(torre, objetivo) {
             x: torre.x,
             y: torre.y,
             objetivo,
-            velocidad: 5.5,
+            velocidad: 6.0,
             danio: torre.danio,
-            splash: torre.nivel === 3 ? 85 : (torre.nivel === 2 ? 75 : 65),
+            splash: torre.nivel === 3 ? 90 : (torre.nivel === 2 ? 80 : 70),
             tipo: 'cannon',
             color: '#ef4444'
         });
@@ -628,7 +604,7 @@ function dispararProyectil(torre, objetivo) {
             x: torre.x,
             y: torre.y,
             objetivo,
-            velocidad: 7.0,
+            velocidad: 7.5,
             danio: torre.danio,
             tipo: 'ice',
             color: '#38bdf8'
@@ -638,7 +614,6 @@ function dispararProyectil(torre, objetivo) {
 
 function impactarProyectil(p) {
     if (p.tipo === 'cannon') {
-        // Daño de área splash
         for (let e of enemigos) {
             if (distSq(p.x, p.y, e.x, e.y) <= p.splash * p.splash) {
                 e.hp -= p.danio;
@@ -657,7 +632,7 @@ function impactarProyectil(p) {
         }
     } else if (p.tipo === 'ice') {
         p.objetivo.hp -= p.danio;
-        p.objetivo.slowTimer = 90;
+        p.objetivo.slowTimer = 75;
         for (let k = 0; k < 8; k++) {
             particulas.push({
                 x: p.x,
@@ -685,15 +660,12 @@ function impactarProyectil(p) {
     }
 }
 
-// Renderizado en Canvas
 function draw() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-    // 1. Fondo de terreno verde oscuro
     ctx.fillStyle = '#0a2315';
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-    // Detalles sutiles del suelo
     ctx.fillStyle = '#0d2d1b';
     for (let i = 20; i < canvas.width; i += 60) {
         for (let j = 20; j < canvas.height; j += 60) {
@@ -703,11 +675,9 @@ function draw() {
         }
     }
 
-    // 2. Dibujar Sendero (Camino de tierra empedrada)
     ctx.lineCap = 'round';
     ctx.lineJoin = 'round';
 
-    // Borde del camino
     ctx.lineWidth = ANCHO_CAMINO + 6;
     ctx.strokeStyle = '#291b0f';
     ctx.beginPath();
@@ -715,7 +685,6 @@ function draw() {
     for (let i = 1; i < CAMINO.length; i++) ctx.lineTo(CAMINO[i].x, CAMINO[i].y);
     ctx.stroke();
 
-    // Relleno del camino
     ctx.lineWidth = ANCHO_CAMINO;
     ctx.strokeStyle = '#452b14';
     ctx.beginPath();
@@ -723,7 +692,6 @@ function draw() {
     for (let i = 1; i < CAMINO.length; i++) ctx.lineTo(CAMINO[i].x, CAMINO[i].y);
     ctx.stroke();
 
-    // Línea central decorativa punteada
     ctx.lineWidth = 3;
     ctx.strokeStyle = '#5a3a1d';
     ctx.setLineDash([8, 12]);
@@ -733,7 +701,6 @@ function draw() {
     ctx.stroke();
     ctx.setLineDash([]);
 
-    // Base del Castillo final
     ctx.fillStyle = '#1e293b';
     ctx.strokeStyle = '#f59e0b';
     ctx.lineWidth = 3;
@@ -746,7 +713,6 @@ function draw() {
     ctx.textBaseline = 'middle';
     ctx.fillText('🏰', CAMINO[CAMINO.length - 1].x - 10, CAMINO[CAMINO.length - 1].y);
 
-    // 3. Rango de la torre inspeccionada
     if (torreInspeccionada) {
         ctx.fillStyle = 'rgba(245, 158, 11, 0.12)';
         ctx.strokeStyle = 'rgba(245, 158, 11, 0.8)';
@@ -757,7 +723,6 @@ function draw() {
         ctx.stroke();
     }
 
-    // 4. Previsualización de colocación de torre
     if (mousePos.dentro && !torreInspeccionada && !juegoTerminado) {
         const info = DATOS_TORRES[tipoTorreSeleccionado];
         const puedeConstruir = oro >= info.costo && !estaEnCamino(mousePos.x, mousePos.y);
@@ -776,11 +741,9 @@ function draw() {
         ctx.fill();
     }
 
-    // 5. Torres construidas
     for (let t of torres) {
         const info = DATOS_TORRES[t.tipo];
 
-        // Base
         ctx.fillStyle = '#0f172a';
         ctx.strokeStyle = t === torreInspeccionada ? '#fbbf24' : '#334155';
         ctx.lineWidth = 3;
@@ -789,30 +752,25 @@ function draw() {
         ctx.fill();
         ctx.stroke();
 
-        // Icono y cañón orientado
         ctx.save();
         ctx.translate(t.x, t.y);
         ctx.rotate(t.angulo);
 
-        // Cañón / Boca
         ctx.fillStyle = info.color;
         ctx.fillRect(8, -3, 10, 6);
         ctx.restore();
 
-        // Icono central
         ctx.font = '16px sans-serif';
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
         ctx.fillText(info.icono, t.x, t.y);
 
-        // Estrellas de nivel
         if (t.nivel > 1) {
             ctx.fillStyle = '#fbbf24';
             ctx.font = '10px sans-serif';
             ctx.fillText(t.nivel === 2 ? '★★' : '★★★', t.x, t.y - 23);
         }
 
-        // Rayo Láser si está activo
         if (t.tipo === 'laser' && t.objetivoLaser) {
             ctx.strokeStyle = '#c084fc';
             ctx.lineWidth = 3;
@@ -826,7 +784,6 @@ function draw() {
         }
     }
 
-    // 6. Proyectiles
     for (let p of proyectiles) {
         ctx.fillStyle = p.color;
         ctx.shadowColor = p.color;
@@ -837,12 +794,10 @@ function draw() {
         ctx.shadowBlur = 0;
     }
 
-    // 7. Enemigos
     for (let e of enemigos) {
         ctx.save();
         ctx.translate(e.x, e.y);
 
-        // Halo de congelación si está ralentizado
         if (e.slowTimer > 0) {
             ctx.fillStyle = 'rgba(56, 189, 248, 0.35)';
             ctx.beginPath();
@@ -850,7 +805,6 @@ function draw() {
             ctx.fill();
         }
 
-        // Cuerpo
         ctx.fillStyle = e.color;
         ctx.beginPath();
         ctx.arc(0, 0, e.radio, 0, Math.PI * 2);
@@ -859,14 +813,12 @@ function draw() {
         ctx.lineWidth = 1.5;
         ctx.stroke();
 
-        // Ojos
         ctx.fillStyle = '#fff';
         ctx.beginPath();
         ctx.arc(-e.radio * 0.3, -2, 2.5, 0, Math.PI * 2);
         ctx.arc(e.radio * 0.3, -2, 2.5, 0, Math.PI * 2);
         ctx.fill();
 
-        // Barra de Vida
         const anchoBarra = e.radio * 2.2;
         const pct = Math.max(0, e.hp / e.hpMax);
         ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
@@ -878,7 +830,6 @@ function draw() {
         ctx.restore();
     }
 
-    // 8. Partículas
     for (let p of particulas) {
         ctx.fillStyle = p.color;
         ctx.beginPath();
@@ -886,7 +837,6 @@ function draw() {
         ctx.fill();
     }
 
-    // 9. Textos flotantes
     ctx.font = 'bold 12px sans-serif';
     ctx.textAlign = 'center';
     for (let t of textosFlotantes) {
@@ -920,7 +870,7 @@ function finalizarJuego(victoria) {
 }
 
 function reiniciarJuego() {
-    oro = 160;
+    oro = 180;
     vidas = 20;
     oleadaActual = 0;
     oleadaEnProgreso = false;
@@ -942,7 +892,6 @@ function reiniciarJuego() {
     actualizarPanelInspector();
 }
 
-// Inicialización
 document.addEventListener('DOMContentLoaded', () => {
     actualizarMarcadoresUI();
     actualizarPanelInspector();
