@@ -1,128 +1,180 @@
-import { POKEMON_DECK, JOKERS_BASE } from './modules/pokemonData.js';
-import { calculateScore } from './modules/scoring.js';
-import { UI } from './modules/ui.js';
+import { POKEMON_DATA, SUITS, LEGENDARY_SHOP } from './modules/pokemonData.js';
+import { evaluateHand } from './modules/scoring.js';
+import {
+  updateUI,
+  renderHand,
+  renderJokers,
+  updateEvaluatorUI,
+  renderHandsModalInfo,
+  renderShop,
+  openModal,
+  closeModal
+} from './modules/ui.js';
 
-class PokemonBalatroGame {
-  constructor() {
-    this.ui = new UI();
-    this.deck = [];
-    this.hand = [];
-    this.selectedCards = [];
-    this.activeItems = [...JOKERS_BASE];
-    this.targetScore = 300;
-    this.currentScore = 0;
-    this.handsLeft = 4;
-    this.discardsLeft = 3;
+let gameState = {
+  round: 1,
+  targetScore: 300,
+  currentScore: 0,
+  money: 4,
+  handsLeft: 4,
+  discardsLeft: 3,
+  deck: [],
+  hand: [],
+  selectedIndices: [],
+  jokers: []
+};
 
-    this.initEvents();
-    this.startNewRun();
-  }
+function initGame() {
+  createDeck();
+  drawHand(8);
+  refreshHandUI();
+  renderJokers(gameState.jokers);
+  renderHandsModalInfo();
+  updateUI(gameState);
+  setupEventListeners();
+}
 
-  startNewRun() {
-    this.deck = [...POKEMON_DECK, ...POKEMON_DECK, ...POKEMON_DECK];
-    this.shuffleDeck();
-    this.hand = [];
-    this.selectedCards = [];
-    this.currentScore = 0;
-    this.handsLeft = 4;
-    this.discardsLeft = 3;
-
-    this.drawHand(8);
-    this.updateUI();
-  }
-
-  shuffleDeck() {
-    this.deck.sort(() => Math.random() - 0.5);
-  }
-
-  drawHand(count) {
-    while (this.hand.length < count && this.deck.length > 0) {
-      this.hand.push(this.deck.pop());
-    }
-  }
-
-  toggleSelectCard(card) {
-    const index = this.selectedCards.indexOf(card);
-    if (index > -1) {
-      this.selectedCards.splice(index, 1);
-    } else {
-      // Garantizar un máximo de 5 cartas seleccionadas
-      if (this.selectedCards.length < 5) {
-        this.selectedCards.push(card);
-      }
-    }
-    this.updateUI();
-  }
-
-  playHand() {
-    if (this.selectedCards.length === 0 || this.selectedCards.length > 5 || this.handsLeft <= 0) return;
-
-    const result = calculateScore(this.selectedCards, this.activeItems);
-    this.currentScore += result.totalScore;
-    this.handsLeft--;
-
-    this.hand = this.hand.filter(c => !this.selectedCards.includes(c));
-    this.selectedCards = [];
-    this.drawHand(8);
-
-    this.updateUI();
-    this.checkGameState();
-  }
-
-  discard() {
-    if (this.discardsLeft <= 0 || this.selectedCards.length === 0 || this.selectedCards.length > 5) return;
-
-    this.hand = this.hand.filter(c => !this.selectedCards.includes(c));
-    this.selectedCards = [];
-    this.discardsLeft--;
-    this.drawHand(8);
-
-    this.updateUI();
-  }
-
-  checkGameState() {
-    if (this.currentScore >= this.targetScore) {
-      setTimeout(() => {
-        alert(`¡Gimnasio Vencido! Puntos totales: ${this.currentScore}. Siguiente nivel.`);
-        this.targetScore = Math.floor(this.targetScore * 1.8);
-        this.startNewRun();
-      }, 200);
-    } else if (this.handsLeft === 0) {
-      setTimeout(() => {
-        alert("¡Has quedado sin manos disponibles! Juego terminado.");
-        this.targetScore = 300;
-        this.startNewRun();
-      }, 200);
-    }
-  }
-
-  updateUI() {
-    this.ui.renderState({
-      targetScore: this.targetScore,
-      currentScore: this.currentScore,
-      handsLeft: this.handsLeft,
-      discardsLeft: this.discardsLeft,
-      activeItems: this.activeItems,
-      selectedCount: this.selectedCards.length
+function createDeck() {
+  gameState.deck = [];
+  let idCounter = 1;
+  SUITS.forEach(suit => {
+    POKEMON_DATA.forEach(poke => {
+      gameState.deck.push({
+        id: idCounter++,
+        name: poke.name,
+        value: poke.value,
+        valStr: poke.valStr,
+        suit: suit,
+        img: poke.img
+      });
     });
+  });
+  gameState.deck.sort(() => Math.random() - 0.5);
+}
 
-    this.ui.renderHand(this.hand, this.selectedCards, (card) => this.toggleSelectCard(card));
-
-    const currentEval = calculateScore(this.selectedCards, this.activeItems);
-    this.ui.renderPreviewScore(currentEval);
-  }
-
-  initEvents() {
-    document.getElementById('play-btn').addEventListener('click', () => this.playHand());
-    document.getElementById('discard-btn').addEventListener('click', () => this.discard());
-
-    // Modal de Combos
-    const modal = document.getElementById('combos-modal');
-    document.getElementById('btn-show-combos').addEventListener('click', () => modal.classList.remove('hidden'));
-    document.getElementById('close-combos-modal').addEventListener('click', () => modal.classList.add('hidden'));
+function drawHand(count) {
+  while (gameState.hand.length < count && gameState.deck.length > 0) {
+    gameState.hand.push(gameState.deck.pop());
   }
 }
 
-window.addEventListener('DOMContentLoaded', () => {
-  new PokemonBalatroGame();
-});
+function toggleSelectCard(index) {
+  const selIdx = gameState.selectedIndices.indexOf(index);
+  if (selIdx > -1) {
+    gameState.selectedIndices.splice(selIdx, 1);
+  } else {
+    if (gameState.selectedIndices.length < 5) {
+      gameState.selectedIndices.push(index);
+    }
+  }
+  refreshHandUI();
+}
+
+function refreshHandUI() {
+  const evalRes = evaluateHand(gameState.selectedIndices, gameState.hand, gameState.jokers);
+  renderHand(gameState, evalRes, toggleSelectCard);
+  updateEvaluatorUI(evalRes);
+}
+
+function playHand() {
+  if (gameState.selectedIndices.length === 0 || gameState.handsLeft <= 0) return;
+
+  const evalRes = evaluateHand(gameState.selectedIndices, gameState.hand, gameState.jokers);
+  gameState.currentScore += evalRes.estimatedTotal;
+  gameState.handsLeft--;
+
+  gameState.selectedIndices.sort((a, b) => b - a).forEach(idx => {
+    gameState.hand.splice(idx, 1);
+  });
+  gameState.selectedIndices = [];
+
+  drawHand(8);
+  updateUI(gameState);
+  refreshHandUI();
+
+  if (gameState.currentScore >= gameState.targetScore) {
+    setTimeout(() => openShopModal(), 500);
+  } else if (gameState.handsLeft <= 0) {
+    alert("¡Te has quedado sin manos! Juego terminado.");
+    resetGame();
+  }
+}
+
+function discardCards() {
+  if (gameState.selectedIndices.length === 0 || gameState.discardsLeft <= 0) return;
+
+  gameState.discardsLeft--;
+  gameState.selectedIndices.sort((a, b) => b - a).forEach(idx => {
+    gameState.hand.splice(idx, 1);
+  });
+  gameState.selectedIndices = [];
+
+  drawHand(8);
+  updateUI(gameState);
+  refreshHandUI();
+}
+
+function openShopModal() {
+  gameState.money += 4;
+  updateUI(gameState);
+  renderShop(gameState, buyJoker);
+  openModal('shopModal');
+}
+
+function buyJoker(jokerId) {
+  const joker = LEGENDARY_SHOP.find(j => j.id === jokerId);
+  if (joker && gameState.money >= joker.cost) {
+    gameState.money -= joker.cost;
+    gameState.jokers.push(joker);
+    renderJokers(gameState.jokers);
+    updateUI(gameState);
+    renderShop(gameState, buyJoker);
+  }
+}
+
+function nextRoundFromShop() {
+  closeModal('shopModal');
+  gameState.round++;
+  gameState.targetScore = Math.floor(gameState.targetScore * 1.8);
+  gameState.currentScore = 0;
+  gameState.handsLeft = 4;
+  gameState.discardsLeft = 3;
+  createDeck();
+  gameState.hand = [];
+  drawHand(8);
+  updateUI(gameState);
+  refreshHandUI();
+}
+
+function resetGame() {
+  gameState = {
+    round: 1,
+    targetScore: 300,
+    currentScore: 0,
+    money: 4,
+    handsLeft: 4,
+    discardsLeft: 3,
+    deck: [],
+    hand: [],
+    selectedIndices: [],
+    jokers: []
+  };
+  initGame();
+}
+
+function setupEventListeners() {
+  document.getElementById('playBtn').onclick = playHand;
+  document.getElementById('discardBtn').onclick = discardCards;
+
+  document.getElementById('openRulesBtn').onclick = () => openModal('rulesModal');
+  document.getElementById('closeRulesBtn').onclick = () => closeModal('rulesModal');
+  document.getElementById('confirmRulesBtn').onclick = () => closeModal('rulesModal');
+
+  document.getElementById('openHandsBtn').onclick = () => openModal('handsModal');
+  document.getElementById('closeHandsBtn').onclick = () => closeModal('handsModal');
+  document.getElementById('confirmHandsBtn').onclick = () => closeModal('handsModal');
+
+  document.getElementById('nextRoundBtn').onclick = nextRoundFromShop;
+}
+
+window.addEventListener('DOMContentLoaded', initGame);

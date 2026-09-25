@@ -1,39 +1,34 @@
-export const POKEMON_DECK = [
-  // Planta
-  { id: 1, name: "Bulbasaur", type: "Grass", power: 10, mult: 2, sprite: "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/1.png" },
-  { id: 2, name: "Ivysaur", type: "Grass", power: 20, mult: 3, sprite: "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/2.png" },
-  { id: 3, name: "Venusaur", type: "Grass", power: 40, mult: 5, sprite: "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/3.png" },
-  { id: 43, name: "Oddish", type: "Grass", power: 8, mult: 1, sprite: "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/43.png" },
-
-  // Fuego
-  { id: 4, name: "Charmander", type: "Fire", power: 12, mult: 2, sprite: "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/4.png" },
-  { id: 5, name: "Charmeleon", type: "Fire", power: 25, mult: 3, sprite: "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/5.png" },
-  { id: 6, name: "Charizard", type: "Fire", power: 50, mult: 6, sprite: "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/6.png" },
-  { id: 37, name: "Vulpix", type: "Fire", power: 10, mult: 2, sprite: "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/37.png" },
-
-  // Agua
-  { id: 7, name: "Squirtle", type: "Water", power: 10, mult: 2, sprite: "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/7.png" },
-  { id: 8, name: "Wartortle", type: "Water", power: 22, mult: 3, sprite: "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/8.png" },
-  { id: 9, name: "Blastoise", type: "Water", power: 45, mult: 5, sprite: "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/9.png" },
-  { id: 54, name: "Psyduck", type: "Water", power: 9, mult: 1, sprite: "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/54.png" },
-
-  // Eléctrico
-  { id: 25, name: "Pikachu", type: "Electric", power: 15, mult: 3, sprite: "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/25.png" },
-  { id: 26, name: "Raichu", type: "Electric", power: 35, mult: 4, sprite: "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/26.png" },
-
-  // Psíquico
-  { id: 63, name: "Abra", type: "Psychic", power: 12, mult: 2, sprite: "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/63.png" },
-  { id: 150, name: "Mewtwo", type: "Psychic", power: 60, mult: 8, sprite: "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/150.png" }
+export const POKEMON_DATA = [
+  { name: "Pichu", value: 2, valStr: "2", img: "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/172.png" },
+  { name: "Charmander", value: 3, valStr: "3", img: "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/4.png" },
+  { name: "Squirtle", value: 4, valStr: "4", img: "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/7.png" },
+  { name: "Bulbasaur", value: 5, valStr: "5", img: "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/1.png" },
+  { name: "Eevee", value: 6, valStr: "6", img: "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/133.png" },
+  { name: "Jigglypuff", value: 7, valStr: "7", img: "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/39.png" },
+  { name: "Meowth", value: 8, valStr: "8", img: "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/52.png" },
+  { name: "Psyduck", value: 9, valStr: "9", img: "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/54.png" },
+  { name: "Pikachu", value: 10, valStr: "10", img: "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/25.png" },
+  { name: "Lucario", value: 10, valStr: "J", img: "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/448.png" },
+  { name: "Gardevoir", value: 10, valStr: "Q", img: "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/282.png" },
+  { name: "Charizard", value: 10, valStr: "K", img: "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/6.png" },
+  { name: "Mew", value: 11, valStr: "A", img: "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/151.png" }
 ];
 
-export const JOKERS_BASE = [
-  { id: 1, name: "Cinta Elegida", desc: "+15 Chips globales", bonusType: "chips", value: 15 },
-  { id: 2, name: "Caramelo Raro", desc: "+3 Mult general", bonusType: "mult", value: 3 }
+export const SUITS = ['🔥', '💧', '🌿', '⚡'];
+
+export const LEGENDARY_SHOP = [
+  { id: 'mewtwo', name: 'Mewtwo', cost: 6, mult: 4, chips: 0, desc: '+4 Mult a todas las manos', img: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/150.png' },
+  { id: 'rayquaza', name: 'Rayquaza', cost: 8, mult: 0, chips: 60, desc: '+60 Fichas en cada mano', img: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/384.png' },
+  { id: 'zapdos', name: 'Zapdos', cost: 5, mult: 3, chips: 20, desc: '+20 Fichas y +3 Mult', img: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/145.png' }
 ];
 
-export const COMBOS = {
-  CARTA_ALTA: { name: "Pokémon Individual", baseChips: 5, baseMult: 1 },
-  MONOTIPO: { name: "Pareja Monotipo", baseChips: 20, baseMult: 2 },
-  TRIO_ELEMENTAL: { name: "Tercia de Tipo", baseChips: 40, baseMult: 3 },
-  FLUSH_TIPO: { name: "Equipo Elemental (5 del mismo Tipo)", baseChips: 70, baseMult: 5 }
-};
+export const POKER_HANDS_INFO = [
+  { name: "Poker (Four of a Kind)", chips: 60, mult: 7, example: ["Pikachu", "Pikachu", "Pikachu", "Pikachu"] },
+  { name: "Full House", chips: 40, mult: 4, example: ["Pikachu", "Pikachu", "Pikachu", "Eevee", "Eevee"] },
+  { name: "Color (Flush)", chips: 35, mult: 4, example: ["Charmander 🔥", "Bulbasaur 🔥", "Pikachu 🔥", "Mew 🔥", "Pichu 🔥"] },
+  { name: "Escalera (Straight)", chips: 30, mult: 4, example: ["Pichu (2)", "Charmander (3)", "Squirtle (4)", "Bulbasaur (5)", "Eevee (6)"] },
+  { name: "Trío (Three of a Kind)", chips: 30, mult: 3, example: ["Pikachu", "Pikachu", "Pikachu"] },
+  { name: "Doble Pareja (Two Pair)", chips: 20, mult: 2, example: ["Pikachu", "Pikachu", "Eevee", "Eevee"] },
+  { name: "Pareja (Pair)", chips: 10, mult: 2, example: ["Pikachu", "Pikachu"] },
+  { name: "Carta Alta (High Card)", chips: 5, mult: 1, example: ["Charizard"] }
+];

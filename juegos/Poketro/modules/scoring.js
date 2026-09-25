@@ -1,48 +1,75 @@
-import { COMBOS } from './pokemonData.js';
+export function evaluateHand(selectedIndices, hand, jokers) {
+  if (selectedIndices.length === 0) return null;
 
-export function calculateScore(selectedCards, itemsActive) {
-  if (selectedCards.length === 0) {
-    return { comboName: "Ninguno", chips: 0, mult: 0, totalScore: 0 };
+  const selectedCards = selectedIndices.map(i => ({ card: hand[i], originalIndex: i }));
+
+  const counts = {};
+  selectedCards.forEach(item => {
+    const key = item.card.name;
+    counts[key] = (counts[key] || []);
+    counts[key].push(item.originalIndex);
+  });
+
+  const countValues = Object.values(counts);
+  let scoringIndices = [];
+  let handName = "Carta Alta";
+  let baseChips = 5;
+  let baseMult = 1;
+
+  const fourGroup = countValues.find(arr => arr.length === 4);
+  if (fourGroup) {
+    handName = "Poker";
+    baseChips = 60; baseMult = 7;
+    scoringIndices = fourGroup;
+  } else {
+    const threeGroup = countValues.find(arr => arr.length === 3);
+    const pairGroups = countValues.filter(arr => arr.length === 2);
+
+    if (threeGroup && pairGroups.length >= 1) {
+      handName = "Full House";
+      baseChips = 40; baseMult = 4;
+      scoringIndices = [...threeGroup, ...pairGroups[0]];
+    } else if (threeGroup) {
+      handName = "Trío";
+      baseChips = 30; baseMult = 3;
+      scoringIndices = threeGroup;
+    } else if (pairGroups.length >= 2) {
+      handName = "Doble Pareja";
+      baseChips = 20; baseMult = 2;
+      scoringIndices = [...pairGroups[0], ...pairGroups[1]];
+    } else if (pairGroups.length === 1) {
+      handName = "Pareja";
+      baseChips = 10; baseMult = 2;
+      scoringIndices = pairGroups[0];
+    } else {
+      let highest = selectedCards[0];
+      selectedCards.forEach(item => {
+        if (item.card.value > highest.card.value) highest = item;
+      });
+      scoringIndices = [highest.originalIndex];
+    }
   }
 
-  // 1. Sumar poder base de las cartas seleccionadas
-  let cardChips = selectedCards.reduce((acc, c) => acc + c.power, 0);
-  let cardMult = selectedCards.reduce((acc, c) => acc + c.mult, 0);
-
-  // 2. Detectar combo
-  const combo = detectCombo(selectedCards);
-
-  let chips = cardChips + combo.baseChips;
-  let mult = cardMult + combo.baseMult;
-
-  // 3. Aplicar bonificadores de Comodines / Ítems
-  itemsActive.forEach(item => {
-    if (item.bonusType === 'chips') chips += item.value;
-    if (item.bonusType === 'mult') mult += item.value;
-    if (item.bonusType === 'xMult') mult *= item.value;
+  let cardsChipsValue = 0;
+  scoringIndices.forEach(idx => {
+    cardsChipsValue += hand[idx].value;
   });
 
-  const totalScore = chips * mult;
+  let jokerMult = 0;
+  let jokerChips = 0;
+  jokers.forEach(j => {
+    jokerMult += j.mult;
+    jokerChips += j.chips;
+  });
+
+  const totalChips = baseChips + cardsChipsValue + jokerChips;
+  const totalMult = baseMult + jokerMult;
 
   return {
-    comboName: combo.name,
-    chips,
-    mult,
-    totalScore
+    handName,
+    totalChips,
+    totalMult,
+    scoringIndices,
+    estimatedTotal: totalChips * totalMult
   };
-}
-
-function detectCombo(cards) {
-  const typeCounts = {};
-  cards.forEach(c => {
-    typeCounts[c.type] = (typeCounts[c.type] || 0) + 1;
-  });
-
-  const maxSameType = Math.max(...Object.values(typeCounts));
-
-  if (cards.length >= 5 && maxSameType === 5) return COMBOS.FLUSH_TIPO;
-  if (maxSameType >= 3) return COMBOS.TRIO_ELEMENTAL;
-  if (maxSameType >= 2) return COMBOS.MONOTIPO;
-  
-  return COMBOS.CARTA_ALTA;
 }
