@@ -7,7 +7,7 @@ document.addEventListener('DOMContentLoaded', () => {
     let baraja = [];
     let manoJugador = [];
     let manoDealer = [];
-    let fichas = parseInt(localStorage.getItem('casino_balance')) || 1000;
+    let fichas = parseInt(localStorage.getItem('casino_balance'));
     let apuestaActual = 50;
     let juegoEnProgreso = false;
 
