@@ -313,7 +313,7 @@ function dibujar() {
     ctx.arc(bote.x + 30, bote.y - 10, 8, 0, Math.PI * 2); // Cabeza
     ctx.fill();
 
-    // Caña de pesca
+    // Caña de Pesca
     ctx.strokeStyle = '#d4a373';
     ctx.lineWidth = 3;
     ctx.beginPath();
