@@ -913,12 +913,12 @@ function draw() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     ctx.drawImage(bgCanvas, 0, 0);
 
-    // El portal de entrada sí se sigue dibujando aquí porque pulsa (usa globalTime).
+    // El portal de entrada
     ctx.fillStyle = 'rgba(168, 85, 247, 0.3)';
     ctx.strokeStyle = '#c084fc';
     ctx.lineWidth = 3;
     ctx.beginPath();
-    ctx.arc(15, CAMINO[0].y, 20 + Math.sin(globalTime * 3) * 2, 0, Math.PI * 2);
+    ctx.arc(CAMINO[0].x, CAMINO[0].y, 20 + Math.sin(globalTime * 3) * 2, 0, Math.PI * 2); // Usa CAMINO[0].x en lugar de 15
     ctx.fill();
     ctx.stroke();
 
