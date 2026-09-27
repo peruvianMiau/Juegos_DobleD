@@ -53,6 +53,7 @@ function createDeck() {
         name: poke.name,
         value: poke.value,
         valStr: poke.valStr,
+        rankOrder: poke.rankOrder,
         suit: suit,
         img: poke.img
       });
@@ -83,6 +84,8 @@ function refreshHandUI() {
   const evalRes = evaluateHand(gameState.selectedIndices, gameState.hand, gameState.jokers);
   renderHand(gameState, evalRes, toggleSelectCard);
   updateEvaluatorUI(evalRes);
+  // Vista previa en vivo: resalta qué Comodines aportarían con la selección actual
+  renderJokers(gameState.jokers, evalRes ? evalRes.jokerResults : null);
 }
 
 // --- Ordenar mano ---
@@ -114,12 +117,16 @@ function playHand() {
   document.getElementById('playBtn').disabled = true;
   document.getElementById('discardBtn').disabled = true;
 
-  showPlayResult(cardsPlayed, evalRes);
+  showPlayResult(cardsPlayed, evalRes, gameState.jokers);
+
+  // Le damos tiempo extra a la animación si hay Comodines que saltan y aportan puntos
+  const triggeredCount = (evalRes.jokerResults || []).filter(r => r.triggered).length;
+  const totalDelay = 1300 + triggeredCount * 600 + 700;
 
   setTimeout(() => {
     hidePlayResult();
     resolvePlayedHand(evalRes);
-  }, 1900);
+  }, totalDelay);
 }
 
 function resolvePlayedHand(evalRes) {
