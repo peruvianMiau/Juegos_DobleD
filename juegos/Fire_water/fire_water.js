@@ -28,8 +28,8 @@ class Jugador {
         this.startY = y;
         this.x = x;
         this.y = y;
-        this.w = 24;
-        this.h = 32;
+        this.w = 18;
+        this.h = 26;
         this.vx = 0;
         this.vy = 0;
         this.color = color;
@@ -55,14 +55,14 @@ class Jugador {
             if (keys['KeyA']) this.vx -= 0.8;
             if (keys['KeyD']) this.vx += 0.8;
             if (keys['KeyW'] && this.enSuelo) {
-                this.vy = -10.5;
+                this.vy = -11;
                 this.enSuelo = false;
             }
         } else if (this.tipo === 'agua') {
             if (keys['ArrowLeft']) this.vx -= 0.8;
             if (keys['ArrowRight']) this.vx += 0.8;
             if (keys['ArrowUp'] && this.enSuelo) {
-                this.vy = -10.5;
+                this.vy = -11;
                 this.enSuelo = false;
             }
         }
@@ -153,131 +153,152 @@ function iniciarTimer() {
 
 // --- DEFINICIÓN DE LOS 5 NIVELES ---
 const NIVELES = [
-    // Nivel 1: Introducción
+    // Nivel 1: El Laberinto de Ascenso Cruzado
     {
         plataformas: [
-            {x: 0, y: 460, w: 800, h: 40},
-            {x: 150, y: 360, w: 200, h: 20},
-            {x: 450, y: 360, w: 200, h: 20},
-            {x: 300, y: 260, w: 200, h: 20},
-            {x: 50, y: 160, w: 250, h: 20},
-            {x: 500, y: 160, w: 250, h: 20}
+            // Marcos externos y piso base
+            {x: 0, y: 660, w: 1000, h: 40},
+            {x: 0, y: 0, w: 20, h: 700},
+            {x: 980, y: 0, w: 20, h: 700},
+            {x: 0, y: 0, w: 1000, h: 20},
+
+            // Ruta Fuego (Ascenso Izquierdo)
+            {x: 20, y: 560, w: 250, h: 20},  // Escalón 1
+            {x: 200, y: 460, w: 150, h: 20}, // Escalón 2
+
+            // Ruta Agua (Ascenso Derecho)
+            {x: 730, y: 560, w: 250, h: 20}, // Escalón 1
+            {x: 650, y: 460, w: 150, h: 20}, // Escalón 2
+
+            // Puente central compartido
+            {x: 350, y: 360, w: 300, h: 20},
+
+            // Plataformas superiores cruzadas (Zonas de las puertas)
+            {x: 20, y: 260, w: 270, h: 20},  // Arriba Izquierda (Destino Agua)
+            {x: 710, y: 260, w: 270, h: 20}, // Arriba Derecha (Destino Fuego)
+
+            // Muros divisorios estructurales (Crean los corredores y fuerzan las rutas)
+            {x: 490, y: 460, w: 20, h: 200}, // Divide la zona inferior impidiendo paso directo
+            {x: 270, y: 260, w: 20, h: 120}, // Obliga a subir al puente desde la izquierda
+            {x: 710, y: 260, w: 20, h: 120}  // Obliga a subir al puente desde la derecha
         ],
         charcos: [
-            {x: 200, y: 450, w: 120, h: 10, tipo: 'fuego'},
-            {x: 480, y: 450, w: 120, h: 10, tipo: 'agua'}
+            {x: 270, y: 650, w: 220, h: 10, tipo: 'fuego'}, // Peligro para Agua en el nivel inferior
+            {x: 510, y: 650, w: 220, h: 10, tipo: 'agua'},  // Peligro para Fuego en el nivel inferior
+            {x: 450, y: 350, w: 100, h: 10, tipo: 'acido'}  // Peligro central compartido en el puente
         ],
         gemas: [
-            {x: 180, y: 320, w: 15, h: 15, tipo: 'fuego', tomada: false},
-            {x: 580, y: 320, w: 15, h: 15, tipo: 'agua', tomada: false},
-            {x: 390, y: 210, w: 15, h: 15, tipo: 'fuego', tomada: false},
-            {x: 410, y: 210, w: 15, h: 15, tipo: 'agua', tomada: false}
+            // Gemas de Fuego (Ruta izquierda y final derecho)
+            {x: 260, y: 410, w: 15, h: 15, tipo: 'fuego', tomada: false},
+            {x: 820, y: 210, w: 15, h: 15, tipo: 'fuego', tomada: false},
+            // Gemas de Agua (Ruta derecha y final izquierdo)
+            {x: 720, y: 410, w: 15, h: 15, tipo: 'agua', tomada: false},
+            {x: 160, y: 210, w: 15, h: 15, tipo: 'agua', tomada: false}
         ],
-        puertaFuego: {x: 100, y: 100, w: 35, h: 60},
-        puertaAgua: {x: 650, y: 100, w: 35, h: 60},
-        spawnFuego: {x: 50, y: 410},
-        spawnAgua: {x: 700, y: 410}
+        puertaFuego: {x: 880, y: 200, w: 35, h: 60}, // Fuego debe cruzar todo hacia la derecha
+        puertaAgua: {x: 80, y: 200, w: 35, h: 60},   // Agua debe cruzar todo hacia la izquierda
+        spawnFuego: {x: 50, y: 610},
+        spawnAgua: {x: 900, y: 610}
     },
-    // Nivel 2: Lagos cruzados
+    // Nivel 2: Torres Entrelazadas (Ascenso zig-zag)
     {
         plataformas: [
-            {x: 0, y: 460, w: 800, h: 40},
-            {x: 100, y: 350, w: 600, h: 20},
-            {x: 0, y: 240, w: 300, h: 20},
-            {x: 500, y: 240, w: 300, h: 20},
-            {x: 250, y: 130, w: 300, h: 20}
+            {x: 0, y: 660, w: 1000, h: 40}, {x: 0, y: 0, w: 20, h: 700}, {x: 980, y: 0, w: 20, h: 700}, {x: 0, y: 0, w: 1000, h: 20},
+            // Suelos segmentados
+            {x: 150, y: 560, w: 700, h: 20}, {x: 150, y: 440, w: 700, h: 20}, {x: 150, y: 320, w: 700, h: 20}, {x: 150, y: 200, w: 700, h: 20},
+            // Huecos y Muros que fuerzan el camino
+            {x: 150, y: 440, w: 20, h: 140}, {x: 830, y: 320, w: 20, h: 140}, {x: 150, y: 200, w: 20, h: 140}
         ],
         charcos: [
-            {x: 250, y: 340, w: 150, h: 10, tipo: 'agua'},
-            {x: 420, y: 340, w: 150, h: 10, tipo: 'fuego'}
+            {x: 250, y: 550, w: 150, h: 10, tipo: 'fuego'}, {x: 600, y: 550, w: 150, h: 10, tipo: 'agua'},
+            {x: 400, y: 430, w: 200, h: 10, tipo: 'acido'},
+            {x: 200, y: 310, w: 150, h: 10, tipo: 'agua'}, {x: 650, y: 310, w: 150, h: 10, tipo: 'fuego'}
         ],
         gemas: [
-            {x: 320, y: 300, w: 15, h: 15, tipo: 'fuego', tomada: false},
-            {x: 460, y: 300, w: 15, h: 15, tipo: 'agua', tomada: false},
-            {x: 120, y: 200, w: 15, h: 15, tipo: 'fuego', tomada: false},
-            {x: 660, y: 200, w: 15, h: 15, tipo: 'agua', tomada: false}
+            {x: 320, y: 510, w: 15, h: 15, tipo: 'fuego', tomada: false}, {x: 670, y: 510, w: 15, h: 15, tipo: 'agua', tomada: false},
+            {x: 800, y: 390, w: 15, h: 15, tipo: 'fuego', tomada: false}, {x: 200, y: 270, w: 15, h: 15, tipo: 'agua', tomada: false}
         ],
-        puertaFuego: {x: 350, y: 70, w: 35, h: 60},
-        puertaAgua: {x: 410, y: 70, w: 35, h: 60},
-        spawnFuego: {x: 30, y: 410},
-        spawnAgua: {x: 730, y: 410}
+        puertaFuego: {x: 850, y: 140, w: 35, h: 60},
+        puertaAgua: {x: 910, y: 140, w: 35, h: 60},
+        spawnFuego: {x: 50, y: 610},
+        spawnAgua: {x: 930, y: 610}
     },
-    // Nivel 3: El veneno mortal
+    // Nivel 3: El Foso Letal (Precisión de caída)
     {
         plataformas: [
-            {x: 0, y: 460, w: 800, h: 40},
-            {x: 200, y: 370, w: 100, h: 20},
-            {x: 500, y: 370, w: 100, h: 20},
-            {x: 350, y: 270, w: 100, h: 20},
-            {x: 100, y: 170, w: 600, h: 20}
+            {x: 0, y: 660, w: 1000, h: 40}, {x: 0, y: 0, w: 20, h: 700}, {x: 980, y: 0, w: 20, h: 700}, {x: 0, y: 0, w: 1000, h: 20},
+            // Estructura superior (Spawn)
+            {x: 20, y: 150, w: 300, h: 20}, {x: 680, y: 150, w: 300, h: 20},
+            // Plataformas pequeñas flotantes
+            {x: 380, y: 250, w: 60, h: 20}, {x: 560, y: 250, w: 60, h: 20},
+            {x: 470, y: 380, w: 60, h: 20},
+            {x: 250, y: 480, w: 100, h: 20}, {x: 650, y: 480, w: 100, h: 20},
+            // Paredes para dificultar saltos horizontales
+            {x: 470, y: 150, w: 20, h: 100}, {x: 510, y: 150, w: 20, h: 100},
+            {x: 320, y: 350, w: 20, h: 150}, {x: 660, y: 350, w: 20, h: 150}
         ],
         charcos: [
-            {x: 150, y: 450, w: 500, h: 10, tipo: 'acido'},
-            {x: 300, y: 160, w: 200, h: 10, tipo: 'fuego'}
+            {x: 20, y: 650, w: 450, h: 10, tipo: 'acido'},
+            {x: 530, y: 650, w: 450, h: 10, tipo: 'acido'}
         ],
         gemas: [
-            {x: 240, y: 330, w: 15, h: 15, tipo: 'fuego', tomada: false},
-            {x: 540, y: 330, w: 15, h: 15, tipo: 'agua', tomada: false},
-            {x: 390, y: 230, w: 15, h: 15, tipo: 'fuego', tomada: false},
-            {x: 390, y: 120, w: 15, h: 15, tipo: 'agua', tomada: false}
+            {x: 400, y: 210, w: 15, h: 15, tipo: 'fuego', tomada: false}, {x: 580, y: 210, w: 15, h: 15, tipo: 'agua', tomada: false},
+            {x: 490, y: 340, w: 15, h: 15, tipo: 'fuego', tomada: false}, {x: 490, y: 300, w: 15, h: 15, tipo: 'agua', tomada: false}
         ],
-        puertaFuego: {x: 150, y: 110, w: 35, h: 60},
-        puertaAgua: {x: 610, y: 110, w: 35, h: 60},
-        spawnFuego: {x: 30, y: 410},
-        spawnAgua: {x: 730, y: 410}
+        puertaFuego: {x: 460, y: 600, w: 35, h: 60},
+        puertaAgua: {x: 505, y: 600, w: 35, h: 60},
+        spawnFuego: {x: 50, y: 100},
+        spawnAgua: {x: 930, y: 100}
     },
-    // Nivel 4: Torres de precisión
+    // Nivel 4: Galerías Subterráneas
     {
         plataformas: [
-            {x: 0, y: 460, w: 800, h: 40},
-            {x: 180, y: 380, w: 80, h: 20},
-            {x: 360, y: 320, w: 80, h: 20},
-            {x: 540, y: 260, w: 80, h: 20},
-            {x: 0, y: 180, w: 250, h: 20},
-            {x: 550, y: 180, w: 250, h: 20}
+            {x: 0, y: 660, w: 1000, h: 40}, {x: 0, y: 0, w: 20, h: 700}, {x: 980, y: 0, w: 20, h: 700},
+            // Tres pisos largos
+            {x: 100, y: 500, w: 880, h: 20}, {x: 20, y: 340, w: 880, h: 20}, {x: 100, y: 180, w: 880, h: 20},
+            // Bloqueos verticales (Muros cortos que obligan a saltar preciso)
+            {x: 300, y: 500, w: 20, h: 100}, {x: 600, y: 500, w: 20, h: 100},
+            {x: 400, y: 340, w: 20, h: 100}, {x: 700, y: 340, w: 20, h: 100}
         ],
         charcos: [
-            {x: 100, y: 450, w: 600, h: 10, tipo: 'acido'},
-            {x: 50, y: 170, w: 100, h: 10, tipo: 'agua'},
-            {x: 650, y: 170, w: 100, h: 10, tipo: 'fuego'}
+            {x: 150, y: 650, w: 200, h: 10, tipo: 'agua'}, {x: 550, y: 650, w: 200, h: 10, tipo: 'fuego'},
+            {x: 350, y: 490, w: 200, h: 10, tipo: 'fuego'}, {x: 650, y: 490, w: 200, h: 10, tipo: 'acido'},
+            {x: 200, y: 330, w: 150, h: 10, tipo: 'acido'}, {x: 750, y: 330, w: 100, h: 10, tipo: 'agua'}
         ],
         gemas: [
-            {x: 210, y: 340, w: 15, h: 15, tipo: 'fuego', tomada: false},
-            {x: 390, y: 280, w: 15, h: 15, tipo: 'agua', tomada: false},
-            {x: 570, y: 220, w: 15, h: 15, tipo: 'fuego', tomada: false},
-            {x: 100, y: 130, w: 15, h: 15, tipo: 'agua', tomada: false}
+            {x: 310, y: 590, w: 15, h: 15, tipo: 'fuego', tomada: false}, {x: 610, y: 590, w: 15, h: 15, tipo: 'agua', tomada: false},
+            {x: 410, y: 430, w: 15, h: 15, tipo: 'agua', tomada: false}, {x: 710, y: 430, w: 15, h: 15, tipo: 'fuego', tomada: false}
         ],
-        puertaFuego: {x: 700, y: 120, w: 35, h: 60},
-        puertaAgua: {x: 30, y: 120, w: 35, h: 60},
-        spawnFuego: {x: 20, y: 410},
-        spawnAgua: {x: 740, y: 410}
+        puertaFuego: {x: 880, y: 120, w: 35, h: 60},
+        puertaAgua: {x: 930, y: 120, w: 35, h: 60},
+        spawnFuego: {x: 50, y: 610},
+        spawnAgua: {x: 930, y: 610}
     },
-    // Nivel 5: El templo final
+    // Nivel 5: El Templo de la Agilidad
     {
         plataformas: [
-            {x: 0, y: 460, w: 800, h: 40},
-            {x: 100, y: 360, w: 150, h: 20},
-            {x: 550, y: 360, w: 150, h: 20},
-            {x: 300, y: 280, w: 200, h: 20},
-            {x: 0, y: 180, w: 800, h: 20}
+            {x: 0, y: 660, w: 1000, h: 40}, {x: 0, y: 0, w: 20, h: 700}, {x: 980, y: 0, w: 20, h: 700},
+            // Plataformas base
+            {x: 20, y: 560, w: 150, h: 20}, {x: 830, y: 560, w: 150, h: 20},
+            {x: 250, y: 480, w: 500, h: 20},
+            {x: 100, y: 360, w: 200, h: 20}, {x: 700, y: 360, w: 200, h: 20},
+            {x: 400, y: 260, w: 200, h: 20},
+            // Paredes que encierran a los personajes
+            {x: 250, y: 480, w: 20, h: 180}, {x: 730, y: 480, w: 20, h: 180},
+            {x: 400, y: 100, w: 20, h: 160}, {x: 580, y: 100, w: 20, h: 160}
         ],
         charcos: [
-            {x: 100, y: 450, w: 250, h: 10, tipo: 'fuego'},
-            {x: 450, y: 450, w: 250, h: 10, tipo: 'agua'},
-            {x: 100, y: 170, w: 250, h: 10, tipo: 'agua'},
-            {x: 450, y: 170, w: 250, h: 10, tipo: 'fuego'},
-            {x: 330, y: 270, w: 140, h: 10, tipo: 'acido'}
+            {x: 270, y: 650, w: 460, h: 10, tipo: 'acido'}, // Un gran foso central
+            {x: 350, y: 470, w: 100, h: 10, tipo: 'agua'}, {x: 550, y: 470, w: 100, h: 10, tipo: 'fuego'}
         ],
         gemas: [
-            {x: 160, y: 320, w: 15, h: 15, tipo: 'agua', tomada: false},
-            {x: 610, y: 320, w: 15, h: 15, tipo: 'fuego', tomada: false},
-            {x: 390, y: 230, w: 15, h: 15, tipo: 'fuego', tomada: false},
-            {x: 410, y: 230, w: 15, h: 15, tipo: 'agua', tomada: false}
+            {x: 300, y: 430, w: 15, h: 15, tipo: 'agua', tomada: false}, {x: 680, y: 430, w: 15, h: 15, tipo: 'fuego', tomada: false},
+            {x: 150, y: 320, w: 15, h: 15, tipo: 'fuego', tomada: false}, {x: 800, y: 320, w: 15, h: 15, tipo: 'agua', tomada: false}
         ],
-        puertaFuego: {x: 360, y: 390, w: 35, h: 60},
-        puertaAgua: {x: 410, y: 390, w: 35, h: 60},
-        spawnFuego: {x: 20, y: 410},
-        spawnAgua: {x: 740, y: 410}
+        puertaFuego: {x: 440, y: 200, w: 35, h: 60},
+        puertaAgua: {x: 520, y: 200, w: 35, h: 60},
+        spawnFuego: {x: 50, y: 610},
+        spawnAgua: {x: 930, y: 610}
     }
 ];
 
