@@ -192,13 +192,15 @@ const CAMINOS_NIVEL_1 = [
 ];
 
 const CAMINOS_NIVEL_2 = [
-    [ // Ruta Superior (se divide)
-        { x: 20, y: 260 }, { x: 260, y: 260 }, { x: 260, y: 100 },
-        { x: 540, y: 100 }, { x: 540, y: 260 }, { x: 780, y: 260 }
+    [ // Ruta Superior (Zig-zag asimétrico)
+        { x: 20, y: 260 }, { x: 180, y: 260 }, { x: 180, y: 100 },
+        { x: 380, y: 100 }, { x: 380, y: 180 }, { x: 580, y: 180 },
+        { x: 580, y: 260 }, { x: 780, y: 260 }
     ],
-    [ // Ruta Inferior (se divide)
-        { x: 20, y: 260 }, { x: 260, y: 260 }, { x: 260, y: 420 },
-        { x: 540, y: 420 }, { x: 540, y: 260 }, { x: 780, y: 260 }
+    [ // Ruta Inferior (Zig-zag asimétrico distinto)
+        { x: 20, y: 260 }, { x: 140, y: 260 }, { x: 140, y: 420 },
+        { x: 460, y: 420 }, { x: 460, y: 340 }, { x: 660, y: 340 },
+        { x: 660, y: 260 }, { x: 780, y: 260 }
     ]
 ];
 
@@ -237,7 +239,7 @@ const DATOS_TORRES = {
     arrow: {
         nombre: 'Torre Arquera',
         costo: 50,
-        rango: 125,
+        rango: 105,
         danio: 18,
         cadencia: 24,
         color: '#f59e0b',
@@ -247,7 +249,7 @@ const DATOS_TORRES = {
     cannon: {
         nombre: 'Torre Cañón',
         costo: 90,
-        rango: 105,
+        rango: 90,
         danio: 40,
         cadencia: 50,
         splash: 70,
@@ -258,7 +260,7 @@ const DATOS_TORRES = {
     ice: {
         nombre: 'Torre de Hielo',
         costo: 75,
-        rango: 110,
+        rango: 115,
         danio: 10,
         cadencia: 35,
         ralentizar: 0.40,
@@ -393,9 +395,9 @@ function mejorarTorreSeleccionada() {
         oro -= costoUpgrade;
         torreInspeccionada.nivel++;
         torreInspeccionada.inversionTotal += costoUpgrade;
-        torreInspeccionada.rango += 16;
-        torreInspeccionada.danio *= 1.45;
-        torreInspeccionada.danioPorFrame *= 1.4;
+        torreInspeccionada.rango += 15;
+        torreInspeccionada.danio *= 1.35;
+        torreInspeccionada.danioPorFrame *= 1.3;
         torreInspeccionada.cadencia = Math.max(12, Math.round(torreInspeccionada.cadencia * 0.82));
 
         for (let i = 0; i < 20; i++) {
@@ -450,7 +452,7 @@ function iniciarSiguienteOleada() {
     const ciclo = Math.floor((oleadaActual - 1) / 10);
     const oleadaBase = ((oleadaActual - 1) % 10) + 1;
 
-    const buffHp = 1 + (ciclo * 1.5);
+    const buffHp = 1 + (ciclo * 0.5);
     const buffVelocidad = 1 + (ciclo * 0.15);
 
     // Incrementa la cantidad de enemigos un 30% adicional por cada ciclo (10 rondas) completado
@@ -463,7 +465,7 @@ function iniciarSiguienteOleada() {
         let tipo = 'goblin';
         let hp = (45 + oleadaBase * 18) * buffHp;
         let speed = 2.0 * multiVelocidad;
-        let recompensa = 4 + Math.floor(oleadaBase * 0.6); // Oro no se buffea con el ciclo
+        let recompensa = 4 + Math.floor(oleadaBase * 0.6); // Oro no se buff con el ciclo
         let color = '#10b981';
         let radio = 11;
 
@@ -1025,6 +1027,10 @@ function ejecutarTransicionNivel() {
     const ciclo = Math.floor(oleadaActual / 10);
     caminosActuales = (ciclo % 2 !== 0) ? CAMINOS_NIVEL_2 : CAMINOS_NIVEL_1;
 
+    // Reiniciar y aumentar el oro (180 base * (ciclo + 1)).
+    // En el primer cambio (ciclo 1), tendrás 360 de oro.
+    oro = 180 * (ciclo + 1);
+
     // Borrar defensas
     torres = [];
     torreInspeccionada = null;
@@ -1040,7 +1046,7 @@ function ejecutarTransicionNivel() {
         const waveBtn = document.getElementById('btn-wave');
         waveBtn.disabled = false;
         waveBtn.className = 'px-5 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-sm transition shadow-lg flex items-center gap-2';
-    }, 4000); // 4 segundos de transición
+    }, 3500); // 3.5 segundos de transición
 }
 
 function draw() {
@@ -1292,6 +1298,25 @@ document.addEventListener('DOMContentLoaded', () => {
     actualizarMarcadoresUI();
     actualizarPanelInspector();
     requestAnimationFrame(loop);
+});
+
+// TRUCO: Presiona 'Alt + N' para saltar instantáneamente a la transición del siguiente mapa
+document.addEventListener('keydown', (e) => {
+    if (e.altKey && (e.key === 'n' || e.key === 'N')) {
+        if (juegoTerminado) return;
+
+        // Forzamos llegar a la oleada 10 para disparar el cambio
+        oleadaActual = 10;
+        enemigos = [];
+        colaSpawn = [];
+        proyectiles = [];
+        oleadaEnProgreso = false;
+
+        ejecutarTransicionNivel();
+        actualizarMarcadoresUI();
+
+        console.log("¡Truco activado! Saltando de mapa...");
+    }
 });
 
 function toggleRulesModal(mostrar) {
