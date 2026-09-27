@@ -195,8 +195,8 @@ const NIVELES = [
             {x: 720, y: 410, w: 15, h: 15, tipo: 'agua', tomada: false},
             {x: 160, y: 210, w: 15, h: 15, tipo: 'agua', tomada: false}
         ],
-        puertaFuego: {x: 880, y: 200, w: 35, h: 60}, // Fuego debe cruzar todo hacia la derecha
-        puertaAgua: {x: 80, y: 200, w: 35, h: 60},   // Agua debe cruzar todo hacia la izquierda
+        puertaFuego: {x: 880, y: 200, w: 35, h: 60}, // Fuego debe cruzar hacia la derecha
+        puertaAgua: {x: 80, y: 200, w: 35, h: 60},   // Agua debe cruzar hacia la izquierda
         spawnFuego: {x: 50, y: 610},
         spawnAgua: {x: 900, y: 610}
     },
