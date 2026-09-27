@@ -9,7 +9,7 @@ const overlayEl = document.getElementById('game-over-overlay');
 
 let puntuacion = 0;
 let capturas = 0;
-let tiempoRestante = 120;
+let tiempoRestante = 90;
 let juegoTerminado = false;
 let temporizadorID;
 
@@ -193,7 +193,7 @@ function finalizarJuego() {
 function reiniciarJuego() {
     puntuacion = 0;
     capturas = 0;
-    tiempoRestante = 120;
+    tiempoRestante = 90;
     juegoTerminado = false;
     peces = [];
     particulas = [];
@@ -204,7 +204,7 @@ function reiniciarJuego() {
 
     scoreEl.innerText = '0';
     fishCountEl.innerText = '0';
-    timerEl.innerText = '120';
+    timerEl.innerText = '90';
     overlayEl.style.display = 'none';
 
     iniciarAudio();
