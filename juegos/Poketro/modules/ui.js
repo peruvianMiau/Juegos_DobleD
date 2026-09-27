@@ -1,4 +1,4 @@
-import { POKER_HANDS_INFO, LEGENDARY_SHOP, POKEMON_DATA } from './pokemonData.js';
+import { POKER_HANDS_INFO, LEGENDARY_SHOP, POKEMON_DATA, getJokerRarity, MAX_JOKERS } from './pokemonData.js';
 
 function findPokemon(name) {
   return POKEMON_DATA.find(p => p.name === name);
@@ -59,8 +59,9 @@ export function renderHand(gameState, evalRes, onSelectCard) {
 }
 
 function jokerOverlayCardMarkup(joker) {
+  const rarity = getJokerRarity(joker.cost);
   return `
-    <div class="joker-card relative w-16 h-24 sm:w-20 sm:h-28 bg-gradient-to-b from-amber-900/50 via-slate-900 to-slate-900 border-2 border-slate-700 rounded-lg flex flex-col justify-between p-1.5 shadow-lg opacity-40 grayscale">
+    <div class="joker-card joker-rarity-${rarity} relative w-16 h-24 sm:w-20 sm:h-28 bg-gradient-to-b from-amber-900/50 via-slate-900 to-slate-900 border-2 rounded-lg flex flex-col justify-between p-1.5 shadow-lg opacity-40 grayscale">
       <div class="text-[8px] text-center font-bold text-yellow-300 truncate leading-tight">${joker.name}</div>
       <div class="flex-1 flex items-center justify-center">
         <img src="${joker.img}" alt="${joker.name}" class="w-9 h-9 sm:w-11 sm:h-11 object-contain pointer-events-none" />
@@ -147,7 +148,7 @@ export function showPlayResult(cardsPlayed, evalRes, jokers) {
           el.classList.remove('opacity-40', 'grayscale');
           el.classList.remove('joker-trigger-anim');
           void el.offsetWidth;
-          el.classList.add('joker-trigger-anim', 'border-yellow-300');
+          el.classList.add('joker-trigger-anim');
 
           const badge = document.createElement('div');
           badge.className = 'joker-float-badge';
@@ -186,8 +187,9 @@ export function hidePlayResult() {
 function jokerCardMarkup(joker, { showCost = false, disabled = false, resultInfo = null } = {}) {
   const isActive = resultInfo && resultInfo.triggered;
   const label = isActive ? contribLabel(resultInfo) : '';
+  const rarity = getJokerRarity(joker.cost);
   return `
-    <div class="joker-card relative w-24 h-32 sm:w-28 sm:h-38 md:w-28 md:h-40 bg-gradient-to-b from-amber-900/50 via-slate-900 to-slate-900 border-2 rounded-xl flex flex-col justify-between p-2 shadow-lg ${disabled ? 'opacity-40' : ''} ${isActive ? 'joker-active' : 'border-yellow-500/70'}">
+    <div class="joker-card joker-rarity-${rarity} relative w-24 h-32 sm:w-28 sm:h-38 md:w-28 md:h-40 bg-gradient-to-b from-amber-900/50 via-slate-900 to-slate-900 border-2 rounded-xl flex flex-col justify-between p-2 shadow-lg ${disabled ? 'opacity-40' : ''} ${isActive ? 'joker-active' : ''}">
       ${showCost ? `<div class="absolute -top-2 -right-2 bg-amber-500 text-slate-950 text-[10px] font-black px-2 py-0.5 rounded-full border border-amber-300 shadow z-10">$${joker.cost}</div>` : ''}
       ${label ? `<div class="joker-live-badge">${label}</div>` : ''}
       <div class="text-[10px] md:text-xs text-center font-bold text-yellow-300 truncate">${joker.name}</div>
@@ -199,11 +201,11 @@ function jokerCardMarkup(joker, { showCost = false, disabled = false, resultInfo
   `;
 }
 
-// jokerResults (opcional): resultado en vivo de evaluateHand para resaltar qué comodines
-// aportarían con la selección actual de cartas (antes incluso de jugar la mano).
 export function renderJokers(jokers, jokerResults = null) {
   const container = document.getElementById('jokersContainer');
   const noText = document.getElementById('noJokersText');
+  const badge = document.getElementById('jokerCountBadge');
+  if (badge) badge.innerText = `${jokers.length}/${MAX_JOKERS}`;
 
   if (jokers.length === 0) {
     container.innerHTML = '';
@@ -214,6 +216,28 @@ export function renderJokers(jokers, jokerResults = null) {
   container.innerHTML = jokers.map(j => {
     const resultInfo = jokerResults ? jokerResults.find(r => r.id === j.id) : null;
     return jokerCardMarkup(j, { resultInfo });
+  }).join('');
+}
+
+export function renderJokersModalInfo(jokers) {
+  const container = document.getElementById('jokersInfoContainer');
+  if (!container) return;
+
+  if (!jokers || jokers.length === 0) {
+    container.innerHTML = `<p class="text-slate-500 italic text-sm text-center py-6">Aún no tienes Comodines. ¡Consíguelos en la Tienda cada 3 Ciegas superadas!</p>`;
+    return;
+  }
+
+  container.innerHTML = jokers.map(j => jokerCardMarkup(j)).join('');
+}
+
+export function renderAllJokersCatalog(ownedIds) {
+  const container = document.getElementById('allJokersContainer');
+  if (!container) return;
+
+  container.innerHTML = LEGENDARY_SHOP.map(j => {
+    const owned = ownedIds.includes(j.id);
+    return jokerCardMarkup(j, { showCost: true, disabled: !owned });
   }).join('');
 }
 
@@ -341,5 +365,47 @@ export function renderShop(gameState, onBuyJoker, onBuyPack, onChoosePackCard) {
   }
 }
 
+export function renderDiscardJokerChoice(jokers, incomingJoker, onChooseDiscard) {
+  const container = document.getElementById('discardJokerContainer');
+  const incomingWrap = document.getElementById('discardJokerIncoming');
+  if (incomingWrap && incomingJoker) {
+    incomingWrap.innerHTML = jokerCardMarkup(incomingJoker, { showCost: false });
+  }
+  if (!container) return;
+
+  container.innerHTML = '';
+  jokers.forEach(j => {
+    const btn = document.createElement('button');
+    btn.className = "flex flex-col items-center gap-1 hover:scale-105 transition-transform";
+    btn.innerHTML = jokerCardMarkup(j);
+    btn.onclick = () => onChooseDiscard(j.id);
+    container.appendChild(btn);
+  });
+}
+
 export function openModal(id) { document.getElementById(id)?.classList.remove('hidden'); }
 export function closeModal(id) { document.getElementById(id)?.classList.add('hidden'); }
+
+export function showRoundToast(success, income, willOpenShop, fastClear = false) {
+  const toast = document.getElementById('roundToast');
+  const textEl = document.getElementById('roundToastText');
+  if (!toast || !textEl) return;
+
+  toast.classList.remove('toast-fail', 'toast-success');
+  toast.classList.add(success ? 'toast-success' : 'toast-fail');
+
+  const icon = success ? (fastClear ? '⚡' : '🏆') : '💤';
+  const message = success
+    ? `¡Ciega superada!${fastClear ? ' (ronda rápida)' : ''} +$${income}${willOpenShop ? ' · 🛒 Tienda disponible' : ''}`
+    : `No alcanzaste el objetivo... +$${income}`;
+  textEl.innerHTML = `<span class="toast-icon">${icon}</span><span>${message}</span>`;
+
+  toast.classList.remove('hidden');
+  void toast.offsetWidth;
+  toast.classList.add('toast-show');
+
+  setTimeout(() => {
+    toast.classList.remove('toast-show');
+    setTimeout(() => toast.classList.add('hidden'), 300);
+  }, success ? 2600 : 2200);
+}

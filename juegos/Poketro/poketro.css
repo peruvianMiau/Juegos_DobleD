@@ -43,6 +43,33 @@ body {
     transform: translateY(-3px);
 }
 
+/* --- Rareza de Comodines según su costo: más caro = borde y brillo más vistosos --- */
+.joker-rarity-common {
+    border-color: rgba(234, 179, 8, 0.5);
+}
+
+.joker-rarity-rare {
+    border-color: #38bdf8;
+    box-shadow: 0 0 10px rgba(56, 189, 248, 0.35);
+}
+
+.joker-rarity-epic {
+    border-color: #a78bfa;
+    box-shadow: 0 0 14px rgba(167, 139, 250, 0.45);
+}
+
+.joker-rarity-legendary {
+    border-color: #fbbf24;
+    background-image: linear-gradient(160deg, rgba(251, 191, 36, 0.18), transparent 55%);
+    box-shadow: 0 0 20px rgba(251, 191, 36, 0.55);
+    animation: legendary-shimmer 2.8s ease-in-out infinite;
+}
+
+@keyframes legendary-shimmer {
+    0%, 100% { box-shadow: 0 0 16px rgba(251, 191, 36, 0.45); }
+    50% { box-shadow: 0 0 26px rgba(251, 191, 36, 0.85); }
+}
+
 /* --- Sobre estilo Pokéball --- */
 .pokeball-wrap {
     display: flex;
@@ -199,4 +226,42 @@ body {
 @keyframes value-pop {
     0% { transform: scale(1.5); color: #fde047; }
     100% { transform: scale(1); }
+}
+
+/* --- Aviso de fin de ronda (modo infinito, sin Game Over) --- */
+.toast-banner {
+    padding: 12px 24px;
+    border-radius: 9999px;
+    font-weight: 700;
+    font-size: 0.82rem;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+    opacity: 0;
+    transform: translate(-50%, -14px) scale(0.96);
+    transition: opacity 0.3s ease, transform 0.3s ease;
+    pointer-events: none;
+    white-space: nowrap;
+    backdrop-filter: blur(6px);
+}
+
+.toast-banner.toast-show {
+    opacity: 1;
+    transform: translate(-50%, 0) scale(1);
+}
+
+.toast-banner .toast-icon {
+    font-size: 1.1rem;
+    margin-right: 8px;
+    filter: drop-shadow(0 0 6px currentColor);
+}
+
+.toast-success {
+    background: linear-gradient(135deg, rgba(6, 78, 59, 0.95), rgba(4, 47, 46, 0.95));
+    border: 1px solid #34d399;
+    color: #6ee7b7;
+}
+
+.toast-fail {
+    background: linear-gradient(135deg, rgba(76, 5, 25, 0.95), rgba(49, 4, 26, 0.95));
+    border: 1px solid #fb7185;
+    color: #fda4af;
 }

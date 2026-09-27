@@ -1,32 +1,30 @@
-// "value" = valor en fichas al puntuar (igual que en Póker: J/Q/K valen 10, As vale 11).
-// "rankOrder" = orden real de rango 2..14, usado SOLO para detectar escaleras.
-// (Antes no existía este campo y J/Q/K compartían value=10, por lo que una escalera
-// que incluyera figuras nunca se podía detectar correctamente.)
+// "value" = valor de la carta, creciente y SIN colisiones (2..14), usado tanto para
+// sumar fichas al puntuar como para detectar escaleras.
+// (Antes J/Q/K valían 10 como en el póker real, lo que generaba dos problemas:
+// 1) el orden "Por Categoría" quedaba raro porque 10/J/Q/K empataban en valor.
+// 2) la suma de fichas de una mano con figuras salía más baja de lo esperado,
+//    porque J/Q/K sumaban solo 10 en vez de su progresión natural 11/12/13.
+// Ahora J=11, Q=12, K=13 y As=14, como en la numeración normal de una escalera.)
 export const POKEMON_DATA = [
-  { name: "Pichu", value: 2, valStr: "2", rankOrder: 2, img: "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/172.png" },
-  { name: "Charmander", value: 3, valStr: "3", rankOrder: 3, img: "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/4.png" },
-  { name: "Squirtle", value: 4, valStr: "4", rankOrder: 4, img: "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/7.png" },
-  { name: "Bulbasaur", value: 5, valStr: "5", rankOrder: 5, img: "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/1.png" },
-  { name: "Eevee", value: 6, valStr: "6", rankOrder: 6, img: "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/133.png" },
-  { name: "Jigglypuff", value: 7, valStr: "7", rankOrder: 7, img: "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/39.png" },
-  { name: "Meowth", value: 8, valStr: "8", rankOrder: 8, img: "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/52.png" },
-  { name: "Psyduck", value: 9, valStr: "9", rankOrder: 9, img: "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/54.png" },
-  { name: "Pikachu", value: 10, valStr: "10", rankOrder: 10, img: "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/25.png" },
-  { name: "Lucario", value: 10, valStr: "J", rankOrder: 11, img: "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/448.png" },
-  { name: "Gardevoir", value: 10, valStr: "Q", rankOrder: 12, img: "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/282.png" },
-  { name: "Charizard", value: 10, valStr: "K", rankOrder: 13, img: "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/6.png" },
-  { name: "Mew", value: 11, valStr: "A", rankOrder: 14, img: "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/151.png" }
+  { name: "Pichu", value: 2, valStr: "2", img: "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/172.png" },
+  { name: "Charmander", value: 3, valStr: "3", img: "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/4.png" },
+  { name: "Squirtle", value: 4, valStr: "4", img: "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/7.png" },
+  { name: "Bulbasaur", value: 5, valStr: "5", img: "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/1.png" },
+  { name: "Eevee", value: 6, valStr: "6", img: "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/133.png" },
+  { name: "Jigglypuff", value: 7, valStr: "7", img: "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/39.png" },
+  { name: "Meowth", value: 8, valStr: "8", img: "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/52.png" },
+  { name: "Psyduck", value: 9, valStr: "9", img: "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/54.png" },
+  { name: "Pikachu", value: 10, valStr: "10", img: "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/25.png" },
+  { name: "Lucario", value: 11, valStr: "J", img: "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/448.png" },
+  { name: "Gardevoir", value: 12, valStr: "Q", img: "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/282.png" },
+  { name: "Charizard", value: 13, valStr: "K", img: "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/6.png" },
+  { name: "Mew", value: 14, valStr: "A", img: "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/151.png" }
 ];
 
 export const SUITS = ['🔥', '💧', '🌿', '⚡'];
 
-// --- Comodines Legendarios estilo Balatro ---
-// Cada joker tiene un "type" que define CUÁNDO aporta su bono, igual que en el juego original:
-//   'flat'     -> siempre suma (comodines "base", pocos y económicos).
-//   'handtype' -> solo suma si la mano jugada es una de las indicadas en "hands".
-//   'xmult'    -> multiplica el Mult total (después de sumas) si la mano jugada coincide con "hands".
-//   'suit'     -> suma por CADA carta jugada de un tipo (palo) concreto.
-//   'perCard'  -> suma por CADA carta que puntúa con un nombre de Pokémon concreto.
+export const MAX_JOKERS = 5;
+
 export const LEGENDARY_SHOP = [
   {
     id: 'mewtwo', name: 'Mewtwo', cost: 6,
@@ -99,11 +97,47 @@ export const LEGENDARY_SHOP = [
     type: 'perCard', nameMatch: 'Mew', mult: 0, chips: 20,
     desc: '+20 Fichas por CADA Mew (As) que puntúe en la mano',
     img: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/151.png'
+  },
+  {
+    id: 'vaporeon', name: 'Vaporeon', cost: 6,
+    type: 'suit', suit: '💧', mult: 0, chips: 8,
+    desc: '+8 Fichas por CADA carta 💧 Agua jugada',
+    img: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/134.png'
+  },
+  {
+    id: 'venusaur', name: 'Venusaur', cost: 6,
+    type: 'suit', suit: '🌿', mult: 0, chips: 8,
+    desc: '+8 Fichas por CADA carta 🌿 Planta jugada',
+    img: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/3.png'
+  },
+  // --- Comodines de gama alta: caros, pero con un impacto enorme (pensados para la tienda de cada 3 rondas) ---
+  {
+    id: 'giratina', name: 'Giratina', cost: 13,
+    type: 'xmult', hands: ['Escalera de Color'], xmult: 3,
+    desc: 'Multiplica el Mult ×3 si juegas la rarísima Escalera de Color',
+    img: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/487.png'
+  },
+  {
+    id: 'dialga', name: 'Dialga', cost: 12,
+    type: 'handtype', hands: ['Full House', 'Poker', 'Escalera de Color'], mult: 0, chips: 120,
+    desc: '+120 Fichas si juegas Full House, Póker o Escalera de Color',
+    img: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/483.png'
+  },
+  {
+    id: 'arceus', name: 'Arceus', cost: 16,
+    type: 'flat', mult: 6, chips: 0,
+    desc: 'El más caro y poderoso: +6 Mult en CUALQUIER mano jugada',
+    img: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/493.png'
   }
 ];
 
-// Ejemplos con datos estructurados (nombre + palo) para poder mostrar sprites reales
-// en el modal de combinaciones, en vez de solo texto.
+export function getJokerRarity(cost) {
+  if (cost >= 13) return 'legendary';
+  if (cost >= 10) return 'epic';
+  if (cost >= 7) return 'rare';
+  return 'common';
+}
+
 export const POKER_HANDS_INFO = [
   {
     name: "Escalera de Color (Straight Flush)", chips: 100, mult: 8,

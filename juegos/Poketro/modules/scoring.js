@@ -17,11 +17,11 @@ export function evaluateHand(selectedIndices, hand, jokers) {
   const isFlush = selectedCards.length === 5 &&
     selectedCards.every(c => c.card.suit === selectedCards[0].card.suit);
 
-  // --- Escalera (5 rangos consecutivos, usando rankOrder para que J/Q/K/A funcionen bien) ---
-  const uniqueRanks = [...new Set(selectedCards.map(c => c.card.rankOrder))].sort((a, b) => a - b);
+  // --- Escalera (5 rangos consecutivos y distintos) ---
+  const uniqueValues = [...new Set(selectedCards.map(c => c.card.value))].sort((a, b) => a - b);
   const isStraight = selectedCards.length === 5 &&
-    uniqueRanks.length === 5 &&
-    (uniqueRanks[4] - uniqueRanks[0] === 4);
+    uniqueValues.length === 5 &&
+    (uniqueValues[4] - uniqueValues[0] === 4);
 
   const fourGroup = countValues.find(arr => arr.length === 4);
   const threeGroup = countValues.find(arr => arr.length === 3);
