@@ -63,10 +63,10 @@
     background: transparent;
     border: none;
     color: #64748b;
-    padding: 7px 14px;
+    padding: 9px 16px;
     border-radius: 10px;
     cursor: pointer;
-    font-size: 12px;
+    font-size: 13px;
     font-family: 'Rubik', sans-serif;
     font-weight: 600;
     white-space: nowrap;
@@ -84,10 +84,10 @@
 .stat-chip {
     display: inline-flex;
     align-items: center;
-    gap: 4px;
-    font-size: 12px;
+    gap: 5px;
+    font-size: 13px;
     font-weight: 700;
-    padding: 4px 10px;
+    padding: 5px 12px;
     border-radius: 9999px;
     background: #1e293b;
     border: 1px solid #334155;
@@ -103,10 +103,10 @@
     background: #1e293b;
     border: 1px solid #334155;
     color: #cbd5e1;
-    padding: 6px 12px;
+    padding: 7px 14px;
     border-radius: 8px;
     cursor: pointer;
-    font-size: 12px;
+    font-size: 13px;
     font-weight: 700;
     font-family: 'Rubik', sans-serif;
     transition: all 0.12s;
@@ -122,7 +122,7 @@
     background: #0f172a;
     border: 1px solid #1e293b;
     border-radius: 16px;
-    padding: 18px;
+    padding: 22px;
     position: relative;
     overflow: hidden;
     transition: border-color 0.2s;
@@ -137,7 +137,7 @@
 }
 .px-card-title {
     font-family: 'Press Start 2P', cursive;
-    font-size: 9px;
+    font-size: 10.5px;
     color: #22d3ee;
     margin-bottom: 14px;
     display: flex;
@@ -167,10 +167,10 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
-    font-size: 12px;
+    font-size: 13px;
     color: #94a3b8;
     margin-bottom: 4px;
-    padding: 3px 0;
+    padding: 5px 0;
     border-bottom: 1px solid #1e293b;
 }
 .px-row:last-child { border-bottom: none; }
@@ -561,6 +561,7 @@
     box-shadow:0 8px 24px rgba(0,0,0,.16);
     position:relative;
     overflow:hidden;
+    padding:22px !important;
 }
 .card::after{
     content:"";
@@ -571,13 +572,21 @@
 }
 .card h3{
     font-family:'Press Start 2P',cursive !important;
-    font-size:9px !important;
+    font-size:10.5px !important;
     letter-spacing:.01em;
     color:#67e8f9 !important;
-    line-height:1.6;
+    line-height:1.7;
+    margin-bottom:6px;
+}
+.card .row{
+    font-size:13px !important;
+    padding:7px 0 !important;
 }
 .grid{
-    gap:14px !important;
+    display:grid !important;
+    grid-template-columns:repeat(auto-fit,minmax(320px,1fr)) !important;
+    gap:20px !important;
+    align-items:start !important;
 }
 
 /* Mini dibujo de mando/ventana en tarjetas */
@@ -734,18 +743,23 @@
 .empCard{
     background:linear-gradient(145deg,#111c2d,#0c1422) !important;
     border:1px solid #24324a !important;
-    border-radius:13px !important;
-    padding:12px !important;
+    border-radius:14px !important;
+    padding:16px !important;
+    margin-bottom:14px !important;
 }
+.empCard:last-child{margin-bottom:0 !important;}
+.empCard .name{font-size:14px !important;}
+.empCard .spec{font-size:12px !important;margin:3px 0 8px !important;}
+.empCard .statChip{font-size:11px !important;padding:3px 8px !important;margin:2px 3px 2px 0 !important;}
 .empCard::before{
     content:"";
     float:left;
-    width:34px;height:34px;margin-right:10px;
+    width:40px;height:40px;margin-right:12px;
     background:
-      linear-gradient(#fbbf24 0 0) 10px 3px/14px 12px no-repeat,
-      linear-gradient(#3b82f6 0 0) 7px 15px/20px 14px no-repeat,
-      linear-gradient(#0f172a 0 0) 11px 29px/5px 5px no-repeat,
-      linear-gradient(#0f172a 0 0) 23px 29px/5px 5px no-repeat,
+      linear-gradient(#fbbf24 0 0) 12px 4px/16px 14px no-repeat,
+      linear-gradient(#3b82f6 0 0) 8px 18px/24px 16px no-repeat,
+      linear-gradient(#0f172a 0 0) 13px 34px/6px 6px no-repeat,
+      linear-gradient(#0f172a 0 0) 27px 34px/6px 6px no-repeat,
       #172033;
     border:1px solid #334155;
     image-rendering:pixelated;
@@ -827,18 +841,18 @@ input:focus,select:focus{
 .tycoon-back svg{width:19px;height:19px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
 .tycoon-title-wrap{display:flex;align-items:center;justify-content:center;gap:10px;min-width:0}
 .tycoon-brand-mark{
-    width:34px;height:34px;
+    width:38px;height:38px;
     display:grid;place-items:center;
     border:1px solid #164e63;
     border-radius:10px;
     background:linear-gradient(135deg,#0e2737,#172554);
     box-shadow:inset 0 0 0 1px rgba(34,211,238,.08);
-    font-size:17px;
+    font-size:19px;
 }
 .tycoon-top-title{
     margin:0;
     font-family:'Press Start 2P',cursive;
-    font-size:13px;
+    font-size:14px;
     line-height:1.35;
     letter-spacing:.04em;
     text-align:center;
@@ -847,13 +861,13 @@ input:focus,select:focus{
 .tycoon-top-subtitle{
     margin:3px 0 0;
     color:#64748b;
-    font-size:10px;
+    font-size:11px;
     font-style:italic;
     text-align:center;
     white-space:nowrap;
     overflow:hidden;
     text-overflow:ellipsis;
-    max-width:230px;
+    max-width:250px;
 }
 .tycoon-header-stats{
     justify-self:end;
@@ -873,7 +887,7 @@ input:focus,select:focus{
     margin-right:auto !important;
 }
 #tabContent > .grid{
-    width:min(100%,980px);
+    width:min(100%,1120px);
     margin-left:auto;
     margin-right:auto;
 }
@@ -992,3 +1006,68 @@ input:focus,select:focus{
     .preview-meta{grid-template-columns:1fr}
     .preview-meta span:last-child{grid-column:auto}
 }
+
+/* ===== MEJORA VISUAL: SECCIONES Y MERCADO ===== */
+.section-visual-header{
+    min-height:150px;
+    margin-bottom:18px;
+    padding:22px 24px;
+    border:1px solid #26364d;
+    border-radius:18px;
+    background:linear-gradient(115deg,#0f1b2e 0%,#111c31 58%,#16243c 100%);
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:20px;
+    overflow:hidden;
+    position:relative;
+}
+.section-visual-header:after{
+    content:'';
+    position:absolute;
+    width:240px;height:240px;
+    right:-80px;top:-120px;
+    border-radius:50%;
+    background:rgba(34,211,238,.06);
+    pointer-events:none;
+}
+.section-visual-copy{position:relative;z-index:2}
+.section-kicker{
+    color:#22d3ee;font-size:10px;font-weight:800;letter-spacing:.16em;
+    margin-bottom:7px;
+}
+.section-visual-copy h2{margin:0;color:#f8fafc;font-size:25px;font-weight:800}
+.section-visual-copy p{margin:7px 0 0;color:#94a3b8;font-size:13px;max-width:560px}
+.section-art{width:180px;height:110px;display:flex;align-items:center;justify-content:center;position:relative;z-index:2;flex-shrink:0}
+.section-art svg{width:160px;height:100px;fill:none;stroke:#22d3ee;stroke-width:5;stroke-linecap:round;stroke-linejoin:round;filter:drop-shadow(0 0 9px rgba(34,211,238,.25))}
+.section-art-gamepad svg{stroke:#8b5cf6}.section-art-team svg{stroke:#60a5fa}.section-art-chart svg{stroke:#4ade80}.section-art-building svg{stroke:#c084fc}.section-art-coin svg{stroke:#fbbf24}.section-art-book svg{stroke:#38bdf8}
+
+/* Acciones más visibles */
+.action-btn,.btn.btnPrimary,.btn.btnSuccess,.btn.btnDanger{
+    min-height:42px;
+    font-weight:800;
+    box-shadow:0 7px 18px rgba(0,0,0,.22);
+}
+.action-btn:hover,.btn.btnPrimary:hover,.btn.btnSuccess:hover,.btn.btnDanger:hover{box-shadow:0 10px 24px rgba(0,0,0,.34)}
+
+/* Mercado */
+.market-intro{display:flex;align-items:center;justify-content:space-between;gap:18px;margin-bottom:16px!important;max-width:none!important}
+.market-intro h3{margin:0 0 7px;color:#f8fafc}
+.market-intro p{margin:0;color:#94a3b8;font-size:12px;line-height:1.6;max-width:650px}
+.market-summary{min-width:95px;text-align:center;padding:12px 16px;border:1px solid #334155;border-radius:14px;background:#0b1322}
+.market-summary strong{display:block;color:#22d3ee;font-size:27px}.market-summary span{color:#64748b;font-size:11px}
+.market-genre-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:15px}
+.market-genre-card{background:#0f172a;border:1px solid #243244;border-radius:17px;padding:17px;position:relative;overflow:hidden;transition:.18s ease}
+.market-genre-card:hover{border-color:#0e7490;transform:translateY(-2px);box-shadow:0 12px 28px rgba(0,0,0,.25)}
+.market-genre-art{height:82px;border-radius:13px;background:linear-gradient(135deg,#14253d,#101a2d);border:1px solid #25364c;display:flex;align-items:center;justify-content:center;font-size:48px;margin-bottom:14px}
+.market-genre-head{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.market-label{font-size:9px;letter-spacing:.13em;color:#64748b;font-weight:800}.market-genre-head h3{margin:3px 0 0;color:#e2e8f0;font-size:20px}
+.market-pop-number{font-size:24px;font-weight:900;color:#22d3ee}
+.market-pop-label{display:flex;justify-content:space-between;color:#64748b;font-size:10px;margin-top:13px}.market-pop-label strong{color:#cbd5e1}
+.market-pop-track{height:8px;background:#1e293b;border-radius:99px;overflow:hidden;margin-top:6px}.market-pop-track div{height:100%;background:linear-gradient(90deg,#22d3ee,#3b82f6,#8b5cf6);border-radius:99px}
+.market-trend{display:flex;justify-content:space-between;align-items:center;margin-top:11px;padding-top:10px;border-top:1px solid #1e293b;color:#64748b;font-size:10px}
+.market-games-title{display:flex;justify-content:space-between;color:#22d3ee;font-size:10px;font-weight:800;letter-spacing:.08em;margin-top:13px;margin-bottom:6px}.market-games-title span{color:#64748b}
+.market-games-list{min-height:39px}.market-game-row{display:flex;justify-content:space-between;gap:8px;padding:7px 0;border-bottom:1px solid #172235;font-size:11px;color:#cbd5e1}.market-game-row small{color:#64748b;text-align:right}.market-empty{padding:8px 0;color:#475569;font-size:11px;font-style:italic}
+.market-create-btn{width:100%;justify-content:center;margin-top:12px}
+@media(max-width:720px){.section-art{width:115px}.section-art svg{width:110px}.market-genre-grid{grid-template-columns:1fr}.market-intro{align-items:flex-start}.market-summary{min-width:75px}}
+@media(max-width:520px){.section-visual-header{padding:17px}.section-art{display:none}.section-visual-copy h2{font-size:21px}}

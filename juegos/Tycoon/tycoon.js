@@ -386,14 +386,45 @@ const UIManager = {
     renderTab(){
         const c = document.getElementById('tabContent');
         const d = GameState.data;
-        if(this.currentTab==='dashboard') c.innerHTML = this.dashboardHTML(d);
-        else if(this.currentTab==='crear') c.innerHTML = this.crearHTML(d);
-        else if(this.currentTab==='empleados') c.innerHTML = this.empleadosHTML(d);
-        else if(this.currentTab==='mercado') c.innerHTML = this.mercadoHTML(d);
-        else if(this.currentTab==='oficina') c.innerHTML = this.oficinaHTML(d);
-        else if(this.currentTab==='finanzas') c.innerHTML = this.finanzasHTML(d);
-        else if(this.currentTab==='historial') c.innerHTML = this.historialHTML(d);
+        let content = '';
+        if(this.currentTab==='dashboard') content = this.dashboardHTML(d);
+        else if(this.currentTab==='crear') content = this.crearHTML(d);
+        else if(this.currentTab==='empleados') content = this.empleadosHTML(d);
+        else if(this.currentTab==='mercado') content = this.mercadoHTML(d);
+        else if(this.currentTab==='oficina') content = this.oficinaHTML(d);
+        else if(this.currentTab==='finanzas') content = this.finanzasHTML(d);
+        else if(this.currentTab==='historial') content = this.historialHTML(d);
+        c.innerHTML = this.sectionHeaderHTML(this.currentTab, d) + content;
         this.bindTabEvents();
+    },
+    sectionHeaderHTML(tab, d){
+        const info = {
+            dashboard: {icon:'⌂', title:'Centro de mando', text:'Supervisa el estado de tu estudio y tus proyectos.', art:'monitor'},
+            crear: {icon:'🎮', title:'Crear juego', text:'Diseña el próximo éxito de tu estudio.', art:'gamepad'},
+            empleados: {icon:'👥', title:'Equipo', text:'Forma el equipo que hará crecer tus juegos.', art:'team'},
+            mercado: {icon:'📊', title:'Mercado', text:'Analiza géneros, tendencias y popularidad antes de invertir.', art:'chart'},
+            oficina: {icon:'🏢', title:'Oficina', text:'Mejora el espacio y la capacidad de tu estudio.', art:'building'},
+            finanzas: {icon:'💰', title:'Finanzas', text:'Controla ingresos, gastos y la salud económica.', art:'coin'},
+            historial: {icon:'📚', title:'Historial', text:'Consulta los juegos publicados y los acontecimientos.', art:'book'}
+        }[tab] || {icon:'🎮',title:'Tycoon',text:'Gestiona tu estudio.',art:'gamepad'};
+        return `<div class="section-visual-header">
+            <div class="section-visual-copy">
+                <div class="section-kicker">${info.icon} ${tab.toUpperCase()}</div>
+                <h2>${info.title}</h2>
+                <p>${info.text}</p>
+            </div>
+            <div class="section-art section-art-${info.art}" aria-hidden="true">${this.sectionArtSVG(info.art)}</div>
+        </div>`;
+    },
+    sectionArtSVG(type){
+        const common='viewBox="0 0 160 100" xmlns="http://www.w3.org/2000/svg"';
+        if(type==='monitor') return `<svg ${common}><rect x="32" y="15" width="96" height="58" rx="5"/><rect x="42" y="25" width="76" height="38"/><path d="M70 84h20M80 73v11"/><path d="M52 51l12-10 10 7 14-15 17 13"/></svg>`;
+        if(type==='gamepad') return `<svg ${common}><path d="M42 35c4-14 18-20 31-13l7 4 7-4c13-7 27-1 31 13l7 27c3 13-13 18-20 7l-8-12H63l-8 12c-7 11-23 6-20-7l7-27Z"/><path d="M57 39v18M48 48h18M104 43h1M116 52h1"/></svg>`;
+        if(type==='team') return `<svg ${common}><circle cx="80" cy="29" r="13"/><circle cx="42" cy="39" r="9"/><circle cx="118" cy="39" r="9"/><path d="M53 78c3-19 15-29 27-29s24 10 27 29M20 76c2-13 10-20 22-20M118 56c12 0 20 7 22 20"/></svg>`;
+        if(type==='chart') return `<svg ${common}><path d="M25 82h110M35 72V45h18v27M66 72V30h18v42M97 72V18h18v54"/><path d="M38 38l29-14 31 10 26-22"/></svg>`;
+        if(type==='building') return `<svg ${common}><path d="M35 84V23h50v61M85 84V42h40v42M48 35h10M66 35h10M48 49h10M66 49h10M48 63h10M66 63h10M98 54h10M98 68h10"/></svg>`;
+        if(type==='coin') return `<svg ${common}><circle cx="80" cy="50" r="31"/><circle cx="80" cy="50" r="23"/><path d="M86 36c-3-3-14-4-17 3-3 8 7 9 12 11 6 2 7 9 2 13-5 4-14 2-17-2M80 30v40"/></svg>`;
+        return `<svg ${common}><rect x="43" y="16" width="74" height="70" rx="4"/><path d="M55 31h50M55 45h50M55 59h35M55 73h42"/><path d="M32 26h11v62h74"/></svg>`;
     },
     dashboardHTML(d){
         let proyecto = '<p style="color:var(--muted)">No hay ningún proyecto en desarrollo. Ve a "Crear Juego".</p>';
@@ -592,13 +623,35 @@ const UIManager = {
     </div>`;
     },
     mercadoHTML(d){
-        const rows = GENEROS.map(g=>{
-            const v = d.market[g];
-            const cls = v>10?'tagGood':(v<-5?'tagBad':'tagMid');
-            return `<div class="row"><span>${g}</span><span class="tag ${cls}">${v>=0?'+':''}${v}% demanda</span></div>`;
+        const genreArt = {
+            'Acción':'🥊','RPG':'⚔️','Estrategia':'🏰','Simulación':'🏢','Terror':'👻','Aventura':'🗺️','Deportes':'🏆','Carreras':'🏎️','Roguelike':'🌀','Puzzle':'🧩','Plataforma':'🕹️'
+        };
+        const getPopularity = g => clamp(Math.round(50 + (d.market[g]||0)*1.2), 8, 98);
+        const getGames = g => {
+            const list = [];
+            if(d.currentProject && d.currentProject.genero===g) list.push({nombre:d.currentProject.nombre, status:'En desarrollo'});
+            d.activeReleases.filter(x=>x.genero===g).forEach(x=>list.push({nombre:x.nombre,status:'A la venta'}));
+            d.library.filter(x=>x.genero===g).slice(-3).forEach(x=>list.push({nombre:x.nombre,status:`Publicado · ${x.calidad}/100`}));
+            return list;
+        };
+        const cards = GENEROS.map(g=>{
+            const popularity=getPopularity(g);
+            const trend=d.market[g]||0;
+            const games=getGames(g);
+            const cls = trend>10?'tagGood':(trend<-5?'tagBad':'tagMid');
+            const gameList = games.length ? games.map(x=>`<div class="market-game-row"><span>🎮 ${this.escapeHtml(x.nombre)}</span><small>${x.status}</small></div>`).join('') : `<div class="market-empty">Aún no tienes juegos de esta temática.</div>`;
+            return `<article class="market-genre-card">
+                <div class="market-genre-art">${genreArt[g]}</div>
+                <div class="market-genre-head"><div><span class="market-label">TEMÁTICA</span><h3>${g}</h3></div><div class="market-pop-number">${popularity}%</div></div>
+                <div class="market-pop-label"><span>Popularidad</span><strong>${popularity}%</strong></div>
+                <div class="market-pop-track"><div style="width:${popularity}%"></div></div>
+                <div class="market-trend"><span>Tendencia actual</span><span class="tag ${cls}">${trend>=0?'+':''}${trend}%</span></div>
+                <div class="market-games-title">JUEGOS <span>${games.length}</span></div>
+                <div class="market-games-list">${gameList}</div>
+                <button class="action-btn btn-primary market-create-btn" data-market-genre="${g}">🎮 Crear juego de ${g}</button>
+            </article>`;
         }).join('');
-        return `<div class="card" style="max-width:480px"><h3>📊 Tendencias del mercado</h3>${rows}
-      <p style="color:var(--muted);font-size:12px;margin-top:10px">Las tendencias cambian cada mes. Elige el género de tu próximo juego con cabeza.</p></div>`;
+        return `<div class="market-intro card"><div><h3>📊 Popularidad de las temáticas</h3><p>Usa estas estadísticas para decidir qué género puede tener más demanda. La popularidad se calcula a partir de la tendencia del mercado actual.</p></div><div class="market-summary"><strong>${GENEROS.length}</strong><span>temáticas</span></div></div><div class="market-genre-grid">${cards}</div>`;
     },
     oficinaHTML(d){
         const info = GameState.officeInfo();
@@ -655,6 +708,14 @@ const UIManager = {
         };
         document.querySelectorAll('[data-hire]').forEach(b=>b.onclick=()=>{ EmployeeSystem.hire(GameState.data,b.dataset.hire); this.renderAll(); });
         document.querySelectorAll('[data-fire]').forEach(b=>b.onclick=()=>{ if(confirm('¿Despedir a este empleado?')){ EmployeeSystem.fire(GameState.data,b.dataset.fire); this.renderAll(); } });
+        document.querySelectorAll('[data-market-genre]').forEach(b=>b.onclick=()=>{
+            const genre=b.dataset.marketGenre;
+            this.currentTab='crear';
+            this.setActiveTab();
+            this.renderTab();
+            const select=document.getElementById('inGenero');
+            if(select){ select.value=genre; this.renderGamePreview(); }
+        });
     },
     showLaunchModal(){
         const root = document.getElementById('modalRoot');
