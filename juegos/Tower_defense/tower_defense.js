@@ -214,11 +214,15 @@ function generarDecoraciones() {
         const y = Math.random() * 500;
         let cercaCamino = false;
 
-        for (let j = 0; j < CAMINO.length - 1; j++) {
-            if (distanciaPuntoASegmento(x, y, CAMINO[j].x, CAMINO[j].y, CAMINO[j + 1].x, CAMINO[j + 1].y) < ANCHO_CAMINO / 2 + 15) {
-                cercaCamino = true;
-                break;
+        // Recorremos todos los caminos del nivel actual
+        for (let camino of caminosActuales) {
+            for (let j = 0; j < camino.length - 1; j++) {
+                if (distanciaPuntoASegmento(x, y, camino[j].x, camino[j].y, camino[j + 1].x, camino[j + 1].y) < ANCHO_CAMINO / 2 + 15) {
+                    cercaCamino = true;
+                    break;
+                }
             }
+            if (cercaCamino) break;
         }
 
         if (!cercaCamino) {
@@ -1281,9 +1285,10 @@ function reiniciarJuego() {
 }
 
 document.addEventListener('DOMContentLoaded', () => {
-    // Nota: generarDecoraciones() ya se ejecutó antes de preRenderFondo() más arriba,
-    // así que el fondo horneado (bgCanvas) coincide con DECORACIONES. No se vuelve
-    // a generar aquí para no desincronizar el fondo ya dibujado.
+    // Generar el escenario inicial y dibujarlo en el bgCanvas
+    generarDecoraciones();
+    preRenderFondo();
+
     actualizarMarcadoresUI();
     actualizarPanelInspector();
     requestAnimationFrame(loop);
