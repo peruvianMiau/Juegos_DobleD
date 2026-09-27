@@ -192,12 +192,12 @@ const CAMINOS_NIVEL_1 = [
 ];
 
 const CAMINOS_NIVEL_2 = [
-    [ // Ruta Superior (Zig-zag asimétrico)
+    [ // Ruta Superior
         { x: 20, y: 260 }, { x: 180, y: 260 }, { x: 180, y: 100 },
         { x: 380, y: 100 }, { x: 380, y: 180 }, { x: 580, y: 180 },
-        { x: 580, y: 260 }, { x: 780, y: 260 }
+        { x: 580, y: 60 }, { x: 780, y: 60 }, { x: 780, y: 260 }, { x: 780, y: 260 }
     ],
-    [ // Ruta Inferior (Zig-zag asimétrico distinto)
+    [ // Ruta Inferior
         { x: 20, y: 260 }, { x: 140, y: 260 }, { x: 140, y: 420 },
         { x: 460, y: 420 }, { x: 460, y: 340 }, { x: 660, y: 340 },
         { x: 660, y: 260 }, { x: 780, y: 260 }
@@ -978,23 +978,29 @@ function preRenderFondo() {
         bgCtx.lineWidth = ANCHO_CAMINO;
         bgCtx.strokeStyle = '#2b1a09';
         bgCtx.beginPath();
-        bgCtx.moveTo(camino[0].x, camino[0].y);
-        for (let i = 1; i < camino.length; i++) bgCtx.lineTo(camino[i].x, camino[i].y);
+        for (let camino of caminosActuales) {
+            bgCtx.moveTo(camino[0].x, camino[0].y);
+            for (let i = 1; i < camino.length; i++) bgCtx.lineTo(camino[i].x, camino[i].y);
+        }
         bgCtx.stroke();
 
         bgCtx.lineWidth = ANCHO_CAMINO - 4;
         bgCtx.strokeStyle = '#5c3d24';
         bgCtx.beginPath();
-        bgCtx.moveTo(camino[0].x, camino[0].y);
-        for (let i = 1; i < camino.length; i++) bgCtx.lineTo(camino[i].x, camino[i].y);
+        for (let camino of caminosActuales) {
+            bgCtx.moveTo(camino[0].x, camino[0].y);
+            for (let i = 1; i < camino.length; i++) bgCtx.lineTo(camino[i].x, camino[i].y);
+        }
         bgCtx.stroke();
 
         bgCtx.lineWidth = 2;
         bgCtx.strokeStyle = 'rgba(217, 119, 6, 0.35)';
         bgCtx.setLineDash([8, 8]);
         bgCtx.beginPath();
-        bgCtx.moveTo(camino[0].x, camino[0].y);
-        for (let i = 1; i < camino.length; i++) bgCtx.lineTo(camino[i].x, camino[i].y);
+        for (let camino of caminosActuales) {
+            bgCtx.moveTo(camino[0].x, camino[0].y);
+            for (let i = 1; i < camino.length; i++) bgCtx.lineTo(camino[i].x, camino[i].y);
+        }
         bgCtx.stroke();
         bgCtx.setLineDash([]);
     }
@@ -1029,7 +1035,7 @@ function ejecutarTransicionNivel() {
 
     // Reiniciar y aumentar el oro (180 base * (ciclo + 1)).
     // En el primer cambio (ciclo 1), tendrás 360 de oro.
-    oro = 180 * (ciclo + 1);
+    oro = 180 * (ciclo + 0.5);
 
     // Borrar defensas
     torres = [];
