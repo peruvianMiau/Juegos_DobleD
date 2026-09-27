@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🎮 Tycoon: Estudio de Videojuegos</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Rubik:wght@400;600;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="tycoon.css">
+</head>
+<body class="min-h-screen bg-slate-950 text-slate-100 select-none" style="font-family:'Rubik',sans-serif;">
+
+<!-- ======================== PANTALLA DE INICIO ======================== -->
+<div id="startScreen" class="fixed inset-0 flex items-center justify-center z-50" style="background:radial-gradient(ellipse at 30% 20%, #1b2740 0%, #070b12 70%);">
+
+    <!-- Pixel art city skyline de fondo -->
+    <div class="absolute bottom-0 left-0 right-0 flex items-end justify-center pointer-events-none overflow-hidden opacity-25">
+        <svg viewBox="0 0 800 220" width="100%" xmlns="http://www.w3.org/2000/svg" style="image-rendering:pixelated">
+            <!-- Edificio 1 -->
+            <rect x="20" y="120" width="60" height="100" fill="#22d3ee"/>
+            <rect x="24" y="124" width="12" height="12" fill="#0f172a"/><rect x="40" y="124" width="12" height="12" fill="#0f172a"/><rect x="56" y="124" width="12" height="12" fill="#fbbf24"/>
+            <rect x="24" y="144" width="12" height="12" fill="#fbbf24"/><rect x="40" y="144" width="12" height="12" fill="#0f172a"/><rect x="56" y="144" width="12" height="12" fill="#0f172a"/>
+            <rect x="24" y="164" width="12" height="12" fill="#0f172a"/><rect x="40" y="164" width="12" height="12" fill="#fbbf24"/><rect x="56" y="164" width="12" height="12" fill="#0f172a"/>
+            <rect x="36" y="108" width="8" height="12" fill="#22d3ee"/><!-- antena -->
+            <!-- Edificio 2 -->
+            <rect x="100" y="80" width="80" height="140" fill="#3b82f6"/>
+            <rect x="108" y="90" width="16" height="16" fill="#0f172a"/><rect x="130" y="90" width="16" height="16" fill="#fbbf24"/><rect x="152" y="90" width="16" height="16" fill="#0f172a"/>
+            <rect x="108" y="116" width="16" height="16" fill="#fbbf24"/><rect x="130" y="116" width="16" height="16" fill="#0f172a"/><rect x="152" y="116" width="16" height="16" fill="#fbbf24"/>
+            <rect x="108" y="142" width="16" height="16" fill="#0f172a"/><rect x="130" y="142" width="16" height="16" fill="#fbbf24"/><rect x="152" y="142" width="16" height="16" fill="#0f172a"/>
+            <rect x="134" y="68" width="12" height="12" fill="#3b82f6"/>
+            <!-- Edificio 3 grande -->
+            <rect x="200" y="40" width="100" height="180" fill="#6366f1"/>
+            <rect x="210" y="54" width="20" height="20" fill="#0f172a"/><rect x="238" y="54" width="20" height="20" fill="#fbbf24"/><rect x="266" y="54" width="20" height="20" fill="#0f172a"/>
+            <rect x="210" y="84" width="20" height="20" fill="#fbbf24"/><rect x="238" y="84" width="20" height="20" fill="#0f172a"/><rect x="266" y="84" width="20" height="20" fill="#fbbf24"/>
+            <rect x="210" y="114" width="20" height="20" fill="#0f172a"/><rect x="238" y="114" width="20" height="20" fill="#fbbf24"/><rect x="266" y="114" width="20" height="20" fill="#0f172a"/>
+            <rect x="210" y="144" width="20" height="20" fill="#fbbf24"/><rect x="238" y="144" width="20" height="20" fill="#0f172a"/><rect x="266" y="144" width="20" height="20" fill="#fbbf24"/>
+            <rect x="246" y="24" width="8" height="16" fill="#f87171"/><!-- antena con luz -->
+            <!-- Edificio 4 -->
+            <rect x="320" y="100" width="70" height="120" fill="#22d3ee"/>
+            <rect x="330" y="110" width="14" height="14" fill="#0f172a"/><rect x="350" y="110" width="14" height="14" fill="#0f172a"/><rect x="370" y="110" width="14" height="14" fill="#fbbf24"/>
+            <rect x="330" y="132" width="14" height="14" fill="#fbbf24"/><rect x="350" y="132" width="14" height="14" fill="#0f172a"/><rect x="370" y="132" width="14" height="14" fill="#0f172a"/>
+            <rect x="330" y="154" width="14" height="14" fill="#0f172a"/><rect x="350" y="154" width="14" height="14" fill="#fbbf24"/><rect x="370" y="154" width="14" height="14" fill="#0f172a"/>
+            <!-- Edificio 5 -->
+            <rect x="410" y="60" width="90" height="160" fill="#8b5cf6"/>
+            <rect x="420" y="74" width="18" height="18" fill="#fbbf24"/><rect x="446" y="74" width="18" height="18" fill="#0f172a"/><rect x="472" y="74" width="18" height="18" fill="#fbbf24"/>
+            <rect x="420" y="102" width="18" height="18" fill="#0f172a"/><rect x="446" y="102" width="18" height="18" fill="#fbbf24"/><rect x="472" y="102" width="18" height="18" fill="#0f172a"/>
+            <rect x="420" y="130" width="18" height="18" fill="#fbbf24"/><rect x="446" y="130" width="18" height="18" fill="#0f172a"/><rect x="472" y="130" width="18" height="18" fill="#fbbf24"/>
+            <rect x="454" y="44" width="10" height="16" fill="#8b5cf6"/>
+            <!-- Edificio 6 -->
+            <rect x="520" y="90" width="65" height="130" fill="#3b82f6"/>
+            <rect x="530" y="102" width="14" height="14" fill="#0f172a"/><rect x="550" y="102" width="14" height="14" fill="#fbbf24"/><rect x="570" y="102" width="14" height="14" fill="#0f172a"/>
+            <rect x="530" y="126" width="14" height="14" fill="#fbbf24"/><rect x="550" y="126" width="14" height="14" fill="#0f172a"/><rect x="570" y="126" width="14" height="14" fill="#fbbf24"/>
+            <rect x="530" y="150" width="14" height="14" fill="#0f172a"/><rect x="550" y="150" width="14" height="14" fill="#fbbf24"/><rect x="570" y="150" width="14" height="14" fill="#0f172a"/>
+            <!-- Edificio 7 -->
+            <rect x="605" y="50" width="80" height="170" fill="#22d3ee"/>
+            <rect x="615" y="64" width="16" height="16" fill="#0f172a"/><rect x="639" y="64" width="16" height="16" fill="#fbbf24"/><rect x="663" y="64" width="16" height="16" fill="#0f172a"/>
+            <rect x="615" y="90" width="16" height="16" fill="#fbbf24"/><rect x="639" y="90" width="16" height="16" fill="#0f172a"/><rect x="663" y="90" width="16" height="16" fill="#fbbf24"/>
+            <rect x="615" y="116" width="16" height="16" fill="#0f172a"/><rect x="639" y="116" width="16" height="16" fill="#fbbf24"/><rect x="663" y="116" width="16" height="16" fill="#0f172a"/>
+            <rect x="615" y="142" width="16" height="16" fill="#fbbf24"/><rect x="639" y="142" width="16" height="16" fill="#0f172a"/><rect x="663" y="142" width="16" height="16" fill="#fbbf24"/>
+            <rect x="641" y="34" width="10" height="16" fill="#22d3ee"/>
+            <!-- Edificio 8 -->
+            <rect x="700" y="110" width="80" height="110" fill="#6366f1"/>
+            <rect x="710" y="122" width="14" height="14" fill="#fbbf24"/><rect x="730" y="122" width="14" height="14" fill="#0f172a"/><rect x="750" y="122" width="14" height="14" fill="#fbbf24"/>
+            <rect x="710" y="146" width="14" height="14" fill="#0f172a"/><rect x="730" y="146" width="14" height="14" fill="#fbbf24"/><rect x="750" y="146" width="14" height="14" fill="#0f172a"/>
+            <rect x="710" y="170" width="14" height="14" fill="#fbbf24"/><rect x="730" y="170" width="14" height="14" fill="#0f172a"/><rect x="750" y="170" width="14" height="14" fill="#fbbf24"/>
+            <!-- suelo -->
+            <rect x="0" y="218" width="800" height="4" fill="#1e293b"/>
+        </svg>
+    </div>
+
+    <!-- Card de inicio -->
+    <div class="relative z-10 bg-slate-900/90 border border-slate-700 rounded-2xl p-8 w-full max-w-md text-center shadow-2xl backdrop-blur" style="box-shadow:0 0 60px rgba(34,211,238,0.15)">
+
+        <!-- Pixel art personaje animado -->
+        <div class="flex justify-center mb-4">
+            <svg viewBox="0 0 48 48" width="72" height="72" xmlns="http://www.w3.org/2000/svg" style="image-rendering:pixelated" class="pixel-bounce">
+                <!-- cabeza -->
+                <rect x="14" y="4" width="20" height="18" fill="#fbbf24"/>
+                <!-- cabello -->
+                <rect x="14" y="4" width="20" height="5" fill="#92400e"/>
+                <rect x="12" y="6" width="4" height="5" fill="#92400e"/>
+                <!-- ojos -->
+                <rect x="18" y="12" width="4" height="4" fill="#0f172a"/>
+                <rect x="28" y="12" width="4" height="4" fill="#0f172a"/>
+                <!-- boca -->
+                <rect x="20" y="18" width="8" height="2" fill="#92400e"/>
+                <!-- cuerpo (camisa azul) -->
+                <rect x="12" y="22" width="24" height="14" fill="#3b82f6"/>
+                <!-- corbata -->
+                <rect x="22" y="22" width="4" height="14" fill="#22d3ee"/>
+                <!-- brazos -->
+                <rect x="4" y="22" width="8" height="10" fill="#3b82f6"/>
+                <rect x="36" y="22" width="8" height="10" fill="#3b82f6"/>
+                <!-- manos -->
+                <rect x="4" y="32" width="8" height="6" fill="#fbbf24"/>
+                <rect x="36" y="32" width="8" height="6" fill="#fbbf24"/>
+                <!-- piernas -->
+                <rect x="14" y="36" width="8" height="10" fill="#1e293b"/>
+                <rect x="26" y="36" width="8" height="10" fill="#1e293b"/>
+                <!-- zapatos -->
+                <rect x="12" y="44" width="12" height="4" fill="#0f172a"/>
+                <rect x="26" y="44" width="12" height="4" fill="#0f172a"/>
+            </svg>
+        </div>
+
+        <h1 class="pixel-font text-base sm:text-lg mb-1 bg-gradient-to-r from-cyan-400 via-blue-400 to-purple-400 bg-clip-text text-transparent drop-shadow">
+            TYCOON
+        </h1>
+        <p class="pixel-font text-xs text-amber-400 mb-2">ESTUDIO DE VIDEOJUEGOS</p>
+        <p class="text-slate-400 text-sm mb-6">1995. Un pequeño estudio, poco dinero, una gran ambición.</p>
+
+        <label class="block text-left text-xs text-slate-400 font-semibold mb-1 uppercase tracking-widest">Nombre de tu estudio</label>
+        <input id="studioNameInput" type="text" placeholder="Pixel Dreams" maxlength="24"
+            class="w-full bg-slate-800 border border-slate-600 text-slate-100 rounded-xl px-4 py-3 mb-5 text-sm focus:outline-none focus:border-cyan-500 transition">
+
+        <div class="flex gap-3 justify-center">
+            <button id="btnNewGame" class="pixel-btn flex-1 bg-gradient-to-r from-cyan-500 to-blue-600 text-slate-950 font-black text-sm py-3 rounded-xl hover:from-cyan-400 hover:to-blue-500 transition shadow-lg" style="font-family:'Rubik',sans-serif">
+                ▶ NUEVA PARTIDA
+            </button>
+            <button id="btnLoadGame" class="pixel-btn flex-1 bg-slate-800 border border-slate-600 text-slate-300 font-bold text-sm py-3 rounded-xl hover:border-slate-400 transition" style="font-family:'Rubik',sans-serif">
+                💾 CARGAR
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- ======================== APP PRINCIPAL ======================== -->
+<div id="app" class="hidden flex flex-col min-h-screen">
+
+    <!-- TOPBAR UNIFICADA -->
+    <header class="tycoon-topbar">
+        <a href="../../index.html" class="tycoon-back">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10 19l-7-7 7-7m-7 7h18"/></svg>
+            <span>Volver al Menú</span>
+        </a>
+
+        <div class="tycoon-title-wrap">
+            <div class="tycoon-brand-mark">🎮</div>
+            <div>
+                <h1 class="tycoon-top-title">TYCOON</h1>
+                <p class="tycoon-top-subtitle"><span id="hStudio">Estudio</span> · <span id="hTagline">Pequeño estudio independiente</span></p>
+            </div>
+        </div>
+
+        <div class="tycoon-header-stats">
+            <div class="stat-chip money">💰 <span id="hMoney">$0</span></div>
+            <div class="stat-chip rep">⭐ <span id="hRep">0</span></div>
+            <div class="stat-chip date">📅 <span id="hDate">Ene 1995</span></div>
+            <div class="stat-chip emp">👥 <span id="hEmp">0</span></div>
+            <div class="stat-chip office">🏢 Nv.<span id="hOffice">1</span></div>
+        </div>
+    </header>
+
+    <!-- TABS -->
+    <nav class="tycoon-tabs" aria-label="Secciones del estudio">
+        <button class="tabBtn active" data-tab="dashboard"><span class="tab-icon pixel-monitor"></span><span>Inicio</span></button>
+        <button class="tabBtn" data-tab="crear"><span class="tab-icon pixel-gamepad"></span><span>Crear</span></button>
+        <button class="tabBtn" data-tab="empleados"><span class="tab-icon pixel-user"></span><span>Equipo</span></button>
+        <button class="tabBtn" data-tab="mercado"><span class="tab-icon pixel-chart"></span><span>Mercado</span></button>
+        <button class="tabBtn" data-tab="oficina"><span class="tab-icon pixel-building"></span><span>Oficina</span></button>
+        <button class="tabBtn" data-tab="finanzas"><span class="tab-icon pixel-coin"></span><span>Finanzas</span></button>
+        <button class="tabBtn" data-tab="historial"><span class="tab-icon pixel-book"></span><span>Historial</span></button>
+    </nav>
+
+    <!-- CONTENIDO -->
+    <main id="tabContent" class="flex-1 p-4 max-w-5xl w-full mx-auto"></main>
+
+    <!-- BARRA INFERIOR / CONTROLES -->
+    <footer class="tycoon-bottom-bar">
+        <div class="bottom-status">
+            <span class="status-pixel-dot"></span>
+            <div class="bottom-message">
+                <span class="bottom-label">ACTIVIDAD</span>
+                <span id="logLine">Bienvenido a tu estudio.</span>
+            </div>
+        </div>
+
+        <div class="time-controls">
+            <button class="time-btn save-btn" id="btnSave" title="Guardar partida">
+                <span class="bottom-icon pixel-disk"></span><span>Guardar</span>
+            </button>
+            <div class="time-group">
+                <span class="time-group-label">AVANZAR TIEMPO</span>
+                <div class="time-buttons">
+                    <button class="time-btn" id="btnAdv1"><span class="play-triangle"></span>1 mes</button>
+                    <button class="time-btn" id="btnAdv3"><span class="play-triangle double"></span>3 meses</button>
+                    <button class="time-btn" id="btnAdv6"><span class="play-triangle triple"></span>6 meses</button>
+                    <button class="time-btn year-btn" id="btnAdv12"><span class="fast-forward"></span>1 año</button>
+                </div>
+            </div>
+            <button class="time-btn danger reset-btn" id="btnReset" title="Reiniciar partida">
+                <span class="bottom-icon pixel-warning"></span><span>Reiniciar</span>
+            </button>
+        </div>
+    </footer>
+</div>
+
+<!-- MODALES -->
+<div id="modalRoot"></div>
+
+<script src="tycoon.js"></script>
+</body>
+</html>
