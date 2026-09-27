@@ -1,10 +1,3 @@
-// "value" = valor de la carta, creciente y SIN colisiones (2..14), usado tanto para
-// sumar fichas al puntuar como para detectar escaleras.
-// (Antes J/Q/K valían 10 como en el póker real, lo que generaba dos problemas:
-// 1) el orden "Por Categoría" quedaba raro porque 10/J/Q/K empataban en valor.
-// 2) la suma de fichas de una mano con figuras salía más baja de lo esperado,
-//    porque J/Q/K sumaban solo 10 en vez de su progresión natural 11/12/13.
-// Ahora J=11, Q=12, K=13 y As=14, como en la numeración normal de una escalera.)
 export const POKEMON_DATA = [
   { name: "Pichu", value: 2, valStr: "2", img: "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/172.png" },
   { name: "Charmander", value: 3, valStr: "3", img: "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/4.png" },
