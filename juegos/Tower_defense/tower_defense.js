@@ -27,7 +27,7 @@ const BGM_INTERVALO = 0.2;   // segundos entre notas (equivale a los 200ms anter
 const BGM_ANTICIPACION = 0.1; // cuántos segundos hacia adelante se programan notas
 const BGM_REVISAR_CADA = 30;  // ms entre cada chequeo del scheduler (no crítico: no toca el audio directamente)
 
-// Secuencia de notas (Frecuencias en Hz estilo 8-bits)
+// secuencia de notas (Frecuencias en Hz estilo 8-bits)
 const BGM_NOTAS = [
     220.00, 261.63, 293.66, 329.63, // A3, C4, D4, E4
     220.00, 261.63, 329.63, 293.66, // A3, C4, E4, D4
@@ -57,7 +57,7 @@ function planificadorBGM() {
 
     try {
         // Programa de una vez todas las notas que caen dentro de la ventana de
-        // anticipación, usando siempre la hora exacta (bgmProximaNota), nunca "ahora".
+        // anticipación, usando siempre la hora exacta (bpmProximaNota), nunca "ahora".
         while (bgmProximaNota < audioCtx.currentTime + BGM_ANTICIPACION) {
             const freq = BGM_NOTAS[bgmPaso % BGM_NOTAS.length];
             programarNotaBGM(freq, bgmProximaNota);
@@ -163,7 +163,7 @@ function playSound(type) {
 let oro = 180;
 let vidas = 20;
 let oleadaActual = 0;
-const OLEADAS_TOTALES = 10;
+const OLEADAS_TOTALES = 20;
 let oleadaEnProgreso = false;
 let velocidad = 1;
 let juegoTerminado = false;
@@ -182,18 +182,29 @@ const uiEnemiesLeft = document.getElementById('enemies-left');
 // Marca que la UI necesita actualizarse; se aplica una sola vez al final de update()
 let uiDirty = false;
 
-// sendero
-const CAMINO = [
-    { x: 20, y: 100 },
-    { x: 220, y: 100 },
-    { x: 220, y: 340 },
-    { x: 460, y: 340 },
-    { x: 460, y: 140 },
-    { x: 660, y: 140 },
-    { x: 660, y: 420 },
-    { x: 740, y: 420 }
+// Mapas y Caminos
+const CAMINOS_NIVEL_1 = [
+    [ // Mapa original
+        { x: 20, y: 100 }, { x: 220, y: 100 }, { x: 220, y: 340 },
+        { x: 460, y: 340 }, { x: 460, y: 140 }, { x: 660, y: 140 },
+        { x: 660, y: 420 }, { x: 780, y: 420 }
+    ]
 ];
 
+const CAMINOS_NIVEL_2 = [
+    [ // Ruta Superior
+        { x: 20, y: 260 }, { x: 180, y: 260 }, { x: 180, y: 100 },
+        { x: 380, y: 100 }, { x: 380, y: 180 }, { x: 580, y: 180 },
+        { x: 580, y: 60 }, { x: 780, y: 60 }, { x: 780, y: 260 }, { x: 780, y: 260 }
+    ],
+    [ // Ruta Inferior
+        { x: 20, y: 260 }, { x: 140, y: 260 }, { x: 140, y: 420 },
+        { x: 460, y: 420 }, { x: 460, y: 340 }, { x: 660, y: 340 },
+        { x: 660, y: 260 }, { x: 780, y: 260 }
+    ]
+];
+
+let caminosActuales = CAMINOS_NIVEL_1;
 const ANCHO_CAMINO = TILE_SIZE;
 
 // Elementos decorativos
@@ -205,11 +216,15 @@ function generarDecoraciones() {
         const y = Math.random() * 500;
         let cercaCamino = false;
 
-        for (let j = 0; j < CAMINO.length - 1; j++) {
-            if (distanciaPuntoASegmento(x, y, CAMINO[j].x, CAMINO[j].y, CAMINO[j + 1].x, CAMINO[j + 1].y) < ANCHO_CAMINO / 2 + 15) {
-                cercaCamino = true;
-                break;
+        // Recorremos todos los caminos del nivel actual
+        for (let camino of caminosActuales) {
+            for (let j = 0; j < camino.length - 1; j++) {
+                if (distanciaPuntoASegmento(x, y, camino[j].x, camino[j].y, camino[j + 1].x, camino[j + 1].y) < ANCHO_CAMINO / 2 + 15) {
+                    cercaCamino = true;
+                    break;
+                }
             }
+            if (cercaCamino) break;
         }
 
         if (!cercaCamino) {
@@ -224,7 +239,7 @@ const DATOS_TORRES = {
     arrow: {
         nombre: 'Torre Arquera',
         costo: 50,
-        rango: 125,
+        rango: 105,
         danio: 18,
         cadencia: 24,
         color: '#f59e0b',
@@ -234,7 +249,7 @@ const DATOS_TORRES = {
     cannon: {
         nombre: 'Torre Cañón',
         costo: 90,
-        rango: 105,
+        rango: 90,
         danio: 40,
         cadencia: 50,
         splash: 70,
@@ -245,7 +260,7 @@ const DATOS_TORRES = {
     ice: {
         nombre: 'Torre de Hielo',
         costo: 75,
-        rango: 110,
+        rango: 115,
         danio: 10,
         cadencia: 35,
         ralentizar: 0.40,
@@ -307,9 +322,11 @@ function distanciaPuntoASegmento(px, py, x1, y1, x2, y2) {
 }
 
 function estaEnCamino(x, y) {
-    for (let i = 0; i < CAMINO.length - 1; i++) {
-        const d = distanciaPuntoASegmento(x, y, CAMINO[i].x, CAMINO[i].y, CAMINO[i + 1].x, CAMINO[i + 1].y);
-        if (d < ANCHO_CAMINO / 2) return true;
+    for (let camino of caminosActuales) {
+        for (let i = 0; i < camino.length - 1; i++) {
+            const d = distanciaPuntoASegmento(x, y, camino[i].x, camino[i].y, camino[i + 1].x, camino[i + 1].y);
+            if (d < ANCHO_CAMINO / 2) return true;
+        }
     }
     return false;
 }
@@ -378,9 +395,9 @@ function mejorarTorreSeleccionada() {
         oro -= costoUpgrade;
         torreInspeccionada.nivel++;
         torreInspeccionada.inversionTotal += costoUpgrade;
-        torreInspeccionada.rango += 16;
-        torreInspeccionada.danio *= 1.45;
-        torreInspeccionada.danioPorFrame *= 1.4;
+        torreInspeccionada.rango += 15;
+        torreInspeccionada.danio *= 1.35;
+        torreInspeccionada.danioPorFrame *= 1.3;
         torreInspeccionada.cadencia = Math.max(12, Math.round(torreInspeccionada.cadencia * 0.82));
 
         for (let i = 0; i < 20; i++) {
@@ -431,67 +448,71 @@ function iniciarSiguienteOleada() {
     document.getElementById('btn-wave').className = 'px-5 py-2 rounded-xl bg-slate-800 text-slate-500 font-black text-sm cursor-not-allowed flex items-center gap-2 border border-slate-700/50';
 
     colaSpawn = [];
-    const count = 6 + oleadaActual * 3;
-    const multiVelocidad = 1 + (oleadaActual - 1) * 0.05;
+
+    const ciclo = Math.floor((oleadaActual - 1) / 10);
+    const oleadaBase = ((oleadaActual - 1) % 10) + 1;
+
+    const buffHp = 1 + (ciclo * 0.5);
+    const buffVelocidad = 1 + (ciclo * 0.15);
+
+    // Incrementa la cantidad de enemigos un 30% adicional por cada ciclo (10 rondas) completado
+    const baseCount = 6 + oleadaBase * 3;
+    const count = Math.floor(baseCount * (1 + ciclo * 0.3));
+
+    const multiVelocidad = (1 + (oleadaBase - 1) * 0.05) * buffVelocidad;
 
     for (let i = 0; i < count; i++) {
         let tipo = 'goblin';
-        let hp = 45 + oleadaActual * 18;
+        let hp = (45 + oleadaBase * 18) * buffHp;
         let speed = 2.0 * multiVelocidad;
-        let recompensa = 4 + Math.floor(oleadaActual * 0.6);
+        let recompensa = 4 + Math.floor(oleadaBase * 0.6); // Oro no se buff con el ciclo
         let color = '#10b981';
         let radio = 11;
 
-        if (oleadaActual >= 3 && i % 3 === 0) {
+        if (oleadaBase >= 3 && i % 3 === 0) {
             tipo = 'orc';
-            hp = 110 + oleadaActual * 28;
+            hp = (110 + oleadaBase * 28) * buffHp;
             speed = 1.50 * multiVelocidad;
-            recompensa = 8 + oleadaActual;
+            recompensa = 8 + oleadaBase;
             color = '#f97316';
             radio = 15;
         }
 
-        if (oleadaActual >= 6 && i % 4 === 0) {
+        if (oleadaBase >= 6 && i % 4 === 0) {
             tipo = 'golem';
-            hp = 280 + oleadaActual * 45;
+            hp = (280 + oleadaBase * 45) * buffHp;
             speed = 1.10 * multiVelocidad;
-            recompensa = 16 + oleadaActual * 1.5;
+            recompensa = 16 + oleadaBase * 1.5;
             color = '#64748b';
             radio = 18;
         }
 
-        if (oleadaActual === 10 && i === count - 1) {
+        if (oleadaBase === 10 && i === count - 1) {
             tipo = 'boss';
-            hp = 1400;
+            hp = 1400 * buffHp;
             speed = 0.58 * multiVelocidad;
             recompensa = 80;
             color = '#dc2626';
             radio = 24;
         }
 
-        // Lógica de escudo asignada por cada enemigo individualmente
-        const tieneEscudo = oleadaActual >= 5 && Math.random() < 0.35;
+        const tieneEscudo = oleadaBase >= 5 && Math.random() < 0.35;
         const valorEscudo = tieneEscudo ? Math.round(hp * 0.5) : 0;
 
+        // Asignar al enemigo a uno de los caminos disponibles aleatoriamente
+        const caminoAsignado = caminosActuales[Math.floor(Math.random() * caminosActuales.length)];
+
         colaSpawn.push({
-            tipo,
-            hpMax: hp,
-            hp: hp,
-            speedBase: speed,
-            speed: speed,
-            recompensa: Math.round(recompensa),
-            color,
-            radio,
+            tipo, hpMax: hp, hp: hp, speedBase: speed, speed: speed,
+            recompensa: Math.round(recompensa), color, radio,
             puntoIdx: 0,
-            x: CAMINO[0].x,
-            y: CAMINO[0].y,
-            slowTimer: 0,
-            animOffset: Math.random() * Math.PI * 2,
-            escudo: valorEscudo,
-            escudoMax: valorEscudo
+            camino: caminoAsignado, // Nuevo: guarda su ruta personal
+            x: caminoAsignado[0].x,
+            y: caminoAsignado[0].y,
+            slowTimer: 0, animOffset: Math.random() * Math.PI * 2,
+            escudo: valorEscudo, escudoMax: valorEscudo
         });
     }
-
     actualizarMarcadoresUI();
 }
 
@@ -602,7 +623,7 @@ function update() {
                 e.speed = e.speedBase;
             }
 
-            const target = CAMINO[e.puntoIdx + 1];
+            const target = e.camino[e.puntoIdx + 1];
             if (!target) {
                 vidas--;
                 playSound('hurt');
@@ -631,10 +652,8 @@ function update() {
             }
         }
 
-        // Progreso de cada enemigo en el camino, calculado UNA vez (antes se recalculaba
-        // por cada torre × cada enemigo, ahora es solo una vez × cada enemigo)
         for (let e of enemigos) {
-            const sig = CAMINO[e.puntoIdx + 1];
+            const sig = e.camino[e.puntoIdx + 1];
             e.progreso = e.puntoIdx * 1000000 - distSq(e.x, e.y, sig ? sig.x : e.x, sig ? sig.y : e.y);
         }
 
@@ -732,15 +751,17 @@ function update() {
             playSound('coin');
             uiDirty = true;
 
-            const waveBtn = document.getElementById('btn-wave');
             if (oleadaActual >= OLEADAS_TOTALES) {
                 finalizarJuego(true);
+            } else if (oleadaActual % 10 === 0) {
+                // Al llegar a un múltiplo de 10, activamos la transición
+                ejecutarTransicionNivel();
             } else {
+                const waveBtn = document.getElementById('btn-wave');
                 waveBtn.disabled = false;
                 waveBtn.className = 'px-5 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-sm transition shadow-lg flex items-center gap-2';
             }
         }
-
         for (let i = particulas.length - 1; i >= 0; i--) {
             const p = particulas[i];
             p.x += p.vx;
@@ -922,16 +943,12 @@ function preRenderFondo() {
     }
     bgCtx.fill();
 
-    // --- Decoraciones (árboles, rocas, flores) ---
-    // Son estáticas: nunca se mueven, así que se hornean aquí en vez de
-    // redibujarse 40 veces por frame en draw().
     for (let dec of DECORACIONES) {
         if (dec.tipo === 'tree') {
             bgCtx.fillStyle = 'rgba(0,0,0,0.3)';
             bgCtx.beginPath();
             bgCtx.ellipse(dec.x, dec.y + dec.size * 0.6, dec.size * 0.8, dec.size * 0.4, 0, 0, Math.PI * 2);
             bgCtx.fill();
-
             bgCtx.fillStyle = '#064e3b';
             bgCtx.beginPath();
             bgCtx.arc(dec.x, dec.y, dec.size, 0, Math.PI * 2);
@@ -953,38 +970,43 @@ function preRenderFondo() {
         }
     }
 
-    // --- Camino (sendero) ---
-    // También estático: antes se trazaba con 3 pasadas de stroke en cada frame.
+    // Dibujar TODOS los caminos activos
     bgCtx.lineCap = 'round';
     bgCtx.lineJoin = 'round';
 
-    bgCtx.lineWidth = ANCHO_CAMINO;
-    bgCtx.strokeStyle = '#2b1a09';
-    bgCtx.beginPath();
-    bgCtx.moveTo(CAMINO[0].x, CAMINO[0].y);
-    for (let i = 1; i < CAMINO.length; i++) bgCtx.lineTo(CAMINO[i].x, CAMINO[i].y);
-    bgCtx.stroke();
+    for (let camino of caminosActuales) {
+        bgCtx.lineWidth = ANCHO_CAMINO;
+        bgCtx.strokeStyle = '#2b1a09';
+        bgCtx.beginPath();
+        for (let camino of caminosActuales) {
+            bgCtx.moveTo(camino[0].x, camino[0].y);
+            for (let i = 1; i < camino.length; i++) bgCtx.lineTo(camino[i].x, camino[i].y);
+        }
+        bgCtx.stroke();
 
-    bgCtx.lineWidth = ANCHO_CAMINO - 4;
-    bgCtx.strokeStyle = '#5c3d24';
-    bgCtx.beginPath();
-    bgCtx.moveTo(CAMINO[0].x, CAMINO[0].y);
-    for (let i = 1; i < CAMINO.length; i++) bgCtx.lineTo(CAMINO[i].x, CAMINO[i].y);
-    bgCtx.stroke();
+        bgCtx.lineWidth = ANCHO_CAMINO - 4;
+        bgCtx.strokeStyle = '#5c3d24';
+        bgCtx.beginPath();
+        for (let camino of caminosActuales) {
+            bgCtx.moveTo(camino[0].x, camino[0].y);
+            for (let i = 1; i < camino.length; i++) bgCtx.lineTo(camino[i].x, camino[i].y);
+        }
+        bgCtx.stroke();
 
-    bgCtx.lineWidth = 2;
-    bgCtx.strokeStyle = 'rgba(217, 119, 6, 0.35)';
-    bgCtx.setLineDash([8, 8]);
-    bgCtx.beginPath();
-    bgCtx.moveTo(CAMINO[0].x, CAMINO[0].y);
-    for (let i = 1; i < CAMINO.length; i++) bgCtx.lineTo(CAMINO[i].x, CAMINO[i].y);
-    bgCtx.stroke();
-    bgCtx.setLineDash([]);
+        bgCtx.lineWidth = 2;
+        bgCtx.strokeStyle = 'rgba(217, 119, 6, 0.35)';
+        bgCtx.setLineDash([8, 8]);
+        bgCtx.beginPath();
+        for (let camino of caminosActuales) {
+            bgCtx.moveTo(camino[0].x, camino[0].y);
+            for (let i = 1; i < camino.length; i++) bgCtx.lineTo(camino[i].x, camino[i].y);
+        }
+        bgCtx.stroke();
+        bgCtx.setLineDash([]);
+    }
 
-    // --- Castillo (destino) ---
-    // Estático (sin animación), así que también se hornea aquí. El portal de
-    // entrada SÍ pulsa (usa globalTime) y por eso se sigue dibujando en draw().
-    const dest = CAMINO[CAMINO.length - 1];
+    // Castillo (Usa el final del primer camino)
+    const dest = caminosActuales[0][caminosActuales[0].length - 1];
     bgCtx.fillStyle = 'rgba(0,0,0,0.5)';
     bgCtx.beginPath();
     bgCtx.ellipse(dest.x, dest.y + 16, 32, 12, 0, 0, Math.PI * 2);
@@ -1003,10 +1025,35 @@ function preRenderFondo() {
     bgCtx.fillText('🏰', dest.x, dest.y);
 }
 
-// Las decoraciones deben generarse ANTES de hornear el fondo, porque
-// preRenderFondo() ahora las dibuja de forma permanente en bgCanvas.
-generarDecoraciones();
-preRenderFondo();
+function ejecutarTransicionNivel() {
+    const overlay = document.getElementById('level-transition-overlay');
+    overlay.classList.remove('hidden');
+
+    // Alternar entre mapa 1 y 2
+    const ciclo = Math.floor(oleadaActual / 10);
+    caminosActuales = (ciclo % 2 !== 0) ? CAMINOS_NIVEL_2 : CAMINOS_NIVEL_1;
+
+    // Reiniciar y aumentar el oro (180 base * (ciclo + 1)).
+    // En el primer cambio (ciclo 1), tendrás 360 de oro.
+    oro = 180 * (ciclo + 0.5);
+
+    // Borrar defensas
+    torres = [];
+    torreInspeccionada = null;
+    deseleccionarTorreConstruccion();
+    actualizarPanelInspector();
+
+    // Regenerar el escenario
+    generarDecoraciones();
+    preRenderFondo();
+
+    setTimeout(() => {
+        overlay.classList.add('hidden');
+        const waveBtn = document.getElementById('btn-wave');
+        waveBtn.disabled = false;
+        waveBtn.className = 'px-5 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-sm transition shadow-lg flex items-center gap-2';
+    }, 3500); // 3.5 segundos de transición
+}
 
 function draw() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -1017,7 +1064,7 @@ function draw() {
     ctx.strokeStyle = '#c084fc';
     ctx.lineWidth = 3;
     ctx.beginPath();
-    ctx.arc(CAMINO[0].x, CAMINO[0].y, 20 + Math.sin(globalTime * 3) * 2, 0, Math.PI * 2); // Usa CAMINO[0].x en lugar de 15
+    ctx.arc(caminosActuales[0][0].x, caminosActuales[0][0].y, 20 + Math.sin(globalTime * 3) * 2, 0, Math.PI * 2);
     ctx.fill();
     ctx.stroke();
 
@@ -1250,12 +1297,32 @@ function reiniciarJuego() {
 }
 
 document.addEventListener('DOMContentLoaded', () => {
-    // Nota: generarDecoraciones() ya se ejecutó antes de preRenderFondo() más arriba,
-    // así que el fondo horneado (bgCanvas) coincide con DECORACIONES. No se vuelve
-    // a generar aquí para no desincronizar el fondo ya dibujado.
+    // Generar el escenario inicial y dibujarlo en el bgCanvas
+    generarDecoraciones();
+    preRenderFondo();
+
     actualizarMarcadoresUI();
     actualizarPanelInspector();
     requestAnimationFrame(loop);
+});
+
+// TRUCO: Presiona 'Alt + N' para saltar instantáneamente a la transición del siguiente mapa
+document.addEventListener('keydown', (e) => {
+    if (e.altKey && (e.key === 'n' || e.key === 'N')) {
+        if (juegoTerminado) return;
+
+        // Forzamos llegar a la oleada 10 para disparar el cambio
+        oleadaActual = 10;
+        enemigos = [];
+        colaSpawn = [];
+        proyectiles = [];
+        oleadaEnProgreso = false;
+
+        ejecutarTransicionNivel();
+        actualizarMarcadoresUI();
+
+        console.log("¡Truco activado! Saltando de mapa...");
+    }
 });
 
 function toggleRulesModal(mostrar) {

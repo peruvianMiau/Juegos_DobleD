@@ -30,13 +30,16 @@
         <button id="openHandsBtn" class="bg-emerald-600 hover:bg-emerald-500 text-white text-xs md:text-sm font-semibold px-3 py-1.5 rounded-lg border border-emerald-400 flex items-center gap-1.5 transition">
             🂠 <span class="hidden sm:inline">Manos</span>
         </button>
+        <button id="openAllJokersBtn" class="bg-amber-600 hover:bg-amber-500 text-white text-xs md:text-sm font-semibold px-3 py-1.5 rounded-lg border border-amber-400 flex items-center gap-1.5 transition">
+            🃏 <span class="hidden sm:inline">Jokers</span>
+        </button>
         <div class="flex items-center gap-2 bg-slate-800/80 px-3 py-1.5 rounded-xl border border-slate-700">
             <span class="text-slate-400 text-xs hidden sm:inline">Ronda</span>
             <span id="roundDisplay" class="font-bold text-cyan-300 text-sm sm:text-lg">1</span>
         </div>
         <div class="flex items-center gap-2 bg-slate-800/80 px-3 py-1.5 rounded-xl border border-slate-700">
             <span class="text-amber-400 font-bold text-xs">💰</span>
-            <span id="moneyDisplay" class="font-bold text-amber-300 text-sm sm:text-lg">$4</span>
+            <span id="moneyDisplay" class="font-bold text-amber-300 text-sm sm:text-lg">$0</span>
         </div>
     </div>
 </header>
@@ -112,15 +115,18 @@
 
         <!-- MANO DE CARTAS DEL JUGADOR -->
         <div class="mt-1">
-            <div class="flex justify-between items-center mb-2 px-2 flex-wrap gap-2">
+            <div class="relative z-10 flex justify-between items-center mb-1 px-2 flex-wrap gap-2">
                 <span class="text-xs text-slate-400 font-semibold">Tu Mano (<span id="selectedCount">0</span>/5 seleccionadas)</span>
                 <div class="flex items-center gap-2">
+                    <button id="openJokersInfoBtn" class="text-xs bg-slate-800 hover:bg-slate-700 border border-amber-600/50 px-2.5 py-1 rounded-lg text-amber-300 transition flex items-center gap-1">
+                        🃏 Comodines (<span id="jokerCountBadge">0</span>)
+                    </button>
                     <span class="text-[10px] text-slate-500 uppercase tracking-wide hidden sm:inline">Ordenar:</span>
                     <button id="sortSuitBtn" class="text-xs bg-slate-800 hover:bg-slate-700 border border-slate-700 px-2.5 py-1 rounded-lg text-slate-300 transition">🔀 Por Palo</button>
                     <button id="sortValueBtn" class="text-xs bg-slate-800 hover:bg-slate-700 border border-slate-700 px-2.5 py-1 rounded-lg text-slate-300 transition">🔢 Por Categoría</button>
                 </div>
             </div>
-            <div id="handContainer" class="flex justify-center items-end min-h-[190px] gap-2 md:gap-4 px-2 flex-wrap"></div>
+            <div id="handContainer" class="flex justify-center items-end min-h-[190px] gap-2 md:gap-4 px-2 pt-9 flex-wrap"></div>
         </div>
     </main>
 
@@ -154,7 +160,12 @@
 
             <div class="bg-slate-950/60 p-3 rounded-xl border border-slate-800/60">
                 <h3 class="text-yellow-400 font-semibold mb-1 text-xs uppercase tracking-wider">👑 Comodines Legendarios</h3>
-                <p class="text-xs">Al superar la ciega vas a la tienda, donde puedes comprar Pokémon Legendarios que dan bonus permanentes de fichas y multiplicador.</p>
+                <p class="text-xs">Cada 3 ciegas superadas se abre la Tienda, donde puedes comprar Pokémon Legendarios con bonus permanentes de fichas y multiplicador.</p>
+            </div>
+
+            <div class="bg-slate-950/60 p-3 rounded-xl border border-slate-800/60">
+                <h3 class="text-rose-400 font-semibold mb-1 text-xs uppercase tracking-wider">💀 Fin de la Partida</h3>
+                <p class="text-xs">Si no alcanzas el objetivo de una Ciega, la partida termina y podrás empezar una nueva.</p>
             </div>
 
             <div class="bg-slate-950/60 p-3 rounded-xl border border-slate-800/60">
@@ -164,6 +175,11 @@
         </div>
     </aside>
 
+</div>
+
+<!-- Aviso de fin de ronda (nunca hay Game Over: el juego es infinito) -->
+<div id="roundToast" class="hidden fixed top-4 left-1/2 -translate-x-1/2 z-[70] toast-banner">
+    <span id="roundToastText"></span>
 </div>
 
 <!-- OVERLAY RESULTADO DE MANO JUGADA -->
@@ -211,6 +227,35 @@
     </div>
 </div>
 
+<!-- MODAL COMODINES -->
+<div id="jokersInfoModal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 modal-backdrop">
+    <div class="bg-slate-900 border border-amber-500/40 rounded-2xl max-w-2xl w-full p-6 shadow-2xl">
+        <div class="flex justify-between items-center mb-4">
+            <h3 class="pixel-font text-lg text-amber-400">🃏 Tus Comodines</h3>
+            <button id="closeJokersInfoBtn" class="text-slate-400 hover:text-white text-xl">✕</button>
+        </div>
+        <div class="flex flex-wrap gap-4 justify-center max-h-[65vh] overflow-y-auto pr-2" id="jokersInfoContainer"></div>
+        <button id="confirmJokersInfoBtn" class="mt-4 w-full bg-slate-800 hover:bg-slate-700 text-white font-bold py-2 rounded-lg">
+            Cerrar
+        </button>
+    </div>
+</div>
+
+<!-- MODAL TODOS LOS JOKERS (catálogo completo, se posean o no) -->
+<div id="allJokersModal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 modal-backdrop">
+    <div class="bg-slate-900 border border-amber-500/40 rounded-2xl max-w-3xl w-full p-6 shadow-2xl">
+        <div class="flex justify-between items-center mb-4">
+            <h3 class="pixel-font text-lg text-amber-400">🃏 Todos los Jokers</h3>
+            <button id="closeAllJokersBtn" class="text-slate-400 hover:text-white text-xl">✕</button>
+        </div>
+        <p class="text-xs text-slate-400 mb-4">Los que ya tienes se ven a color; el resto aún puedes conseguirlo en la Tienda cada 3 Ciegas superadas.</p>
+        <div class="flex flex-wrap gap-4 justify-center max-h-[65vh] overflow-y-auto pr-2" id="allJokersContainer"></div>
+        <button id="confirmAllJokersBtn" class="mt-4 w-full bg-slate-800 hover:bg-slate-700 text-white font-bold py-2 rounded-lg">
+            Cerrar
+        </button>
+    </div>
+</div>
+
 <!-- MODAL TIENDA -->
 <div id="shopModal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 modal-backdrop">
     <div class="bg-slate-900 border border-yellow-500/40 rounded-2xl max-w-3xl w-full p-6 shadow-2xl text-center max-h-[90vh] overflow-y-auto">
@@ -230,6 +275,31 @@
 
         <button id="nextRoundBtn" class="bg-emerald-600 hover:bg-emerald-500 text-white font-bold px-8 py-3 rounded-xl border border-emerald-400 text-lg shadow-lg">
             Siguiente Ciega ➔
+        </button>
+    </div>
+</div>
+
+<!-- MODAL DESCARTAR COMODÍN (al llegar al tope de 5, hay que soltar uno para llevarse otro) -->
+<div id="discardJokerModal" class="hidden fixed inset-0 z-[70] flex items-center justify-center p-4 modal-backdrop">
+    <div class="bg-slate-900 border border-rose-500/40 rounded-2xl max-w-2xl w-full p-6 shadow-2xl text-center">
+        <h3 class="pixel-font text-lg text-rose-400 mb-2">🗑️ Límite de Comodines alcanzado</h3>
+        <p class="text-sm text-slate-400 mb-4">Ya tienes el máximo de Comodines. Elige cuál descartar para quedarte con:</p>
+        <div class="flex justify-center mb-5" id="discardJokerIncoming"></div>
+        <div class="flex flex-wrap gap-4 justify-center max-h-[45vh] overflow-y-auto pr-2 mb-5" id="discardJokerContainer"></div>
+        <button id="cancelDiscardJokerBtn" class="w-full bg-slate-800 hover:bg-slate-700 text-white font-bold py-2 rounded-lg">
+            Cancelar
+        </button>
+    </div>
+</div>
+
+<!-- MODAL GAME OVER -->
+<div id="gameOverModal" class="hidden fixed inset-0 z-[80] flex items-center justify-center p-4 modal-backdrop">
+    <div class="bg-slate-900 border border-rose-500/50 rounded-2xl max-w-md w-full p-8 shadow-2xl text-center">
+        <div class="text-5xl mb-3">💀</div>
+        <h2 class="pixel-font text-2xl text-rose-400 mb-3">¡Perdiste!</h2>
+        <p id="gameOverText" class="text-sm text-slate-300 mb-6">No alcanzaste el objetivo de la Ciega.</p>
+        <button id="playAgainBtn" class="bg-emerald-600 hover:bg-emerald-500 text-white font-bold px-8 py-3 rounded-xl border border-emerald-400 text-lg shadow-lg w-full">
+            🔄 Jugar de nuevo
         </button>
     </div>
 </div>
